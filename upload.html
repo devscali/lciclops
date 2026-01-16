@@ -467,19 +467,38 @@
                 ring.style.strokeDashoffset = 0;
                 percent.textContent = '100%';
 
-                // Show preview button
-                progress.innerHTML = `
-                    <button onclick="showPreview(${JSON.stringify(data.document).replace(/"/g, '&quot;')}, this.closest('.file-item'))" class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-pizza/10 text-pizza text-sm font-medium hover:bg-pizza/20 transition-colors">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                            <circle cx="12" cy="12" r="3"/>
-                        </svg>
-                        Ver preview
-                    </button>
-                `;
+                // Handle multiple sheets or single document
+                const documents = data.documents || [data.document];
+                const sheetsCount = documents.length;
 
-                // Auto-show preview
-                showPreview(data.document, fileCard);
+                if (sheetsCount === 1) {
+                    // Single sheet - show preview button
+                    progress.innerHTML = `
+                        <button onclick="showPreview(${JSON.stringify(documents[0]).replace(/"/g, '&quot;')}, this.closest('.file-item'))" class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-pizza/10 text-pizza text-sm font-medium hover:bg-pizza/20 transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                <circle cx="12" cy="12" r="3"/>
+                            </svg>
+                            Ver preview
+                        </button>
+                    `;
+                    showPreview(documents[0], fileCard);
+                } else {
+                    // Multiple sheets - show sheet selector
+                    progress.innerHTML = `
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm text-success font-medium">${sheetsCount} hojas</span>
+                            <button onclick="showSheetsModal(${JSON.stringify(documents).replace(/"/g, '&quot;')}, this.closest('.file-item'))" class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-pizza/10 text-pizza text-sm font-medium hover:bg-pizza/20 transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                                    <line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/>
+                                </svg>
+                                Ver hojas
+                            </button>
+                        </div>
+                    `;
+                    showSheetsModal(documents, fileCard);
+                }
 
             } catch (err) {
                 clearInterval(progressInterval);
@@ -496,36 +515,127 @@
             }
         }
 
+        let allSheetsData = [];
+
+        function showSheetsModal(documents, fileCard) {
+            allSheetsData = documents;
+            currentFileCard = fileCard;
+
+            let html = `
+                <div class="space-y-4">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-10 h-10 rounded-xl bg-pizza/10 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-pizza" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-ink">Se detectaron ${documents.length} hojas</h3>
+                            <p class="text-sm text-ink-3">Selecciona una hoja para ver el preview y confirmar</p>
+                        </div>
+                    </div>
+            `;
+
+            documents.forEach((doc, i) => {
+                const ai = doc.ai_analysis || {};
+                const dataType = ai.data_type || 'datos';
+                const summary = ai.summary || 'Sin descripción';
+                const category = ai.recommended_category || 'general';
+
+                html += `
+                    <div class="p-4 rounded-xl bg-surface-3/30 border border-white/5 hover:border-pizza/30 transition-all cursor-pointer" onclick="showPreview(allSheetsData[${i}], currentFileCard)">
+                        <div class="flex items-start justify-between gap-4">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="font-medium text-ink">${escapeHtml(doc.sheet_name || 'Hoja ' + (i+1))}</span>
+                                    <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-pizza/10 text-pizza">${dataType}</span>
+                                </div>
+                                <p class="text-sm text-ink-3 mb-2">${escapeHtml(summary)}</p>
+                                <div class="flex items-center gap-4 text-xs text-ink-3">
+                                    <span>${doc.rows} filas</span>
+                                    <span>${doc.columns?.length || 0} columnas</span>
+                                    <span class="px-2 py-0.5 rounded bg-surface-2">${category}</span>
+                                </div>
+                            </div>
+                            <svg class="w-5 h-5 text-ink-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <polyline points="9 18 15 12 9 6"/>
+                            </svg>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+
+            document.getElementById('previewTitle').textContent = documents[0]?.filename?.split('[')[0] || 'Excel';
+            document.getElementById('previewSubtitle').textContent = `${documents.length} hojas detectadas - Analizadas con AI`;
+            document.getElementById('previewContent').innerHTML = html;
+
+            // Hide confirm button when showing sheets list
+            document.querySelector('#previewModal .bg-pizza').style.display = 'none';
+            document.getElementById('previewModal').classList.remove('hidden');
+        }
+
         function showPreview(doc, fileCard) {
             currentDocData = doc;
             currentFileCard = fileCard;
 
             document.getElementById('previewTitle').textContent = doc.filename;
-            document.getElementById('previewSubtitle').textContent = `${doc.type.toUpperCase()} - ${doc.rows} filas detectadas`;
+
+            const ai = doc.ai_analysis || {};
+            const subtitle = ai.summary ? `${ai.summary}` : `${doc.type.toUpperCase()} - ${doc.rows} filas detectadas`;
+            document.getElementById('previewSubtitle').textContent = subtitle;
 
             const content = document.getElementById('previewContent');
             let html = '';
 
+            // Show AI analysis if available
+            if (ai.data_type && ai.data_type !== 'unknown') {
+                html += `
+                    <div class="mb-4 p-4 rounded-xl bg-gradient-to-r from-pizza/10 to-transparent border border-pizza/20">
+                        <div class="flex items-center gap-2 mb-2">
+                            <svg class="w-5 h-5 text-pizza" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/>
+                                <path d="M12 6v6l4 2"/>
+                            </svg>
+                            <span class="font-semibold text-pizza">Análisis AI</span>
+                            <span class="ml-auto px-2 py-0.5 rounded-full text-xs font-medium bg-pizza/20 text-pizza">${ai.data_type}</span>
+                        </div>
+                        <p class="text-sm text-ink-2">${escapeHtml(ai.summary || '')}</p>
+                        ${ai.recommended_category ? `<p class="text-xs text-ink-3 mt-2">Categoría sugerida: <span class="text-pizza">${ai.recommended_category}</span></p>` : ''}
+                    </div>
+                `;
+            }
+
             if (doc.type === 'pdf') {
                 // For PDFs, show text content
-                html = '<table class="w-full text-sm"><thead><tr><th class="text-left p-3 bg-pizza/10 text-pizza font-semibold rounded-t-lg">Contenido extraido del PDF</th></tr></thead><tbody>';
+                html += '<table class="w-full text-sm"><thead><tr><th class="text-left p-3 bg-pizza/10 text-pizza font-semibold rounded-t-lg">Contenido extraido del PDF</th></tr></thead><tbody>';
                 (doc.preview || []).forEach((line, i) => {
                     html += `<tr><td class="p-3 border-b border-white/5 text-ink-2 ${i % 2 === 0 ? 'bg-surface-3/20' : ''}">${escapeHtml(line)}</td></tr>`;
                 });
                 html += '</tbody></table>';
             } else {
-                // For Excel/CSV
+                // For Excel/CSV - show field mapping if available
                 const cols = doc.columns || [];
-                html = '<table class="w-full text-sm"><thead><tr>';
+                const fieldMapping = ai.detected_fields || {};
+
+                html += '<table class="w-full text-sm"><thead><tr>';
                 cols.forEach(col => {
-                    html += `<th class="text-left p-3 bg-pizza/10 text-pizza font-semibold whitespace-nowrap">${escapeHtml(col)}</th>`;
+                    const mapped = fieldMapping[col];
+                    const mappedName = mapped?.mapped_to || col;
+                    const fieldType = mapped?.type || '';
+                    html += `<th class="text-left p-3 bg-pizza/10 text-pizza font-semibold whitespace-nowrap">
+                        <div>${escapeHtml(col)}</div>
+                        ${mappedName !== col ? `<div class="text-xs font-normal text-ink-3 mt-0.5">→ ${mappedName}</div>` : ''}
+                        ${fieldType ? `<div class="text-xs font-normal text-ink-4">${fieldType}</div>` : ''}
+                    </th>`;
                 });
                 html += '</tr></thead><tbody>';
 
                 (doc.preview || []).forEach((row, i) => {
                     html += `<tr class="${i % 2 === 0 ? 'bg-surface-3/20' : ''}">`;
                     cols.forEach(col => {
-                        html += `<td class="p-3 border-b border-white/5 text-ink-2 whitespace-nowrap">${escapeHtml(row[col] || '-')}</td>`;
+                        html += `<td class="p-3 border-b border-white/5 text-ink-2 whitespace-nowrap">${escapeHtml(row[col] ?? '-')}</td>`;
                     });
                     html += '</tr>';
                 });
@@ -533,6 +643,9 @@
             }
 
             content.innerHTML = html;
+
+            // Show confirm button
+            document.querySelector('#previewModal .bg-pizza').style.display = '';
             document.getElementById('previewModal').classList.remove('hidden');
         }
 
