@@ -174,9 +174,10 @@ Analiza y mapea estos campos."""
 
 
 @app.post("/upload")
-async def upload_file(file: UploadFile = File(...)):
+async def upload_file(file: UploadFile = File(...), skip_ai: bool = False):
     """
     Sube un archivo Excel/CSV/PDF y extrae los datos
+    - skip_ai: Si True, no ejecuta análisis AI (más rápido para archivos grandes)
     """
     try:
         # Validar tipo de archivo
@@ -190,6 +191,13 @@ async def upload_file(file: UploadFile = File(...)):
 
         # Leer contenido
         content = await file.read()
+        file_size_mb = len(content) / (1024 * 1024)
+        print(f"📁 Procesando archivo: {file.filename} ({file_size_mb:.2f} MB)")
+
+        # Auto-skip AI para archivos grandes (> 5MB)
+        if file_size_mb > 5:
+            print(f"⚠️ Archivo grande detectado, desactivando AI analysis")
+            skip_ai = True
 
         # Parsear según tipo
         is_pdf = filename.endswith('.pdf')
@@ -210,7 +218,7 @@ async def upload_file(file: UploadFile = File(...)):
                 "rows": len(lines),
                 "columns": ["contenido"],
                 "preview": lines[:10],
-                "full_text": pdf_text[:5000],  # Primeros 5000 chars para preview
+                "full_text": pdf_text[:5000],
                 "status": "uploaded"
             }
 
@@ -220,6 +228,13 @@ async def upload_file(file: UploadFile = File(...)):
                 "df_json": df.to_json(),
                 "raw_text": pdf_text
             })
+
+            return {
+                "success": True,
+                "message": f"PDF '{file.filename}' procesado",
+                "sheets_count": 1,
+                "documents": [doc_info]
+            }
         else:
             # Excel o CSV
             if filename.endswith('.csv'):
@@ -227,17 +242,32 @@ async def upload_file(file: UploadFile = File(...)):
                 sheets_data = {"Datos": df}
             else:
                 # Excel: leer TODAS las hojas
+                print(f"📊 Leyendo hojas del Excel...")
                 excel_file = pd.ExcelFile(BytesIO(content))
                 sheet_names = excel_file.sheet_names
+                print(f"📋 Hojas encontradas: {len(sheet_names)} - {sheet_names[:5]}{'...' if len(sheet_names) > 5 else ''}")
+
                 sheets_data = {}
                 for sheet_name in sheet_names:
-                    df = pd.read_excel(excel_file, sheet_name=sheet_name)
-                    if not df.empty and len(df.columns) > 0:
-                        sheets_data[sheet_name] = df
+                    try:
+                        df = pd.read_excel(excel_file, sheet_name=sheet_name)
+                        if not df.empty and len(df.columns) > 0:
+                            sheets_data[sheet_name] = df
+                    except Exception as e:
+                        print(f"⚠️ Error leyendo hoja '{sheet_name}': {e}")
+                        continue
 
             # Procesar cada hoja
             documents_created = []
-            for sheet_name, df in sheets_data.items():
+            total_sheets = len(sheets_data)
+
+            # Limitar AI analysis a máximo 3 hojas para evitar timeout
+            max_ai_sheets = 3 if not skip_ai else 0
+            ai_processed = 0
+
+            for idx, (sheet_name, df) in enumerate(sheets_data.items()):
+                print(f"  → Procesando hoja {idx+1}/{total_sheets}: {sheet_name}")
+
                 df.columns = [str(col).strip() for col in df.columns]
                 df = df.dropna(how='all')
 
@@ -247,12 +277,20 @@ async def upload_file(file: UploadFile = File(...)):
                 data = df.to_dict(orient='records')
                 columns = list(df.columns)
 
-                # Analizar campos con AI
-                ai_analysis = await analyze_fields_with_ai(data, columns, f"{file.filename} - {sheet_name}")
+                # Solo analizar con AI las primeras N hojas para evitar timeout
+                ai_analysis = None
+                if not skip_ai and ai_processed < max_ai_sheets and len(df) < 10000:
+                    try:
+                        print(f"    🤖 Analizando con AI...")
+                        ai_analysis = await analyze_fields_with_ai(data, columns, f"{file.filename} - {sheet_name}")
+                        ai_processed += 1
+                    except Exception as e:
+                        print(f"    ⚠️ AI analysis failed: {e}")
+                        ai_analysis = None
 
                 doc_info = {
                     "id": len(documents_store) + 1,
-                    "filename": f"{file.filename}" if len(sheets_data) == 1 else f"{file.filename} [{sheet_name}]",
+                    "filename": f"{file.filename}" if total_sheets == 1 else f"{file.filename} [{sheet_name}]",
                     "sheet_name": sheet_name,
                     "type": "excel" if not filename.endswith('.csv') else "csv",
                     "rows": len(df),
@@ -273,13 +311,57 @@ async def upload_file(file: UploadFile = File(...)):
             if not documents_created:
                 raise HTTPException(status_code=400, detail="No se encontraron datos válidos en el archivo")
 
+            print(f"✅ Procesado: {len(documents_created)} hojas, {ai_processed} con AI")
+
             return {
                 "success": True,
-                "message": f"Archivo '{file.filename}' procesado - {len(documents_created)} hoja(s) detectada(s)",
+                "message": f"Archivo '{file.filename}' procesado - {len(documents_created)} hoja(s)",
                 "sheets_count": len(documents_created),
+                "ai_analyzed": ai_processed,
                 "documents": documents_created
             }
 
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/upload/analyze/{doc_id}")
+async def analyze_document_fields(doc_id: int):
+    """
+    Analiza campos de un documento con AI (para docs que se subieron sin AI)
+    """
+    if not openai_client:
+        raise HTTPException(status_code=503, detail="OpenAI API no configurada")
+
+    # Buscar documento
+    doc = None
+    for d in documents_store:
+        if d["info"]["id"] == doc_id:
+            doc = d
+            break
+
+    if not doc:
+        raise HTTPException(status_code=404, detail=f"Documento {doc_id} no encontrado")
+
+    if doc["info"].get("type") == "pdf":
+        return {"success": True, "message": "PDFs no requieren análisis de campos", "ai_analysis": None}
+
+    try:
+        data = doc.get("data", [])
+        columns = doc["info"].get("columns", [])
+        filename = doc["info"]["filename"]
+
+        ai_analysis = await analyze_fields_with_ai(data, columns, filename)
+
+        # Actualizar el documento
+        doc["info"]["ai_analysis"] = ai_analysis
+
+        return {
+            "success": True,
+            "doc_id": doc_id,
+            "ai_analysis": ai_analysis
+        }
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
