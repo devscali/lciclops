@@ -1,6 +1,7 @@
 """
 CICLOPS Backend - Modo Demo
 Funciona sin Firebase, solo con OpenAI API para análisis
+Soporta: Excel, CSV, PDF
 """
 
 from fastapi import FastAPI, File, UploadFile, HTTPException
@@ -14,6 +15,7 @@ from io import BytesIO
 from dotenv import load_dotenv
 from typing import Optional
 import traceback
+import pdfplumber
 
 # Cargar variables de entorno
 load_dotenv()
@@ -74,47 +76,97 @@ async def health_check():
     }
 
 
+def extract_text_from_pdf(content: bytes) -> str:
+    """Extrae texto de un PDF usando pdfplumber"""
+    text_content = []
+    with pdfplumber.open(BytesIO(content)) as pdf:
+        for page in pdf.pages:
+            # Intentar extraer tablas primero
+            tables = page.extract_tables()
+            if tables:
+                for table in tables:
+                    for row in table:
+                        if row:
+                            text_content.append(" | ".join([str(cell) if cell else "" for cell in row]))
+            else:
+                # Si no hay tablas, extraer texto normal
+                text = page.extract_text()
+                if text:
+                    text_content.append(text)
+    return "\n".join(text_content)
+
+
 @app.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
     """
-    Sube un archivo Excel/CSV y extrae los datos
+    Sube un archivo Excel/CSV/PDF y extrae los datos
     """
     try:
         # Validar tipo de archivo
         filename = file.filename.lower()
-        if not any(filename.endswith(ext) for ext in ['.xlsx', '.xls', '.csv']):
+        allowed_extensions = ['.xlsx', '.xls', '.csv', '.pdf']
+        if not any(filename.endswith(ext) for ext in allowed_extensions):
             raise HTTPException(
                 status_code=400,
-                detail="Solo se permiten archivos Excel (.xlsx, .xls) o CSV (.csv)"
+                detail="Solo se permiten archivos Excel (.xlsx, .xls), CSV (.csv) o PDF (.pdf)"
             )
 
         # Leer contenido
         content = await file.read()
 
         # Parsear según tipo
-        if filename.endswith('.csv'):
-            df = pd.read_csv(BytesIO(content))
+        is_pdf = filename.endswith('.pdf')
+
+        if is_pdf:
+            # Extraer texto del PDF
+            pdf_text = extract_text_from_pdf(content)
+
+            # Crear un "dataframe" simple con el contenido
+            lines = [line.strip() for line in pdf_text.split('\n') if line.strip()]
+            df = pd.DataFrame({"contenido": lines})
+            data = df.to_dict(orient='records')
+
+            doc_info = {
+                "id": len(documents_store) + 1,
+                "filename": file.filename,
+                "type": "pdf",
+                "rows": len(lines),
+                "columns": ["contenido"],
+                "preview": lines[:10],
+                "full_text": pdf_text[:5000],  # Primeros 5000 chars para preview
+                "status": "uploaded"
+            }
+
+            documents_store.append({
+                "info": doc_info,
+                "data": data,
+                "df_json": df.to_json(),
+                "raw_text": pdf_text
+            })
         else:
-            df = pd.read_excel(BytesIO(content))
+            # Excel o CSV
+            if filename.endswith('.csv'):
+                df = pd.read_csv(BytesIO(content))
+            else:
+                df = pd.read_excel(BytesIO(content))
 
-        # Convertir a diccionario
-        data = df.to_dict(orient='records')
+            data = df.to_dict(orient='records')
 
-        # Info del archivo
-        doc_info = {
-            "id": len(documents_store) + 1,
-            "filename": file.filename,
-            "rows": len(df),
-            "columns": list(df.columns),
-            "preview": data[:5],  # Primeras 5 filas
-            "status": "uploaded"
-        }
+            doc_info = {
+                "id": len(documents_store) + 1,
+                "filename": file.filename,
+                "type": "excel" if not filename.endswith('.csv') else "csv",
+                "rows": len(df),
+                "columns": list(df.columns),
+                "preview": data[:5],
+                "status": "uploaded"
+            }
 
-        documents_store.append({
-            "info": doc_info,
-            "data": data,
-            "df_json": df.to_json()
-        })
+            documents_store.append({
+                "info": doc_info,
+                "data": data,
+                "df_json": df.to_json()
+            })
 
         return {
             "success": True,
@@ -149,19 +201,33 @@ async def analyze_document(doc_id: int, analysis_type: str = "general"):
         raise HTTPException(status_code=404, detail=f"Documento {doc_id} no encontrado")
 
     try:
-        # Preparar datos para Claude
-        df = pd.read_json(doc["df_json"])
-        data_summary = f"""
-        Archivo: {doc['info']['filename']}
-        Filas: {len(df)}
-        Columnas: {', '.join(df.columns.tolist())}
+        # Preparar datos según tipo de documento
+        is_pdf = doc["info"].get("type") == "pdf"
 
-        Primeras filas:
-        {df.head(10).to_string()}
+        if is_pdf:
+            # Para PDFs, usar el texto raw
+            raw_text = doc.get("raw_text", "")
+            data_summary = f"""
+            Archivo: {doc['info']['filename']}
+            Tipo: PDF (Estado de Resultados)
 
-        Estadísticas:
-        {df.describe().to_string()}
-        """
+            Contenido del documento:
+            {raw_text[:8000]}
+            """
+        else:
+            # Para Excel/CSV
+            df = pd.read_json(doc["df_json"])
+            data_summary = f"""
+            Archivo: {doc['info']['filename']}
+            Filas: {len(df)}
+            Columnas: {', '.join(df.columns.tolist())}
+
+            Primeras filas:
+            {df.head(10).to_string()}
+
+            Estadísticas:
+            {df.describe().to_string()}
+            """
 
         # Prompt según tipo de análisis
         prompts = {
