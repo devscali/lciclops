@@ -5,7 +5,9 @@ Funciona sin Firebase, solo con Claude API para análisis
 
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
 import anthropic
 import pandas as pd
 import json
@@ -266,6 +268,28 @@ async def list_analyses():
         "count": len(analysis_store),
         "analyses": analysis_store
     }
+
+
+# Servir archivos estáticos del frontend
+# Los archivos HTML están en la raíz del repo (../../)
+STATIC_DIR = Path(__file__).parent.parent.parent.parent  # Sube a lciclops/
+if STATIC_DIR.exists():
+    # Servir index.html en la raíz
+    @app.get("/app")
+    @app.get("/app/")
+    async def serve_app():
+        index_path = STATIC_DIR / "index.html"
+        if index_path.exists():
+            return FileResponse(index_path)
+        return {"error": "index.html not found"}
+
+    # Servir otros archivos HTML
+    @app.get("/app/{filename}")
+    async def serve_html(filename: str):
+        file_path = STATIC_DIR / filename
+        if file_path.exists() and file_path.suffix in ['.html', '.css', '.js', '.png', '.jpg', '.svg', '.ico']:
+            return FileResponse(file_path)
+        return {"error": f"{filename} not found"}
 
 
 # Para correr: python -m uvicorn app.main_demo:app --reload --port 8000
