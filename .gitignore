@@ -1,0 +1,63 @@
+# ========================================
+# ARCHIVOS SENSIBLES - NUNCA SUBIR A GIT
+# ========================================
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Firebase/Google credentials
+**/firebase-credentials.json
+**/*-firebase-adminsdk-*.json
+**/serviceAccountKey.json
+
+# ========================================
+# DEPENDENCIAS
+# ========================================
+
+# Node
+node_modules/
+.npm/
+
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+env/
+
+# ========================================
+# BUILD/CACHE
+# ========================================
+
+# Next.js
+.next/
+out/
+build/
+
+# Python
+*.egg-info/
+dist/
+.eggs/
+
+# ========================================
+# IDE/OS
+# ========================================
+
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+Thumbs.db
+
+# ========================================
+# LOGS/TEMP
+# ========================================
+
+*.log
+logs/
+temp/
+uploads/
+.cache/

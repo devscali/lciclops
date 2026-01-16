@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subir Documentos - CICLOPS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Bricolage+Grotesque:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'pizza': '#FF5722',
+                        'pizza-light': '#FF8A65',
+                        'pizza-dark': '#E64A19',
+                        'midnight': '#0a0a0b',
+                        'surface': '#141416',
+                        'surface-2': '#1c1c1f',
+                        'surface-3': '#242428',
+                        'ink': '#ffffff',
+                        'ink-2': '#a1a1a6',
+                        'ink-3': '#636366',
+                        'success': '#34C759',
+                        'warning': '#FF9500',
+                        'danger': '#FF3B30',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        :root { --pizza: #FF5722; --bg: #0a0a0b; }
+        * { font-family: 'Instrument Sans', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+        .font-display { font-family: 'Bricolage Grotesque', serif; letter-spacing: -0.03em; }
+        body { background: var(--bg); min-height: 100vh; }
+
+        .blob {
+            position: fixed; width: 600px; height: 600px;
+            background: radial-gradient(circle, rgba(255,87,34,0.15) 0%, transparent 70%);
+            filter: blur(60px); animation: morph 15s infinite ease-in-out; pointer-events: none; z-index: 0;
+        }
+        @keyframes morph {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            50% { transform: translate(-30px, 50px) rotate(180deg); }
+        }
+
+        .nav-pill { padding: 0.75rem 1.25rem; border-radius: 100px; font-weight: 500; color: #636366; transition: all 0.3s ease; }
+        .nav-pill.active { color: #fff; background: linear-gradient(135deg, #FF5722 0%, #E64A19 100%); box-shadow: 0 4px 20px rgba(255,87,34,0.4); }
+        .nav-pill:not(.active):hover { color: #a1a1a6; background: rgba(255,255,255,0.03); }
+
+        .drop-zone {
+            border: 2px dashed rgba(255,87,34,0.3);
+            background: linear-gradient(145deg, rgba(255,87,34,0.02) 0%, transparent 100%);
+            transition: all 0.3s ease;
+        }
+        .drop-zone:hover, .drop-zone.dragover {
+            border-color: var(--pizza);
+            background: rgba(255,87,34,0.05);
+            transform: scale(1.01);
+        }
+        .drop-zone.dragover { box-shadow: 0 0 60px rgba(255,87,34,0.2); }
+
+        .file-item { animation: slideIn 0.3s ease-out; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .progress-ring { transition: stroke-dashoffset 0.35s; transform: rotate(-90deg); transform-origin: 50% 50%; }
+
+        .mobile-nav { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(10,10,11,0.9); backdrop-filter: blur(20px); border-top: 1px solid rgba(255,255,255,0.05); padding: 0.75rem 1rem; z-index: 100; display: none; }
+        @media (max-width: 1024px) { .mobile-nav { display: flex; justify-content: space-around; } .desktop-nav { display: none; } body { padding-bottom: 80px; } }
+
+        /* ============================================
+           LIGHT THEME - Mejor balance y profundidad
+           ============================================ */
+        .theme-light {
+            --bg: #f8f8fa;
+            background: linear-gradient(180deg, #f8f8fa 0%, #f0f0f2 100%) !important;
+        }
+        .theme-light .text-ink { color: #1a1a1a; }
+        .theme-light .text-ink-2 { color: #525252; }
+        .theme-light .text-ink-3 { color: #787878; }
+        .theme-light .bg-surface-2 { background: #ffffff; }
+        .theme-light .bg-surface-2\/50 { background: rgba(255,255,255,0.9); }
+        .theme-light .bg-surface-3\/50 { background: rgba(0,0,0,0.03); }
+
+        .theme-light .drop-zone {
+            background: linear-gradient(145deg, rgba(255,255,255,0.9) 0%, rgba(248,248,250,0.9) 100%);
+            border: 2px dashed rgba(255,87,34,0.25);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        .theme-light .drop-zone:hover, .theme-light .drop-zone.dragover {
+            background: rgba(255,87,34,0.03);
+            border-color: #FF5722;
+            box-shadow: 0 8px 32px rgba(255,87,34,0.12);
+        }
+
+        .theme-light .file-card {
+            background: #ffffff;
+            border: 1px solid rgba(0,0,0,0.06);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03);
+        }
+
+        /* Tips cards en light */
+        .theme-light .p-5.rounded-2xl.bg-surface-2\/50 {
+            background: #ffffff;
+            border-color: rgba(0,0,0,0.06);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+
+        /* Nav en light */
+        .theme-light .nav-pill:not(.active) { color: #525252; }
+        .theme-light .nav-pill:not(.active):hover { color: #1a1a1a; background: rgba(0,0,0,0.04); }
+        .theme-light .border-white\/5 { border-color: rgba(0,0,0,0.08); }
+
+        /* Blobs más sutiles en light */
+        .theme-light .blob {
+            background: radial-gradient(circle, rgba(255,87,34,0.06) 0%, transparent 70%);
+            filter: blur(80px);
+        }
+
+        /* Mobile nav en light */
+        .theme-light .mobile-nav {
+            background: rgba(255,255,255,0.95);
+            border-top-color: rgba(0,0,0,0.08);
+        }
+    </style>
+</head>
+<body class="text-ink" id="app">
+    <div class="blob -top-48 -right-48"></div>
+    <div class="blob -bottom-48 -left-48" style="animation-delay: -7s;"></div>
+
+    <!-- Desktop Navigation -->
+    <header class="desktop-nav fixed top-0 left-0 right-0 z-50 px-6 py-4">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <a href="index.html" class="flex items-center gap-3 group">
+                <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-pizza to-pizza-dark flex items-center justify-center shadow-lg shadow-pizza/30 group-hover:scale-105 transition-transform">
+                    <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/>
+                        <line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/>
+                        <line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/>
+                    </svg>
+                </div>
+                <div>
+                    <span class="font-display text-xl font-bold text-ink">CICLOPS</span>
+                    <span class="block text-[10px] text-ink-3 tracking-[0.2em] uppercase">Little Caesars Intel</span>
+                </div>
+            </a>
+
+            <nav class="flex items-center gap-1 p-1.5 bg-surface-2/80 backdrop-blur-xl rounded-full border border-white/5">
+                <a href="index.html" class="nav-pill"><span class="flex items-center gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>Dashboard</span></a>
+                <a href="upload.html" class="nav-pill active"><span class="flex items-center gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Subir</span></a>
+                <a href="reports.html" class="nav-pill"><span class="flex items-center gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Reportes</span></a>
+                <a href="documents.html" class="nav-pill"><span class="flex items-center gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>Docs</span></a>
+            </nav>
+
+            <div class="flex items-center gap-3">
+                <button onclick="toggleTheme()" class="w-10 h-10 rounded-xl bg-surface-2 border border-white/5 flex items-center justify-center text-ink-3 hover:text-ink transition-all">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/></svg>
+                </button>
+                <!-- User Menu -->
+                <div class="relative">
+                    <button onclick="toggleUserMenu()" class="flex items-center gap-2 p-1 rounded-xl hover:bg-surface-3/50 transition-all" id="userMenuBtn">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-pizza to-pizza-dark flex items-center justify-center text-white font-bold text-sm">LC</div>
+                        <svg class="w-4 h-4 text-ink-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div id="userMenu" class="hidden absolute right-0 top-14 w-56 bg-surface-2 border border-white/10 rounded-2xl shadow-2xl shadow-black/50 overflow-hidden z-50">
+                        <div class="p-4 border-b border-white/5">
+                            <p class="font-semibold text-ink">Little Caesars</p>
+                            <p class="text-sm text-ink-3">admin@lciclops.com</p>
+                        </div>
+                        <div class="p-2">
+                            <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-ink-2 hover:bg-surface-3/50 hover:text-ink transition-all">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                Mi perfil
+                            </a>
+                            <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-ink-2 hover:bg-surface-3/50 hover:text-ink transition-all">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                                Configuración
+                            </a>
+                        </div>
+                        <div class="p-2 border-t border-white/5">
+                            <a href="login.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-danger hover:bg-danger/10 transition-all">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                                Cerrar sesión
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Mobile Navigation -->
+    <nav class="mobile-nav">
+        <a href="index.html" class="flex flex-col items-center gap-1 text-ink-3"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg><span class="text-[10px] font-medium">Dashboard</span></a>
+        <a href="upload.html" class="flex flex-col items-center gap-1 text-pizza"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><span class="text-[10px] font-medium">Subir</span></a>
+        <a href="reports.html" class="flex flex-col items-center gap-1 text-ink-3"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span class="text-[10px] font-medium">Reportes</span></a>
+        <a href="documents.html" class="flex flex-col items-center gap-1 text-ink-3"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg><span class="text-[10px] font-medium">Docs</span></a>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="relative z-10 pt-28 pb-8 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-4xl mx-auto">
+            <!-- Header -->
+            <div class="text-center mb-12">
+                <h1 class="font-display text-4xl sm:text-5xl font-extrabold text-ink mb-4">
+                    Sube tus <span class="text-transparent bg-clip-text bg-gradient-to-r from-pizza to-pizza-light">documentos</span>
+                </h1>
+                <p class="text-ink-2 text-lg max-w-xl mx-auto">
+                    Arrastra PDFs de estados de cuenta, facturas o reportes. Julia los procesará con IA para extraer los datos automáticamente.
+                </p>
+            </div>
+
+            <!-- Drop Zone -->
+            <div id="dropZone" class="drop-zone rounded-3xl p-12 sm:p-16 text-center cursor-pointer mb-8" onclick="document.getElementById('fileInput').click()">
+                <input type="file" id="fileInput" class="hidden" multiple accept=".pdf,.xlsx,.xls,.csv" onchange="handleFiles(this.files)">
+
+                <div class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-pizza/20 to-pizza/5 flex items-center justify-center">
+                    <svg class="w-10 h-10 text-pizza" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="17 8 12 3 7 8"/>
+                        <line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                </div>
+
+                <h3 class="font-display text-2xl font-bold text-ink mb-2">Arrastra archivos aquí</h3>
+                <p class="text-ink-3 mb-6">o haz clic para seleccionar</p>
+
+                <div class="flex flex-wrap items-center justify-center gap-3">
+                    <span class="px-3 py-1.5 rounded-full bg-surface-3/50 text-ink-2 text-sm font-medium">PDF</span>
+                    <span class="px-3 py-1.5 rounded-full bg-surface-3/50 text-ink-2 text-sm font-medium">Excel</span>
+                    <span class="px-3 py-1.5 rounded-full bg-surface-3/50 text-ink-2 text-sm font-medium">CSV</span>
+                </div>
+            </div>
+
+            <!-- File List -->
+            <div id="fileList" class="space-y-4"></div>
+
+            <!-- Tips -->
+            <div class="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="p-5 rounded-2xl bg-surface-2/50 border border-white/5">
+                    <div class="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center mb-3">
+                        <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                        </svg>
+                    </div>
+                    <h4 class="font-semibold text-ink mb-1">Estados de cuenta</h4>
+                    <p class="text-sm text-ink-3">PDFs de bancos como Banamex, BBVA, Santander</p>
+                </div>
+                <div class="p-5 rounded-2xl bg-surface-2/50 border border-white/5">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center mb-3">
+                        <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <rect x="2" y="4" width="20" height="16" rx="2"/>
+                            <path d="M7 15h0M2 9h20"/>
+                        </svg>
+                    </div>
+                    <h4 class="font-semibold text-ink mb-1">Facturas</h4>
+                    <p class="text-sm text-ink-3">CFE, agua, gas, proveedores, nómina</p>
+                </div>
+                <div class="p-5 rounded-2xl bg-surface-2/50 border border-white/5">
+                    <div class="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center mb-3">
+                        <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path d="M3 3v18h18"/>
+                            <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/>
+                        </svg>
+                    </div>
+                    <h4 class="font-semibold text-ink mb-1">Reportes POS</h4>
+                    <p class="text-sm text-ink-3">Exportaciones del sistema de punto de venta</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        function toggleTheme() {
+            const body = document.getElementById('app');
+            body.classList.toggle('theme-light');
+            localStorage.setItem('theme', body.classList.contains('theme-light') ? 'light' : 'dark');
+        }
+        if (localStorage.getItem('theme') === 'light') document.getElementById('app').classList.add('theme-light');
+
+        function toggleUserMenu() {
+            document.getElementById('userMenu').classList.toggle('hidden');
+        }
+        document.addEventListener('click', (e) => {
+            const menu = document.getElementById('userMenu');
+            const btn = document.getElementById('userMenuBtn');
+            if (!btn?.contains(e.target) && !menu?.contains(e.target)) menu?.classList.add('hidden');
+        });
+
+        // Drag and drop
+        const dropZone = document.getElementById('dropZone');
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(event => {
+            dropZone.addEventListener(event, e => { e.preventDefault(); e.stopPropagation(); });
+        });
+
+        ['dragenter', 'dragover'].forEach(event => {
+            dropZone.addEventListener(event, () => dropZone.classList.add('dragover'));
+        });
+
+        ['dragleave', 'drop'].forEach(event => {
+            dropZone.addEventListener(event, () => dropZone.classList.remove('dragover'));
+        });
+
+        dropZone.addEventListener('drop', e => handleFiles(e.dataTransfer.files));
+
+        function handleFiles(files) {
+            const fileList = document.getElementById('fileList');
+
+            Array.from(files).forEach((file, index) => {
+                const id = Date.now() + index;
+                const ext = file.name.split('.').pop().toUpperCase();
+                const size = (file.size / 1024 / 1024).toFixed(2);
+
+                const fileCard = document.createElement('div');
+                fileCard.className = 'file-item file-card p-5 rounded-2xl bg-surface-2/50 border border-white/5 flex items-center gap-4';
+                fileCard.innerHTML = `
+                    <div class="w-12 h-12 rounded-xl bg-pizza/10 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-6 h-6 text-pizza" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                        </svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="font-medium text-ink truncate">${file.name}</p>
+                        <p class="text-sm text-ink-3">${ext} • ${size} MB</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div id="progress-${id}" class="flex items-center gap-2">
+                            <div class="w-8 h-8">
+                                <svg class="w-8 h-8" viewBox="0 0 36 36">
+                                    <circle cx="18" cy="18" r="16" fill="none" stroke="currentColor" stroke-width="2" class="text-surface-3"/>
+                                    <circle cx="18" cy="18" r="16" fill="none" stroke="currentColor" stroke-width="2" class="text-pizza progress-ring" stroke-dasharray="100" stroke-dashoffset="100" id="ring-${id}"/>
+                                </svg>
+                            </div>
+                            <span class="text-sm text-ink-3" id="percent-${id}">0%</span>
+                        </div>
+                        <button onclick="this.closest('.file-item').remove()" class="w-8 h-8 rounded-lg bg-danger/10 flex items-center justify-center text-danger hover:bg-danger/20 transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                        </button>
+                    </div>
+                `;
+
+                fileList.appendChild(fileCard);
+                simulateUpload(id);
+            });
+        }
+
+        function simulateUpload(id) {
+            const ring = document.getElementById(`ring-${id}`);
+            const percent = document.getElementById(`percent-${id}`);
+            const progress = document.getElementById(`progress-${id}`);
+            let p = 0;
+
+            const interval = setInterval(() => {
+                p += Math.random() * 15;
+                if (p >= 100) {
+                    p = 100;
+                    clearInterval(interval);
+                    progress.innerHTML = `
+                        <div class="flex items-center gap-2 text-success">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                            <span class="text-sm font-medium">Procesado</span>
+                        </div>
+                    `;
+                }
+                ring.style.strokeDashoffset = 100 - p;
+                percent.textContent = Math.round(p) + '%';
+            }, 200);
+        }
+    </script>
+</body>
+</html>

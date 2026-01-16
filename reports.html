@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reportes - CICLOPS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Bricolage+Grotesque:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'pizza': '#FF5722',
+                        'pizza-light': '#FF8A65',
+                        'pizza-dark': '#E64A19',
+                        'midnight': '#0a0a0b',
+                        'surface': '#141416',
+                        'surface-2': '#1c1c1f',
+                        'surface-3': '#242428',
+                        'ink': '#ffffff',
+                        'ink-2': '#a1a1a6',
+                        'ink-3': '#636366',
+                        'success': '#34C759',
+                        'warning': '#FF9500',
+                        'danger': '#FF3B30',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        :root { --pizza: #FF5722; --bg: #0a0a0b; }
+        * { font-family: 'Instrument Sans', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+        .font-display { font-family: 'Bricolage Grotesque', serif; letter-spacing: -0.03em; }
+        body { background: var(--bg); min-height: 100vh; }
+
+        .blob {
+            position: fixed; width: 600px; height: 600px;
+            background: radial-gradient(circle, rgba(255,87,34,0.15) 0%, transparent 70%);
+            filter: blur(60px); animation: morph 15s infinite ease-in-out; pointer-events: none; z-index: 0;
+        }
+        @keyframes morph { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(-30px, 50px); } }
+
+        .nav-pill { padding: 0.75rem 1.25rem; border-radius: 100px; font-weight: 500; color: #636366; transition: all 0.3s ease; }
+        .nav-pill.active { color: #fff; background: linear-gradient(135deg, #FF5722 0%, #E64A19 100%); box-shadow: 0 4px 20px rgba(255,87,34,0.4); }
+        .nav-pill:not(.active):hover { color: #a1a1a6; background: rgba(255,255,255,0.03); }
+
+        .report-card { background: linear-gradient(145deg, #141416 0%, #0f0f11 100%); border: 1px solid rgba(255,255,255,0.04); transition: all 0.3s ease; }
+        .report-card:hover { border-color: rgba(255,87,34,0.2); transform: translateY(-2px); }
+
+        .tab-btn { transition: all 0.2s ease; }
+        .tab-btn.active { background: rgba(255,87,34,0.1); color: #FF5722; }
+
+        .table-row:hover { background: rgba(255,255,255,0.02); }
+
+        .mobile-nav { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(10,10,11,0.9); backdrop-filter: blur(20px); border-top: 1px solid rgba(255,255,255,0.05); padding: 0.75rem 1rem; z-index: 100; display: none; }
+        @media (max-width: 1024px) { .mobile-nav { display: flex; justify-content: space-around; } .desktop-nav { display: none; } body { padding-bottom: 80px; } }
+
+        /* ============================================
+           LIGHT THEME - Mejor balance y profundidad
+           ============================================ */
+        .theme-light {
+            --bg: #f8f8fa;
+            background: linear-gradient(180deg, #f8f8fa 0%, #f0f0f2 100%) !important;
+        }
+        .theme-light .text-ink { color: #1a1a1a; }
+        .theme-light .text-ink-2 { color: #525252; }
+        .theme-light .text-ink-3 { color: #787878; }
+
+        .theme-light .report-card {
+            background: #ffffff;
+            border: 1px solid rgba(0,0,0,0.06);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.05);
+        }
+        .theme-light .report-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08), 0 8px 24px rgba(255,87,34,0.08);
+        }
+
+        .theme-light .bg-surface-2 { background: #ffffff; }
+        .theme-light .bg-surface-2\/80 { background: rgba(255,255,255,0.9); }
+        .theme-light .bg-surface-3 { background: #f0f0f2; }
+        .theme-light .bg-surface-3\/50 { background: rgba(0,0,0,0.03); }
+        .theme-light .bg-surface-3\/30 { background: rgba(0,0,0,0.02); }
+
+        /* Tabla en light */
+        .theme-light .border-white\/5 { border-color: rgba(0,0,0,0.08); }
+        .theme-light .table-row:hover { background: rgba(0,0,0,0.02); }
+        .theme-light .bg-pizza\/5 { background: rgba(255,87,34,0.06); }
+        .theme-light .bg-success\/10 { background: rgba(52,199,89,0.1); }
+
+        /* Nav en light */
+        .theme-light .nav-pill:not(.active) { color: #525252; }
+        .theme-light .nav-pill:not(.active):hover { color: #1a1a1a; background: rgba(0,0,0,0.04); }
+
+        /* Tabs en light */
+        .theme-light .tab-btn { color: #787878; }
+        .theme-light .tab-btn:hover { color: #1a1a1a; }
+        .theme-light .tab-btn.active { background: rgba(255,87,34,0.08); color: #E64A19; }
+
+        /* Blobs más sutiles en light */
+        .theme-light .blob {
+            background: radial-gradient(circle, rgba(255,87,34,0.06) 0%, transparent 70%);
+            filter: blur(80px);
+        }
+
+        /* Mobile nav en light */
+        .theme-light .mobile-nav {
+            background: rgba(255,255,255,0.95);
+            border-top-color: rgba(0,0,0,0.08);
+        }
+
+        @media print {
+            body { background: white !important; }
+            .no-print { display: none !important; }
+            .report-card { break-inside: avoid; box-shadow: none; border: 1px solid #ddd; }
+        }
+    </style>
+</head>
+<body class="text-ink" id="app">
+    <div class="blob -top-48 -right-48"></div>
+
+    <!-- Desktop Navigation -->
+    <header class="desktop-nav fixed top-0 left-0 right-0 z-50 px-6 py-4 no-print">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <a href="index.html" class="flex items-center gap-3 group">
+                <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-pizza to-pizza-dark flex items-center justify-center shadow-lg shadow-pizza/30">
+                    <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/>
+                    </svg>
+                </div>
+                <div>
+                    <span class="font-display text-xl font-bold text-ink">CICLOPS</span>
+                    <span class="block text-[10px] text-ink-3 tracking-[0.2em] uppercase">Little Caesars Intel</span>
+                </div>
+            </a>
+
+            <nav class="flex items-center gap-1 p-1.5 bg-surface-2/80 backdrop-blur-xl rounded-full border border-white/5">
+                <a href="index.html" class="nav-pill"><span class="flex items-center gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>Dashboard</span></a>
+                <a href="upload.html" class="nav-pill"><span class="flex items-center gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Subir</span></a>
+                <a href="reports.html" class="nav-pill active"><span class="flex items-center gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Reportes</span></a>
+                <a href="documents.html" class="nav-pill"><span class="flex items-center gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>Docs</span></a>
+            </nav>
+
+            <div class="flex items-center gap-3">
+                <button onclick="toggleTheme()" class="w-10 h-10 rounded-xl bg-surface-2 border border-white/5 flex items-center justify-center text-ink-3 hover:text-ink transition-all">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/></svg>
+                </button>
+                <!-- User Menu -->
+                <div class="relative">
+                    <button onclick="toggleUserMenu()" class="flex items-center gap-2 p-1 rounded-xl hover:bg-surface-3/50 transition-all" id="userMenuBtn">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-pizza to-pizza-dark flex items-center justify-center text-white font-bold text-sm">LC</div>
+                        <svg class="w-4 h-4 text-ink-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div id="userMenu" class="hidden absolute right-0 top-14 w-56 bg-surface-2 border border-white/10 rounded-2xl shadow-2xl shadow-black/50 overflow-hidden z-50">
+                        <div class="p-4 border-b border-white/5">
+                            <p class="font-semibold text-ink">Little Caesars</p>
+                            <p class="text-sm text-ink-3">admin@lciclops.com</p>
+                        </div>
+                        <div class="p-2">
+                            <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-ink-2 hover:bg-surface-3/50 hover:text-ink transition-all">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                Mi perfil
+                            </a>
+                            <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-ink-2 hover:bg-surface-3/50 hover:text-ink transition-all">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                                Configuración
+                            </a>
+                        </div>
+                        <div class="p-2 border-t border-white/5">
+                            <a href="login.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-danger hover:bg-danger/10 transition-all">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                                Cerrar sesión
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Mobile Navigation -->
+    <nav class="mobile-nav no-print">
+        <a href="index.html" class="flex flex-col items-center gap-1 text-ink-3"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="2"/></svg><span class="text-[10px]">Dashboard</span></a>
+        <a href="upload.html" class="flex flex-col items-center gap-1 text-ink-3"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><polyline points="17 8 12 3 7 8"/></svg><span class="text-[10px]">Subir</span></a>
+        <a href="reports.html" class="flex flex-col items-center gap-1 text-pizza"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg><span class="text-[10px]">Reportes</span></a>
+        <a href="documents.html" class="flex flex-col items-center gap-1 text-ink-3"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg><span class="text-[10px]">Docs</span></a>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="relative z-10 pt-28 pb-8 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-6xl mx-auto">
+            <!-- Header -->
+            <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
+                <div>
+                    <p class="text-ink-3 text-sm font-medium mb-2">Estado de Resultados</p>
+                    <h1 class="font-display text-4xl sm:text-5xl font-extrabold text-ink">
+                        P&L <span class="text-transparent bg-clip-text bg-gradient-to-r from-pizza to-pizza-light">Enero 2026</span>
+                    </h1>
+                </div>
+                <div class="flex gap-3 no-print">
+                    <button onclick="window.print()" class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface-3/50 border border-white/5 text-ink-2 hover:text-ink hover:border-white/10 transition-all">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                        Imprimir
+                    </button>
+                    <button class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-pizza to-pizza-dark text-white font-semibold shadow-lg shadow-pizza/25 hover:shadow-pizza/40 transition-all">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        Exportar Excel
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="flex gap-2 mb-8 overflow-x-auto no-print pb-2">
+                <button class="tab-btn active px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap">Resumen</button>
+                <button class="tab-btn px-4 py-2 rounded-xl text-sm font-medium text-ink-3 hover:text-ink whitespace-nowrap">Detalle Ventas</button>
+                <button class="tab-btn px-4 py-2 rounded-xl text-sm font-medium text-ink-3 hover:text-ink whitespace-nowrap">Detalle Gastos</button>
+                <button class="tab-btn px-4 py-2 rounded-xl text-sm font-medium text-ink-3 hover:text-ink whitespace-nowrap">Comparativo</button>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <div class="report-card rounded-2xl p-5">
+                    <p class="text-xs text-ink-3 uppercase tracking-wider mb-2">Ventas Brutas</p>
+                    <p class="font-display text-2xl font-bold text-ink">$285,000</p>
+                    <p class="text-sm text-success mt-1">+12% vs mes ant.</p>
+                </div>
+                <div class="report-card rounded-2xl p-5">
+                    <p class="text-xs text-ink-3 uppercase tracking-wider mb-2">Costo de Ventas</p>
+                    <p class="font-display text-2xl font-bold text-ink">$85,500</p>
+                    <p class="text-sm text-ink-3 mt-1">30% de ventas</p>
+                </div>
+                <div class="report-card rounded-2xl p-5">
+                    <p class="text-xs text-ink-3 uppercase tracking-wider mb-2">Gastos Operativos</p>
+                    <p class="font-display text-2xl font-bold text-ink">$156,950</p>
+                    <p class="text-sm text-warning mt-1">+8% vs mes ant.</p>
+                </div>
+                <div class="report-card rounded-2xl p-5">
+                    <p class="text-xs text-ink-3 uppercase tracking-wider mb-2">Utilidad Neta</p>
+                    <p class="font-display text-2xl font-bold text-success">$42,550</p>
+                    <p class="text-sm text-ink-3 mt-1">14.9% margen</p>
+                </div>
+            </div>
+
+            <!-- P&L Table -->
+            <div class="report-card rounded-2xl overflow-hidden mb-8">
+                <div class="p-5 border-b border-white/5">
+                    <h3 class="font-display text-lg font-bold text-ink">Estado de Resultados Detallado</h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="border-b border-white/5">
+                                <th class="text-left text-xs text-ink-3 uppercase tracking-wider p-4">Concepto</th>
+                                <th class="text-right text-xs text-ink-3 uppercase tracking-wider p-4">Enero 2026</th>
+                                <th class="text-right text-xs text-ink-3 uppercase tracking-wider p-4">Dic 2025</th>
+                                <th class="text-right text-xs text-ink-3 uppercase tracking-wider p-4">Var %</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="table-row border-b border-white/5">
+                                <td class="p-4 font-semibold text-ink">INGRESOS</td>
+                                <td class="p-4 text-right"></td>
+                                <td class="p-4 text-right"></td>
+                                <td class="p-4 text-right"></td>
+                            </tr>
+                            <tr class="table-row border-b border-white/5">
+                                <td class="p-4 pl-8 text-ink-2">Ventas Mostrador</td>
+                                <td class="p-4 text-right text-ink">$171,000</td>
+                                <td class="p-4 text-right text-ink-3">$158,000</td>
+                                <td class="p-4 text-right text-success">+8.2%</td>
+                            </tr>
+                            <tr class="table-row border-b border-white/5">
+                                <td class="p-4 pl-8 text-ink-2">Ventas Delivery</td>
+                                <td class="p-4 text-right text-ink">$85,500</td>
+                                <td class="p-4 text-right text-ink-3">$72,000</td>
+                                <td class="p-4 text-right text-success">+18.8%</td>
+                            </tr>
+                            <tr class="table-row border-b border-white/5">
+                                <td class="p-4 pl-8 text-ink-2">Ventas App</td>
+                                <td class="p-4 text-right text-ink">$28,500</td>
+                                <td class="p-4 text-right text-ink-3">$24,000</td>
+                                <td class="p-4 text-right text-success">+18.8%</td>
+                            </tr>
+                            <tr class="table-row border-b border-white/5 bg-surface-3/30">
+                                <td class="p-4 font-semibold text-ink">TOTAL INGRESOS</td>
+                                <td class="p-4 text-right font-semibold text-ink">$285,000</td>
+                                <td class="p-4 text-right text-ink-3">$254,000</td>
+                                <td class="p-4 text-right text-success font-semibold">+12.2%</td>
+                            </tr>
+
+                            <tr class="table-row border-b border-white/5">
+                                <td class="p-4 font-semibold text-ink">COSTO DE VENTAS</td>
+                                <td class="p-4 text-right"></td>
+                                <td class="p-4 text-right"></td>
+                                <td class="p-4 text-right"></td>
+                            </tr>
+                            <tr class="table-row border-b border-white/5">
+                                <td class="p-4 pl-8 text-ink-2">Ingredientes</td>
+                                <td class="p-4 text-right text-ink">$62,700</td>
+                                <td class="p-4 text-right text-ink-3">$55,880</td>
+                                <td class="p-4 text-right text-danger">+12.2%</td>
+                            </tr>
+                            <tr class="table-row border-b border-white/5">
+                                <td class="p-4 pl-8 text-ink-2">Empaques</td>
+                                <td class="p-4 text-right text-ink">$14,250</td>
+                                <td class="p-4 text-right text-ink-3">$12,700</td>
+                                <td class="p-4 text-right text-danger">+12.2%</td>
+                            </tr>
+                            <tr class="table-row border-b border-white/5">
+                                <td class="p-4 pl-8 text-ink-2">Merma</td>
+                                <td class="p-4 text-right text-ink">$8,550</td>
+                                <td class="p-4 text-right text-ink-3">$7,620</td>
+                                <td class="p-4 text-right text-danger">+12.2%</td>
+                            </tr>
+                            <tr class="table-row border-b border-white/5 bg-surface-3/30">
+                                <td class="p-4 font-semibold text-ink">TOTAL COSTO DE VENTAS</td>
+                                <td class="p-4 text-right font-semibold text-ink">$85,500</td>
+                                <td class="p-4 text-right text-ink-3">$76,200</td>
+                                <td class="p-4 text-right text-danger font-semibold">+12.2%</td>
+                            </tr>
+
+                            <tr class="table-row border-b border-white/5 bg-pizza/5">
+                                <td class="p-4 font-bold text-ink">UTILIDAD BRUTA</td>
+                                <td class="p-4 text-right font-bold text-ink">$199,500</td>
+                                <td class="p-4 text-right text-ink-3">$177,800</td>
+                                <td class="p-4 text-right text-success font-bold">+12.2%</td>
+                            </tr>
+
+                            <tr class="table-row border-b border-white/5">
+                                <td class="p-4 font-semibold text-ink">GASTOS OPERATIVOS</td>
+                                <td class="p-4 text-right"></td>
+                                <td class="p-4 text-right"></td>
+                                <td class="p-4 text-right"></td>
+                            </tr>
+                            <tr class="table-row border-b border-white/5">
+                                <td class="p-4 pl-8 text-ink-2">Nómina</td>
+                                <td class="p-4 text-right text-ink">$68,000</td>
+                                <td class="p-4 text-right text-ink-3">$65,000</td>
+                                <td class="p-4 text-right text-danger">+4.6%</td>
+                            </tr>
+                            <tr class="table-row border-b border-white/5">
+                                <td class="p-4 pl-8 text-ink-2">Renta</td>
+                                <td class="p-4 text-right text-ink">$35,000</td>
+                                <td class="p-4 text-right text-ink-3">$35,000</td>
+                                <td class="p-4 text-right text-ink-3">0%</td>
+                            </tr>
+                            <tr class="table-row border-b border-white/5">
+                                <td class="p-4 pl-8 text-ink-2">Electricidad (CFE)</td>
+                                <td class="p-4 text-right text-ink">$18,500</td>
+                                <td class="p-4 text-right text-ink-3">$13,200</td>
+                                <td class="p-4 text-right text-danger">+40.2%</td>
+                            </tr>
+                            <tr class="table-row border-b border-white/5">
+                                <td class="p-4 pl-8 text-ink-2">Gas</td>
+                                <td class="p-4 text-right text-ink">$8,200</td>
+                                <td class="p-4 text-right text-ink-3">$7,800</td>
+                                <td class="p-4 text-right text-danger">+5.1%</td>
+                            </tr>
+                            <tr class="table-row border-b border-white/5">
+                                <td class="p-4 pl-8 text-ink-2">Marketing</td>
+                                <td class="p-4 text-right text-ink">$12,000</td>
+                                <td class="p-4 text-right text-ink-3">$10,000</td>
+                                <td class="p-4 text-right text-danger">+20%</td>
+                            </tr>
+                            <tr class="table-row border-b border-white/5">
+                                <td class="p-4 pl-8 text-ink-2">Mantenimiento</td>
+                                <td class="p-4 text-right text-ink">$5,250</td>
+                                <td class="p-4 text-right text-ink-3">$4,800</td>
+                                <td class="p-4 text-right text-danger">+9.4%</td>
+                            </tr>
+                            <tr class="table-row border-b border-white/5">
+                                <td class="p-4 pl-8 text-ink-2">Otros</td>
+                                <td class="p-4 text-right text-ink">$10,000</td>
+                                <td class="p-4 text-right text-ink-3">$9,500</td>
+                                <td class="p-4 text-right text-danger">+5.3%</td>
+                            </tr>
+                            <tr class="table-row border-b border-white/5 bg-surface-3/30">
+                                <td class="p-4 font-semibold text-ink">TOTAL GASTOS OPERATIVOS</td>
+                                <td class="p-4 text-right font-semibold text-ink">$156,950</td>
+                                <td class="p-4 text-right text-ink-3">$145,300</td>
+                                <td class="p-4 text-right text-danger font-semibold">+8.0%</td>
+                            </tr>
+
+                            <tr class="table-row bg-success/10">
+                                <td class="p-4 font-bold text-lg text-ink">UTILIDAD NETA</td>
+                                <td class="p-4 text-right font-bold text-lg text-success">$42,550</td>
+                                <td class="p-4 text-right text-ink-3">$32,500</td>
+                                <td class="p-4 text-right text-success font-bold">+30.9%</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="report-card rounded-2xl p-6">
+                    <h3 class="font-display text-lg font-bold text-ink mb-4">Tendencia de Ventas</h3>
+                    <div class="h-64">
+                        <canvas id="salesTrend"></canvas>
+                    </div>
+                </div>
+                <div class="report-card rounded-2xl p-6">
+                    <h3 class="font-display text-lg font-bold text-ink mb-4">Distribución de Gastos</h3>
+                    <div class="h-64">
+                        <canvas id="expensesDist"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        function toggleTheme() {
+            const body = document.getElementById('app');
+            body.classList.toggle('theme-light');
+            localStorage.setItem('theme', body.classList.contains('theme-light') ? 'light' : 'dark');
+        }
+        if (localStorage.getItem('theme') === 'light') document.getElementById('app').classList.add('theme-light');
+
+        function toggleUserMenu() {
+            document.getElementById('userMenu').classList.toggle('hidden');
+        }
+        document.addEventListener('click', (e) => {
+            const menu = document.getElementById('userMenu');
+            const btn = document.getElementById('userMenuBtn');
+            if (!btn?.contains(e.target) && !menu?.contains(e.target)) menu?.classList.add('hidden');
+        });
+
+        // Charts
+        Chart.defaults.color = '#636366';
+        Chart.defaults.borderColor = 'rgba(255,255,255,0.04)';
+        Chart.defaults.font.family = 'Instrument Sans';
+
+        new Chart(document.getElementById('salesTrend'), {
+            type: 'line',
+            data: {
+                labels: ['Ago', 'Sep', 'Oct', 'Nov', 'Dic', 'Ene'],
+                datasets: [{
+                    label: 'Ventas',
+                    data: [220, 235, 245, 250, 254, 285],
+                    borderColor: '#FF5722',
+                    backgroundColor: 'rgba(255,87,34,0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#FF5722'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        grid: { color: 'rgba(255,255,255,0.03)' },
+                        ticks: { callback: v => '$' + v + 'k' }
+                    },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+
+        new Chart(document.getElementById('expensesDist'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Nómina', 'Renta', 'CFE', 'Gas', 'Marketing', 'Otros'],
+                datasets: [{
+                    data: [68, 35, 18.5, 8.2, 12, 15.25],
+                    backgroundColor: ['#FF5722', '#FF8A65', '#FFAB91', '#FFCCBC', '#FFE0B2', '#242428'],
+                    borderWidth: 0,
+                    spacing: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '60%',
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: { padding: 12, usePointStyle: true, pointStyle: 'circle' }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CICLOPS - Test Upload</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Bricolage+Grotesque:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Instrument Sans', system-ui, sans-serif; }
+        .font-display { font-family: 'Bricolage Grotesque', serif; }
+        body { background: #0a0a0b; }
+        .drop-zone { border: 2px dashed rgba(255,87,34,0.3); transition: all 0.3s; }
+        .drop-zone:hover, .drop-zone.dragover { border-color: #FF5722; background: rgba(255,87,34,0.05); }
+    </style>
+</head>
+<body class="min-h-screen text-white p-8">
+    <div class="max-w-4xl mx-auto">
+        <!-- Header -->
+        <div class="text-center mb-12">
+            <div class="inline-flex items-center gap-3 mb-4">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#FF5722] to-[#E64A19] flex items-center justify-center">
+                    <svg class="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/>
+                    </svg>
+                </div>
+                <span class="font-display text-3xl font-bold">CICLOPS</span>
+            </div>
+            <h1 class="font-display text-4xl font-bold mb-2">Test de <span class="text-[#FF5722]">Upload + IA</span></h1>
+            <p class="text-gray-400">Sube un Excel y Claude lo analiza</p>
+        </div>
+
+        <!-- Status -->
+        <div id="status" class="mb-8 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-center">
+            🟢 Backend conectado - Listo para recibir archivos
+        </div>
+
+        <!-- Drop Zone -->
+        <div id="dropZone" class="drop-zone rounded-3xl p-16 text-center cursor-pointer mb-8" onclick="document.getElementById('fileInput').click()">
+            <input type="file" id="fileInput" class="hidden" accept=".xlsx,.xls,.csv" onchange="uploadFile(this.files[0])">
+
+            <div class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-[#FF5722]/10 flex items-center justify-center">
+                <svg class="w-10 h-10 text-[#FF5722]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="17 8 12 3 7 8"/>
+                    <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+            </div>
+
+            <h3 class="font-display text-2xl font-bold mb-2">Arrastra tu Excel aquí</h3>
+            <p class="text-gray-500 mb-4">o haz clic para seleccionar</p>
+            <div class="flex justify-center gap-2">
+                <span class="px-3 py-1 rounded-full bg-white/5 text-gray-400 text-sm">.xlsx</span>
+                <span class="px-3 py-1 rounded-full bg-white/5 text-gray-400 text-sm">.xls</span>
+                <span class="px-3 py-1 rounded-full bg-white/5 text-gray-400 text-sm">.csv</span>
+            </div>
+        </div>
+
+        <!-- Upload Progress -->
+        <div id="uploadProgress" class="hidden mb-8 p-6 rounded-2xl bg-white/5 border border-white/10">
+            <div class="flex items-center gap-4 mb-4">
+                <div class="w-12 h-12 rounded-xl bg-[#FF5722]/10 flex items-center justify-center animate-pulse">
+                    <svg class="w-6 h-6 text-[#FF5722]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    </svg>
+                </div>
+                <div class="flex-1">
+                    <p id="fileName" class="font-semibold">archivo.xlsx</p>
+                    <p id="fileStatus" class="text-sm text-gray-400">Subiendo...</p>
+                </div>
+            </div>
+            <div class="h-2 bg-white/10 rounded-full overflow-hidden">
+                <div id="progressBar" class="h-full bg-gradient-to-r from-[#FF5722] to-[#FF8A65] rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <!-- Document Info -->
+        <div id="docInfo" class="hidden mb-8 p-6 rounded-2xl bg-white/5 border border-white/10">
+            <h3 class="font-display text-lg font-bold mb-4">📄 Documento subido</h3>
+            <div id="docDetails" class="space-y-2 text-sm"></div>
+            <button onclick="analyzeDoc()" class="mt-4 w-full py-3 rounded-xl bg-gradient-to-r from-[#FF5722] to-[#E64A19] text-white font-semibold hover:shadow-lg hover:shadow-[#FF5722]/25 transition-all">
+                🤖 Analizar con Claude
+            </button>
+        </div>
+
+        <!-- Analysis Result -->
+        <div id="analysisResult" class="hidden p-6 rounded-2xl bg-white/5 border border-white/10">
+            <h3 class="font-display text-lg font-bold mb-4">🧠 Análisis de Julia (IA)</h3>
+            <div id="analysisContent" class="prose prose-invert max-w-none text-gray-300 whitespace-pre-wrap"></div>
+        </div>
+    </div>
+
+    <script>
+        const API = 'http://localhost:8000';
+        let currentDocId = null;
+
+        // Check backend status
+        fetch(API + '/health')
+            .then(r => r.json())
+            .then(data => {
+                if (data.anthropic === 'connected') {
+                    document.getElementById('status').innerHTML = '🟢 Backend + Claude IA conectados - Todo listo';
+                }
+            })
+            .catch(() => {
+                document.getElementById('status').innerHTML = '🔴 Backend no disponible - Corre: uvicorn app.main_demo:app --reload';
+                document.getElementById('status').className = 'mb-8 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-center';
+            });
+
+        // Drag and drop
+        const dropZone = document.getElementById('dropZone');
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(e => {
+            dropZone.addEventListener(e, ev => { ev.preventDefault(); ev.stopPropagation(); });
+        });
+        ['dragenter', 'dragover'].forEach(e => dropZone.addEventListener(e, () => dropZone.classList.add('dragover')));
+        ['dragleave', 'drop'].forEach(e => dropZone.addEventListener(e, () => dropZone.classList.remove('dragover')));
+        dropZone.addEventListener('drop', e => uploadFile(e.dataTransfer.files[0]));
+
+        async function uploadFile(file) {
+            if (!file) return;
+
+            // Show progress
+            document.getElementById('uploadProgress').classList.remove('hidden');
+            document.getElementById('fileName').textContent = file.name;
+            document.getElementById('fileStatus').textContent = 'Subiendo...';
+            document.getElementById('progressBar').style.width = '30%';
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                document.getElementById('progressBar').style.width = '60%';
+
+                const response = await fetch(API + '/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                document.getElementById('progressBar').style.width = '100%';
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.detail || 'Error al subir');
+                }
+
+                const data = await response.json();
+                currentDocId = data.document.id;
+
+                document.getElementById('fileStatus').textContent = '✅ Subido correctamente';
+
+                // Show doc info
+                document.getElementById('docInfo').classList.remove('hidden');
+                document.getElementById('docDetails').innerHTML = `
+                    <p><span class="text-gray-500">ID:</span> ${data.document.id}</p>
+                    <p><span class="text-gray-500">Archivo:</span> ${data.document.filename}</p>
+                    <p><span class="text-gray-500">Filas:</span> ${data.document.rows}</p>
+                    <p><span class="text-gray-500">Columnas:</span> ${data.document.columns.join(', ')}</p>
+                `;
+
+            } catch (err) {
+                document.getElementById('fileStatus').textContent = '❌ Error: ' + err.message;
+                document.getElementById('progressBar').className = document.getElementById('progressBar').className.replace('from-[#FF5722]', 'from-red-500');
+            }
+        }
+
+        async function analyzeDoc() {
+            if (!currentDocId) return;
+
+            document.getElementById('analysisResult').classList.remove('hidden');
+            document.getElementById('analysisContent').innerHTML = '<div class="animate-pulse">🔄 Analizando con Claude... esto puede tomar unos segundos</div>';
+
+            try {
+                const response = await fetch(API + `/analyze/${currentDocId}?analysis_type=general`, {
+                    method: 'POST'
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.detail || 'Error en análisis');
+                }
+
+                const data = await response.json();
+                document.getElementById('analysisContent').textContent = data.analysis.result;
+
+            } catch (err) {
+                document.getElementById('analysisContent').innerHTML = `<span class="text-red-400">❌ Error: ${err.message}</span>`;
+            }
+        }
+    </script>
+</body>
+</html>

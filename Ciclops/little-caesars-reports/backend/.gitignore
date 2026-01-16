@@ -1,0 +1,37 @@
+# Environment variables - NUNCA SUBIR
+.env
+.env.local
+.env.production
+
+# Firebase credentials - NUNCA SUBIR
+firebase-credentials.json
+*-firebase-adminsdk-*.json
+serviceAccountKey.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Uploads temporales
+uploads/
+temp/
