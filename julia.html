@@ -536,10 +536,8 @@
         async function confirmData() {
             if (!currentDocData) return;
 
-            // Prompt for store info
-            const storeId = prompt('ID de sucursal (ej: LC001):') || 'LC001';
-            const storeName = prompt('Nombre de sucursal:') || 'Little Caesars';
-            const period = prompt('Periodo (ej: Enero 2024):') || new Date().toLocaleDateString('es-MX', { month: 'long', year: 'numeric' });
+            // Auto-detect period from filename or use current month
+            const defaultPeriod = new Date().toLocaleDateString('es-MX', { month: 'long', year: 'numeric' });
 
             try {
                 // Save to PostgreSQL via API
@@ -548,9 +546,9 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         doc_id: currentDocData.id,
-                        store_id: storeId,
-                        store_name: storeName,
-                        period: period,
+                        store_id: 'ALL',
+                        store_name: 'Todas las tiendas',
+                        period: defaultPeriod,
                         confirm: true
                     })
                 });
