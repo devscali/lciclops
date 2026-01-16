@@ -27,10 +27,11 @@ app = FastAPI(
 # CORS - permitir frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # En producción, restringir esto
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_origins=["*"],
+    allow_credentials=False,  # No puede ser True con origins=["*"]
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # Cliente de Anthropic
