@@ -179,10 +179,10 @@
                             </a>
                         </div>
                         <div class="p-2 border-t border-white/5">
-                            <a href="login.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-danger hover:bg-danger/10 transition-all">
+                            <button onclick="logout()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-danger hover:bg-danger/10 transition-all">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
                                 Cerrar sesión
-                            </a>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -339,6 +339,16 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        function logout() {
+            auth.signOut().then(() => {
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('userEmail');
+                localStorage.removeItem('userName');
+                window.location.href = 'login.html';
+            });
+        }
 
         function toggleTheme() {
             const body = document.getElementById('app');
@@ -539,10 +549,8 @@
         async function confirmAndSave() {
             if (!currentDocData) return;
 
-            // Prompt for store info
-            const storeId = prompt('ID de sucursal (ej: LC001):') || 'LC001';
-            const storeName = prompt('Nombre de sucursal:') || 'Little Caesars';
-            const period = prompt('Periodo (ej: Enero 2024):') || new Date().toLocaleDateString('es-MX', { month: 'long', year: 'numeric' });
+            // Auto-detect period from current month
+            const defaultPeriod = new Date().toLocaleDateString('es-MX', { month: 'long', year: 'numeric' });
 
             try {
                 // Save to PostgreSQL via API
@@ -551,9 +559,9 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         doc_id: currentDocData.id,
-                        store_id: storeId,
-                        store_name: storeName,
-                        period: period,
+                        store_id: 'ALL',
+                        store_name: 'Todas las tiendas',
+                        period: defaultPeriod,
                         confirm: true
                     })
                 });

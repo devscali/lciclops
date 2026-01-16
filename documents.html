@@ -108,7 +108,31 @@
                 <button onclick="toggleTheme()" class="w-10 h-10 rounded-xl bg-surface-2 border border-white/5 flex items-center justify-center text-ink-3 hover:text-ink transition-all">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="5"/></svg>
                 </button>
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-pizza to-pizza-dark flex items-center justify-center text-white font-bold text-sm">LC</div>
+                <!-- User Menu -->
+                <div class="relative">
+                    <button onclick="toggleUserMenu()" class="flex items-center gap-2 p-1 rounded-xl hover:bg-surface-3/50 transition-all" id="userMenuBtn">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-pizza to-pizza-dark flex items-center justify-center text-white font-bold text-sm">LC</div>
+                        <svg class="w-4 h-4 text-ink-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div id="userMenu" class="hidden absolute right-0 top-14 w-56 bg-surface-2 border border-white/10 rounded-2xl shadow-2xl shadow-black/50 overflow-hidden z-50">
+                        <div class="p-4 border-b border-white/5">
+                            <p class="font-semibold text-ink">Little Caesars</p>
+                            <p class="text-sm text-ink-3">admin@lciclops.com</p>
+                        </div>
+                        <div class="p-2">
+                            <a href="profile.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-ink-2 hover:bg-surface-3/50 hover:text-ink transition-all">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                Mi perfil
+                            </a>
+                        </div>
+                        <div class="p-2 border-t border-white/5">
+                            <button onclick="logout()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-danger hover:bg-danger/10 transition-all">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                                Cerrar sesión
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </header>
@@ -432,6 +456,41 @@
 
         // Load vault on page load
         loadVault();
+
+        // User menu toggle
+        function toggleUserMenu() {
+            document.getElementById('userMenu').classList.toggle('hidden');
+        }
+        document.addEventListener('click', (e) => {
+            const menu = document.getElementById('userMenu');
+            const btn = document.getElementById('userMenuBtn');
+            if (!btn?.contains(e.target) && !menu?.contains(e.target)) menu?.classList.add('hidden');
+        });
+    </script>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBL8-hBMJR6NlnXN6rWwS8WVcrdMm7m4rY",
+            authDomain: "ciclops-8a2de.firebaseapp.com",
+            projectId: "ciclops-8a2de",
+            storageBucket: "ciclops-8a2de.firebasestorage.app",
+            messagingSenderId: "475876958824",
+            appId: "1:475876958824:web:5ecc315220c66fdd56d1dd"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        function logout() {
+            auth.signOut().then(() => {
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('userEmail');
+                localStorage.removeItem('userName');
+                window.location.href = 'login.html';
+            });
+        }
     </script>
 </body>
 </html>
