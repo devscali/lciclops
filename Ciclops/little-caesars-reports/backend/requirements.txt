@@ -16,8 +16,9 @@ sqlalchemy==2.0.25
 psycopg2-binary==2.9.9
 alembic==1.13.1
 
-# AI - OpenAI
+# AI - OpenAI + Anthropic
 openai==1.12.0
+anthropic==0.39.0
 
 # PDF Processing
 pdfplumber==0.10.3

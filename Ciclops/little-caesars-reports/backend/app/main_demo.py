@@ -9,6 +9,7 @@ from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from openai import OpenAI
+from anthropic import Anthropic
 from pydantic import BaseModel
 import pandas as pd
 import json
@@ -50,19 +51,35 @@ app.add_middleware(
     expose_headers=["*"],
 )
 
-# Cliente de OpenAI
+# Clientes de AI
 openai_client = None
+anthropic_client = None
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+
+# AI Provider preference (openai or anthropic)
+ai_provider = os.getenv("AI_PROVIDER", "openai")
 
 if OPENAI_API_KEY:
     openai_client = OpenAI(api_key=OPENAI_API_KEY)
     print("✅ OpenAI API configurada correctamente")
 else:
-    print("⚠️ OPENAI_API_KEY no encontrada - análisis IA deshabilitado")
+    print("⚠️ OPENAI_API_KEY no encontrada")
+
+if ANTHROPIC_API_KEY:
+    anthropic_client = Anthropic(api_key=ANTHROPIC_API_KEY)
+    print("✅ Anthropic API configurada correctamente")
+else:
+    print("⚠️ ANTHROPIC_API_KEY no encontrada")
 
 # Almacenamiento en memoria (demo)
 documents_store = []
 analysis_store = []
+settings_store = {
+    "ai_provider": ai_provider,
+    "anthropic_key_set": bool(ANTHROPIC_API_KEY),
+    "openai_key_set": bool(OPENAI_API_KEY)
+}
 
 
 @app.get("/")
@@ -86,8 +103,68 @@ async def health_check():
         "status": "healthy",
         "mode": "demo",
         "openai": "connected" if openai_client else "disabled",
+        "anthropic": "connected" if anthropic_client else "disabled",
+        "ai_provider": settings_store.get("ai_provider", "openai"),
         "documents_count": len(documents_store)
     }
+
+
+# ============================================
+# SETTINGS - Configuracion de API keys
+# ============================================
+
+class SettingsUpdate(BaseModel):
+    anthropic_key: Optional[str] = None
+    openai_key: Optional[str] = None
+    ai_provider: Optional[str] = None
+
+
+@app.get("/settings")
+async def get_settings():
+    """Obtiene la configuracion actual (sin exponer keys)"""
+    return {
+        "ai_provider": settings_store.get("ai_provider", "openai"),
+        "anthropic_key_set": settings_store.get("anthropic_key_set", False),
+        "openai_key_set": settings_store.get("openai_key_set", False)
+    }
+
+
+@app.post("/settings")
+async def update_settings(settings: SettingsUpdate):
+    """Actualiza la configuracion de AI"""
+    global openai_client, anthropic_client, settings_store
+
+    try:
+        # Update Anthropic key if provided
+        if settings.anthropic_key:
+            anthropic_client = Anthropic(api_key=settings.anthropic_key)
+            settings_store["anthropic_key_set"] = True
+            print("✅ Anthropic API key actualizada")
+
+        # Update OpenAI key if provided
+        if settings.openai_key:
+            openai_client = OpenAI(api_key=settings.openai_key)
+            settings_store["openai_key_set"] = True
+            print("✅ OpenAI API key actualizada")
+
+        # Update AI provider preference
+        if settings.ai_provider:
+            if settings.ai_provider not in ["openai", "anthropic"]:
+                raise HTTPException(status_code=400, detail="AI provider debe ser 'openai' o 'anthropic'")
+            settings_store["ai_provider"] = settings.ai_provider
+            print(f"✅ AI provider cambiado a: {settings.ai_provider}")
+
+        return {
+            "success": True,
+            "message": "Configuracion actualizada",
+            "ai_provider": settings_store.get("ai_provider"),
+            "anthropic_key_set": settings_store.get("anthropic_key_set"),
+            "openai_key_set": settings_store.get("openai_key_set")
+        }
+
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 def extract_text_from_pdf(content: bytes) -> str:
@@ -510,12 +587,22 @@ async def chat_with_julia(request: ChatRequest):
     """
     Chat con Julia - Asistente financiera IA
     Responde preguntas sobre los datos del vault
+    Soporta OpenAI y Anthropic (Claude)
     """
-    if not openai_client:
-        raise HTTPException(
-            status_code=503,
-            detail="OpenAI API no configurada. Agrega OPENAI_API_KEY al .env"
-        )
+    current_provider = settings_store.get("ai_provider", "openai")
+
+    # Verificar que hay un cliente disponible
+    if current_provider == "anthropic" and not anthropic_client:
+        if openai_client:
+            current_provider = "openai"  # Fallback
+        else:
+            raise HTTPException(status_code=503, detail="No hay API de AI configurada. Ve a Configuracion.")
+
+    if current_provider == "openai" and not openai_client:
+        if anthropic_client:
+            current_provider = "anthropic"  # Fallback
+        else:
+            raise HTTPException(status_code=503, detail="No hay API de AI configurada. Ve a Configuracion.")
 
     try:
         # Construir contexto con datos disponibles
@@ -538,15 +625,12 @@ async def chat_with_julia(request: ChatRequest):
                         data_context += f"  Columnas: {', '.join(info['columns'])}\n"
                         data_context += f"  Muestra de datos: {json.dumps(preview[:5], ensure_ascii=False)}\n"
 
-        # Construir mensajes para el chat
-        messages = [
-            {
-                "role": "system",
-                "content": f"""Eres Julia, una asistente experta en análisis financiero para restaurantes Little Caesars en Mexico.
+        # System prompt para Julia
+        system_prompt = f"""Eres Julia, una asistente experta en analisis financiero para restaurantes Little Caesars en Mexico.
 
 Tu personalidad:
 - Profesional pero amigable
-- Respondes siempre en español
+- Respondes siempre en espanol
 - Das respuestas claras y accionables
 - Cuando muestras numeros, los formateas en pesos mexicanos
 - Cuando detectas problemas, sugieres soluciones
@@ -565,34 +649,46 @@ Si no tienes datos suficientes para responder, sugieres amablemente que el usuar
 Cuando hagas calculos, muestra tu trabajo brevemente.
 Usa emojis con moderacion para hacer las respuestas mas amigables.
 """
-            }
-        ]
 
-        # Agregar historial de conversacion
+        # Construir historial de mensajes
+        chat_messages = []
         for msg in (request.history or [])[-6:]:
-            messages.append({
+            chat_messages.append({
                 "role": msg.get("role", "user"),
                 "content": msg.get("content", "")
             })
-
-        # Agregar mensaje actual
-        messages.append({
+        chat_messages.append({
             "role": "user",
             "content": request.message
         })
 
-        # Llamar a OpenAI
-        response = openai_client.chat.completions.create(
-            model="gpt-4o-mini",
-            max_tokens=1500,
-            temperature=0.7,
-            messages=messages
-        )
+        # Llamar al AI provider seleccionado
+        if current_provider == "anthropic":
+            response = anthropic_client.messages.create(
+                model="claude-sonnet-4-20250514",
+                max_tokens=1500,
+                system=system_prompt,
+                messages=chat_messages
+            )
+            response_text = response.content[0].text
+            tokens_used = response.usage.input_tokens + response.usage.output_tokens
+        else:
+            # OpenAI
+            openai_messages = [{"role": "system", "content": system_prompt}] + chat_messages
+            response = openai_client.chat.completions.create(
+                model="gpt-4o-mini",
+                max_tokens=1500,
+                temperature=0.7,
+                messages=openai_messages
+            )
+            response_text = response.choices[0].message.content
+            tokens_used = response.usage.total_tokens
 
         return {
             "success": True,
-            "response": response.choices[0].message.content,
-            "tokens_used": response.usage.total_tokens
+            "response": response_text,
+            "tokens_used": tokens_used,
+            "provider": current_provider
         }
 
     except Exception as e:
