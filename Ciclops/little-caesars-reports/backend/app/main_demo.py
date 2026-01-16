@@ -110,6 +110,69 @@ def extract_text_from_pdf(content: bytes) -> str:
     return "\n".join(text_content)
 
 
+async def analyze_fields_with_ai(data_preview: list, columns: list, filename: str) -> dict:
+    """Usa AI para detectar y mapear campos automáticamente"""
+    if not openai_client:
+        return {"detected_fields": {}, "data_type": "unknown", "summary": "AI no disponible", "recommended_category": "general"}
+
+    try:
+        sample_data = json.dumps(data_preview[:5], ensure_ascii=False, indent=2)
+
+        response = openai_client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "system",
+                    "content": """Eres un experto en análisis de datos financieros de restaurantes Little Caesars.
+Analiza los datos y detecta qué tipo de información contienen.
+
+Responde SOLO con JSON válido con esta estructura:
+{
+    "data_type": "ventas|gastos|inventario|nomina|estado_resultados|otro",
+    "detected_fields": {
+        "columna_original": {
+            "mapped_to": "nombre_estandarizado",
+            "type": "currency|number|text|date|percentage",
+            "description": "descripción breve"
+        }
+    },
+    "summary": "descripción de qué contiene este archivo",
+    "recommended_category": "categoria sugerida para el vault"
+}"""
+                },
+                {
+                    "role": "user",
+                    "content": f"""Archivo: {filename}
+Columnas detectadas: {columns}
+
+Muestra de datos:
+{sample_data}
+
+Analiza y mapea estos campos."""
+                }
+            ],
+            temperature=0.1,
+            max_tokens=1000
+        )
+
+        result = response.choices[0].message.content
+        if result.startswith("```"):
+            result = result.split("```")[1]
+            if result.startswith("json"):
+                result = result[4:]
+        result = result.strip()
+
+        return json.loads(result)
+    except Exception as e:
+        print(f"Error en análisis AI: {e}")
+        return {
+            "data_type": "unknown",
+            "detected_fields": {col: {"mapped_to": col, "type": "text"} for col in columns},
+            "summary": "No se pudo analizar automáticamente",
+            "recommended_category": "general"
+        }
+
+
 @app.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
     """
@@ -161,32 +224,61 @@ async def upload_file(file: UploadFile = File(...)):
             # Excel o CSV
             if filename.endswith('.csv'):
                 df = pd.read_csv(BytesIO(content))
+                sheets_data = {"Datos": df}
             else:
-                df = pd.read_excel(BytesIO(content))
+                # Excel: leer TODAS las hojas
+                excel_file = pd.ExcelFile(BytesIO(content))
+                sheet_names = excel_file.sheet_names
+                sheets_data = {}
+                for sheet_name in sheet_names:
+                    df = pd.read_excel(excel_file, sheet_name=sheet_name)
+                    if not df.empty and len(df.columns) > 0:
+                        sheets_data[sheet_name] = df
 
-            data = df.to_dict(orient='records')
+            # Procesar cada hoja
+            documents_created = []
+            for sheet_name, df in sheets_data.items():
+                df.columns = [str(col).strip() for col in df.columns]
+                df = df.dropna(how='all')
 
-            doc_info = {
-                "id": len(documents_store) + 1,
-                "filename": file.filename,
-                "type": "excel" if not filename.endswith('.csv') else "csv",
-                "rows": len(df),
-                "columns": list(df.columns),
-                "preview": data[:5],
-                "status": "uploaded"
+                if df.empty:
+                    continue
+
+                data = df.to_dict(orient='records')
+                columns = list(df.columns)
+
+                # Analizar campos con AI
+                ai_analysis = await analyze_fields_with_ai(data, columns, f"{file.filename} - {sheet_name}")
+
+                doc_info = {
+                    "id": len(documents_store) + 1,
+                    "filename": f"{file.filename}" if len(sheets_data) == 1 else f"{file.filename} [{sheet_name}]",
+                    "sheet_name": sheet_name,
+                    "type": "excel" if not filename.endswith('.csv') else "csv",
+                    "rows": len(df),
+                    "columns": columns,
+                    "preview": data[:5],
+                    "ai_analysis": ai_analysis,
+                    "status": "uploaded"
+                }
+
+                documents_store.append({
+                    "info": doc_info,
+                    "data": data,
+                    "df_json": df.to_json()
+                })
+
+                documents_created.append(doc_info)
+
+            if not documents_created:
+                raise HTTPException(status_code=400, detail="No se encontraron datos válidos en el archivo")
+
+            return {
+                "success": True,
+                "message": f"Archivo '{file.filename}' procesado - {len(documents_created)} hoja(s) detectada(s)",
+                "sheets_count": len(documents_created),
+                "documents": documents_created
             }
-
-            documents_store.append({
-                "info": doc_info,
-                "data": data,
-                "df_json": df.to_json()
-            })
-
-        return {
-            "success": True,
-            "message": f"Archivo '{file.filename}' subido correctamente",
-            "document": doc_info
-        }
 
     except Exception as e:
         traceback.print_exc()
