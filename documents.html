@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Documentos - CICLOPS</title>
+    <title>Vault - CICLOPS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Bricolage+Grotesque:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script>
@@ -48,61 +48,35 @@
         .mobile-nav { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(10,10,11,0.9); backdrop-filter: blur(20px); border-top: 1px solid rgba(255,255,255,0.05); padding: 0.75rem 1rem; z-index: 100; display: none; }
         @media (max-width: 1024px) { .mobile-nav { display: flex; justify-content: space-around; } .desktop-nav { display: none; } body { padding-bottom: 80px; } }
 
-        /* ============================================
-           LIGHT THEME - Mejor balance y profundidad
-           ============================================ */
-        .theme-light {
-            --bg: #f8f8fa;
-            background: linear-gradient(180deg, #f8f8fa 0%, #f0f0f2 100%) !important;
+        .vault-icon {
+            background: linear-gradient(135deg, rgba(255,87,34,0.2) 0%, rgba(255,87,34,0.05) 100%);
+            animation: pulse 3s ease-in-out infinite;
         }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(255,87,34,0.3); }
+            50% { box-shadow: 0 0 20px 10px rgba(255,87,34,0); }
+        }
+
+        /* Light theme */
+        .theme-light { --bg: #f8f8fa; background: linear-gradient(180deg, #f8f8fa 0%, #f0f0f2 100%) !important; }
         .theme-light .text-ink { color: #1a1a1a; }
         .theme-light .text-ink-2 { color: #525252; }
         .theme-light .text-ink-3 { color: #787878; }
-
-        .theme-light .doc-card {
-            background: #ffffff;
-            border: 1px solid rgba(0,0,0,0.06);
-            box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.04);
-        }
-        .theme-light .doc-card:hover {
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08), 0 8px 24px rgba(255,87,34,0.08);
-        }
-
+        .theme-light .doc-card { background: #ffffff; border: 1px solid rgba(0,0,0,0.06); box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.04); }
+        .theme-light .doc-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08), 0 8px 24px rgba(255,87,34,0.08); }
         .theme-light .bg-surface-2 { background: #ffffff; }
         .theme-light .bg-surface-2\/50 { background: rgba(255,255,255,0.9); }
         .theme-light .bg-surface-3\/50 { background: rgba(0,0,0,0.03); }
-
-        /* Filters en light */
         .theme-light .filter-btn { color: #787878; border-color: rgba(0,0,0,0.08); }
         .theme-light .filter-btn:hover { color: #1a1a1a; border-color: rgba(0,0,0,0.15); }
         .theme-light .filter-btn.active { background: rgba(255,87,34,0.08); color: #E64A19; border-color: rgba(255,87,34,0.2); }
         .theme-light .border-white\/5 { border-color: rgba(0,0,0,0.08); }
-
-        /* Search input en light */
-        .theme-light input {
-            background: #ffffff;
-            border-color: rgba(0,0,0,0.1);
-        }
-        .theme-light input:focus {
-            border-color: rgba(255,87,34,0.4);
-            box-shadow: 0 0 0 3px rgba(255,87,34,0.1);
-        }
-
-        /* Nav en light */
+        .theme-light input { background: #ffffff; border-color: rgba(0,0,0,0.1); }
+        .theme-light input:focus { border-color: rgba(255,87,34,0.4); box-shadow: 0 0 0 3px rgba(255,87,34,0.1); }
         .theme-light .nav-pill:not(.active) { color: #525252; }
         .theme-light .nav-pill:not(.active):hover { color: #1a1a1a; background: rgba(0,0,0,0.04); }
-
-        /* Blobs más sutiles en light */
-        .theme-light .blob {
-            background: radial-gradient(circle, rgba(255,87,34,0.06) 0%, transparent 70%);
-            filter: blur(80px);
-        }
-
-        /* Mobile nav en light */
-        .theme-light .mobile-nav {
-            background: rgba(255,255,255,0.95);
-            border-top-color: rgba(0,0,0,0.08);
-        }
+        .theme-light .blob { background: radial-gradient(circle, rgba(255,87,34,0.06) 0%, transparent 70%); filter: blur(80px); }
+        .theme-light .mobile-nav { background: rgba(255,255,255,0.95); border-top-color: rgba(0,0,0,0.08); }
     </style>
 </head>
 <body class="text-ink" id="app">
@@ -126,43 +100,15 @@
             <nav class="flex items-center gap-1 p-1.5 bg-surface-2/80 backdrop-blur-xl rounded-full border border-white/5">
                 <a href="index.html" class="nav-pill"><span class="flex items-center gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="2"/></svg>Dashboard</span></a>
                 <a href="upload.html" class="nav-pill"><span class="flex items-center gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><polyline points="17 8 12 3 7 8"/></svg>Subir</span></a>
-                <a href="reports.html" class="nav-pill"><span class="flex items-center gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>Reportes</span></a>
-                <a href="documents.html" class="nav-pill active"><span class="flex items-center gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>Docs</span></a>
+                <a href="julia.html" class="nav-pill"><span class="flex items-center gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Julia</span></a>
+                <a href="documents.html" class="nav-pill active"><span class="flex items-center gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>Vault</span></a>
             </nav>
 
             <div class="flex items-center gap-3">
                 <button onclick="toggleTheme()" class="w-10 h-10 rounded-xl bg-surface-2 border border-white/5 flex items-center justify-center text-ink-3 hover:text-ink transition-all">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="5"/></svg>
                 </button>
-                <!-- User Menu -->
-                <div class="relative">
-                    <button onclick="toggleUserMenu()" class="flex items-center gap-2 p-1 rounded-xl hover:bg-surface-3/50 transition-all" id="userMenuBtn">
-                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-pizza to-pizza-dark flex items-center justify-center text-white font-bold text-sm">LC</div>
-                        <svg class="w-4 h-4 text-ink-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-                    </button>
-                    <div id="userMenu" class="hidden absolute right-0 top-14 w-56 bg-surface-2 border border-white/10 rounded-2xl shadow-2xl shadow-black/50 overflow-hidden z-50">
-                        <div class="p-4 border-b border-white/5">
-                            <p class="font-semibold text-ink">Little Caesars</p>
-                            <p class="text-sm text-ink-3">admin@lciclops.com</p>
-                        </div>
-                        <div class="p-2">
-                            <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-ink-2 hover:bg-surface-3/50 hover:text-ink transition-all">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                                Mi perfil
-                            </a>
-                            <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-ink-2 hover:bg-surface-3/50 hover:text-ink transition-all">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-                                Configuración
-                            </a>
-                        </div>
-                        <div class="p-2 border-t border-white/5">
-                            <a href="login.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-danger hover:bg-danger/10 transition-all">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                                Cerrar sesión
-                            </a>
-                        </div>
-                    </div>
-                </div>
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-pizza to-pizza-dark flex items-center justify-center text-white font-bold text-sm">LC</div>
             </div>
         </div>
     </header>
@@ -171,8 +117,8 @@
     <nav class="mobile-nav">
         <a href="index.html" class="flex flex-col items-center gap-1 text-ink-3"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="2"/></svg><span class="text-[10px]">Dashboard</span></a>
         <a href="upload.html" class="flex flex-col items-center gap-1 text-ink-3"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><polyline points="17 8 12 3 7 8"/></svg><span class="text-[10px]">Subir</span></a>
-        <a href="reports.html" class="flex flex-col items-center gap-1 text-ink-3"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg><span class="text-[10px]">Reportes</span></a>
-        <a href="documents.html" class="flex flex-col items-center gap-1 text-pizza"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg><span class="text-[10px]">Docs</span></a>
+        <a href="julia.html" class="flex flex-col items-center gap-1 text-ink-3"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="text-[10px]">Julia</span></a>
+        <a href="documents.html" class="flex flex-col items-center gap-1 text-pizza"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg><span class="text-[10px]">Vault</span></a>
     </nav>
 
     <!-- Main Content -->
@@ -180,202 +126,135 @@
         <div class="max-w-6xl mx-auto">
             <!-- Header -->
             <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
-                <div>
-                    <h1 class="font-display text-4xl sm:text-5xl font-extrabold text-ink">
-                        Tus <span class="text-transparent bg-clip-text bg-gradient-to-r from-pizza to-pizza-light">documentos</span>
-                    </h1>
-                    <p class="text-ink-2 mt-2">23 archivos procesados</p>
+                <div class="flex items-center gap-5">
+                    <div class="w-16 h-16 rounded-2xl vault-icon flex items-center justify-center">
+                        <svg class="w-8 h-8 text-pizza" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="font-display text-4xl sm:text-5xl font-extrabold text-ink">
+                            Data <span class="text-transparent bg-clip-text bg-gradient-to-r from-pizza to-pizza-light">Vault</span>
+                        </h1>
+                        <p class="text-ink-2 mt-1"><span id="totalDocs">0</span> documentos - <span id="totalRows">0</span> registros totales</p>
+                    </div>
                 </div>
                 <a href="upload.html" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-pizza to-pizza-dark text-white font-semibold shadow-lg shadow-pizza/25 hover:shadow-pizza/40 transition-all">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                    Subir nuevo
+                    Agregar datos
                 </a>
             </div>
 
+            <!-- Stats Row -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+                <div class="doc-card rounded-2xl p-5">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <p id="pdfCount" class="font-display text-2xl font-bold text-ink">0</p>
+                            <p class="text-xs text-ink-3">PDFs</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="doc-card rounded-2xl p-5">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <p id="excelCount" class="font-display text-2xl font-bold text-ink">0</p>
+                            <p class="text-xs text-ink-3">Excel</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="doc-card rounded-2xl p-5">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="12" y2="17"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <p id="csvCount" class="font-display text-2xl font-bold text-ink">0</p>
+                            <p class="text-xs text-ink-3">CSV</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="doc-card rounded-2xl p-5">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-pizza/10 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-pizza" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="font-display text-2xl font-bold text-ink">Julia</p>
+                            <p class="text-xs text-ink-3">Lista</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Filters -->
-            <div class="flex flex-wrap gap-2 mb-8">
-                <button class="filter-btn active px-4 py-2 rounded-xl text-sm font-medium border border-white/5">Todos</button>
-                <button class="filter-btn px-4 py-2 rounded-xl text-sm font-medium text-ink-3 border border-white/5 hover:border-white/10">P&L</button>
-                <button class="filter-btn px-4 py-2 rounded-xl text-sm font-medium text-ink-3 border border-white/5 hover:border-white/10">Facturas</button>
-                <button class="filter-btn px-4 py-2 rounded-xl text-sm font-medium text-ink-3 border border-white/5 hover:border-white/10">Estados de cuenta</button>
-                <button class="filter-btn px-4 py-2 rounded-xl text-sm font-medium text-ink-3 border border-white/5 hover:border-white/10">Nómina</button>
+            <div class="flex flex-wrap gap-2 mb-6">
+                <button onclick="filterDocs('all')" class="filter-btn active px-4 py-2 rounded-xl text-sm font-medium border border-white/5" data-filter="all">Todos</button>
+                <button onclick="filterDocs('pdf')" class="filter-btn px-4 py-2 rounded-xl text-sm font-medium text-ink-3 border border-white/5 hover:border-white/10" data-filter="pdf">PDF</button>
+                <button onclick="filterDocs('excel')" class="filter-btn px-4 py-2 rounded-xl text-sm font-medium text-ink-3 border border-white/5 hover:border-white/10" data-filter="excel">Excel</button>
+                <button onclick="filterDocs('csv')" class="filter-btn px-4 py-2 rounded-xl text-sm font-medium text-ink-3 border border-white/5 hover:border-white/10" data-filter="csv">CSV</button>
             </div>
 
             <!-- Search -->
             <div class="relative mb-8">
-                <input type="text" placeholder="Buscar documentos..." class="w-full bg-surface-2/50 border border-white/5 rounded-2xl px-5 py-4 pl-12 text-ink placeholder-ink-3 focus:outline-none focus:border-pizza/30 transition-all">
+                <input type="text" id="searchInput" placeholder="Buscar en el vault..." class="w-full bg-surface-2/50 border border-white/5 rounded-2xl px-5 py-4 pl-12 text-ink placeholder-ink-3 focus:outline-none focus:border-pizza/30 transition-all" oninput="searchDocs(this.value)">
                 <svg class="w-5 h-5 text-ink-3 absolute left-4 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                     <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
                 </svg>
             </div>
 
-            <!-- Documents Grid -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <!-- Document 1 -->
-                <div class="doc-card rounded-2xl p-5">
-                    <div class="flex items-start gap-4">
-                        <div class="w-12 h-12 rounded-xl bg-success/10 flex items-center justify-center flex-shrink-0">
-                            <svg class="w-6 h-6 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
-                            </svg>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <h4 class="font-semibold text-ink truncate">P&L_Enero_2026.pdf</h4>
-                            <p class="text-sm text-ink-3">Hace 2 horas • 2.4 MB</p>
-                        </div>
-                    </div>
-                    <div class="mt-4 flex items-center justify-between">
-                        <span class="px-2.5 py-1 rounded-lg bg-success/10 text-success text-xs font-medium">Procesado</span>
-                        <div class="flex gap-2">
-                            <button class="w-8 h-8 rounded-lg bg-surface-3/50 flex items-center justify-center text-ink-3 hover:text-ink hover:bg-surface-3 transition-all">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                            </button>
-                            <button class="w-8 h-8 rounded-lg bg-surface-3/50 flex items-center justify-center text-ink-3 hover:text-ink hover:bg-surface-3 transition-all">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                            </button>
-                        </div>
-                    </div>
+            <!-- Empty State -->
+            <div id="emptyState" class="hidden text-center py-16">
+                <div class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-surface-3/50 flex items-center justify-center">
+                    <svg class="w-10 h-10 text-ink-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                    </svg>
                 </div>
-
-                <!-- Document 2 -->
-                <div class="doc-card rounded-2xl p-5">
-                    <div class="flex items-start gap-4">
-                        <div class="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center flex-shrink-0">
-                            <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                                <rect x="2" y="4" width="20" height="16" rx="2"/><path d="M7 15h0M2 9h20"/>
-                            </svg>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <h4 class="font-semibold text-ink truncate">Factura_CFE_Enero.pdf</h4>
-                            <p class="text-sm text-ink-3">Hace 5 horas • 1.1 MB</p>
-                        </div>
-                    </div>
-                    <div class="mt-4 flex items-center justify-between">
-                        <span class="px-2.5 py-1 rounded-lg bg-success/10 text-success text-xs font-medium">Procesado</span>
-                        <div class="flex gap-2">
-                            <button class="w-8 h-8 rounded-lg bg-surface-3/50 flex items-center justify-center text-ink-3 hover:text-ink hover:bg-surface-3 transition-all">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                            </button>
-                            <button class="w-8 h-8 rounded-lg bg-surface-3/50 flex items-center justify-center text-ink-3 hover:text-ink hover:bg-surface-3 transition-all">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Document 3 -->
-                <div class="doc-card rounded-2xl p-5">
-                    <div class="flex items-start gap-4">
-                        <div class="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center flex-shrink-0">
-                            <svg class="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                            </svg>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <h4 class="font-semibold text-ink truncate">Nomina_Enero_2026.xlsx</h4>
-                            <p class="text-sm text-ink-3">Ayer • 856 KB</p>
-                        </div>
-                    </div>
-                    <div class="mt-4 flex items-center justify-between">
-                        <span class="px-2.5 py-1 rounded-lg bg-success/10 text-success text-xs font-medium">Procesado</span>
-                        <div class="flex gap-2">
-                            <button class="w-8 h-8 rounded-lg bg-surface-3/50 flex items-center justify-center text-ink-3 hover:text-ink hover:bg-surface-3 transition-all">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                            </button>
-                            <button class="w-8 h-8 rounded-lg bg-surface-3/50 flex items-center justify-center text-ink-3 hover:text-ink hover:bg-surface-3 transition-all">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Document 4 -->
-                <div class="doc-card rounded-2xl p-5">
-                    <div class="flex items-start gap-4">
-                        <div class="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
-                            <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                                <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
-                            </svg>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <h4 class="font-semibold text-ink truncate">Estado_BBVA_Dic.pdf</h4>
-                            <p class="text-sm text-ink-3">3 ene • 3.2 MB</p>
-                        </div>
-                    </div>
-                    <div class="mt-4 flex items-center justify-between">
-                        <span class="px-2.5 py-1 rounded-lg bg-success/10 text-success text-xs font-medium">Procesado</span>
-                        <div class="flex gap-2">
-                            <button class="w-8 h-8 rounded-lg bg-surface-3/50 flex items-center justify-center text-ink-3 hover:text-ink hover:bg-surface-3 transition-all">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                            </button>
-                            <button class="w-8 h-8 rounded-lg bg-surface-3/50 flex items-center justify-center text-ink-3 hover:text-ink hover:bg-surface-3 transition-all">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Document 5 -->
-                <div class="doc-card rounded-2xl p-5">
-                    <div class="flex items-start gap-4">
-                        <div class="w-12 h-12 rounded-xl bg-warning/10 flex items-center justify-center flex-shrink-0">
-                            <svg class="w-6 h-6 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
-                            </svg>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <h4 class="font-semibold text-ink truncate">P&L_Diciembre_2025.pdf</h4>
-                            <p class="text-sm text-ink-3">28 dic • 2.1 MB</p>
-                        </div>
-                    </div>
-                    <div class="mt-4 flex items-center justify-between">
-                        <span class="px-2.5 py-1 rounded-lg bg-success/10 text-success text-xs font-medium">Procesado</span>
-                        <div class="flex gap-2">
-                            <button class="w-8 h-8 rounded-lg bg-surface-3/50 flex items-center justify-center text-ink-3 hover:text-ink hover:bg-surface-3 transition-all">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                            </button>
-                            <button class="w-8 h-8 rounded-lg bg-surface-3/50 flex items-center justify-center text-ink-3 hover:text-ink hover:bg-surface-3 transition-all">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Document 6 - Processing -->
-                <div class="doc-card rounded-2xl p-5 opacity-70">
-                    <div class="flex items-start gap-4">
-                        <div class="w-12 h-12 rounded-xl bg-pizza/10 flex items-center justify-center flex-shrink-0 animate-pulse">
-                            <svg class="w-6 h-6 text-pizza" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
-                            </svg>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <h4 class="font-semibold text-ink truncate">Factura_Proveedor_X.pdf</h4>
-                            <p class="text-sm text-ink-3">Subiendo... • 1.8 MB</p>
-                        </div>
-                    </div>
-                    <div class="mt-4">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="px-2.5 py-1 rounded-lg bg-pizza/10 text-pizza text-xs font-medium">Procesando</span>
-                            <span class="text-sm text-ink-3">67%</span>
-                        </div>
-                        <div class="h-1.5 bg-surface-3 rounded-full overflow-hidden">
-                            <div class="h-full w-2/3 bg-gradient-to-r from-pizza to-pizza-light rounded-full"></div>
-                        </div>
-                    </div>
-                </div>
+                <h3 class="font-display text-2xl font-bold text-ink mb-2">El vault esta vacio</h3>
+                <p class="text-ink-3 mb-6 max-w-md mx-auto">Sube documentos financieros para que Julia pueda analizarlos y responder tus preguntas.</p>
+                <a href="upload.html" class="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-pizza to-pizza-dark text-white font-semibold shadow-lg shadow-pizza/25 hover:shadow-pizza/40 transition-all">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Subir primer documento
+                </a>
             </div>
 
-            <!-- Load More -->
-            <div class="text-center mt-8">
-                <button class="px-6 py-3 rounded-xl bg-surface-3/50 border border-white/5 text-ink-2 font-medium hover:bg-surface-3 hover:text-ink transition-all">
-                    Cargar más documentos
-                </button>
+            <!-- Documents Grid -->
+            <div id="documentsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Documents will be loaded here -->
+            </div>
+
+            <!-- Loading State -->
+            <div id="loadingState" class="text-center py-16">
+                <div class="w-12 h-12 mx-auto mb-4 rounded-full border-2 border-pizza border-t-transparent animate-spin"></div>
+                <p class="text-ink-3">Cargando vault...</p>
             </div>
         </div>
     </main>
 
     <script>
+        const API = 'https://lciclops-production.up.railway.app';
+
+        let allDocs = [];
+        let currentFilter = 'all';
+
+        // Theme toggle
         function toggleTheme() {
             const body = document.getElementById('app');
             body.classList.toggle('theme-light');
@@ -383,22 +262,176 @@
         }
         if (localStorage.getItem('theme') === 'light') document.getElementById('app').classList.add('theme-light');
 
-        function toggleUserMenu() {
-            document.getElementById('userMenu').classList.toggle('hidden');
-        }
-        document.addEventListener('click', (e) => {
-            const menu = document.getElementById('userMenu');
-            const btn = document.getElementById('userMenuBtn');
-            if (!btn?.contains(e.target) && !menu?.contains(e.target)) menu?.classList.add('hidden');
-        });
+        // Load documents from vault via API
+        async function loadVault() {
+            try {
+                const response = await fetch(API + '/documents?status=confirmed');
+                if (!response.ok) throw new Error('Error al cargar documentos');
 
-        // Filter buttons
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
+                const data = await response.json();
+
+                allDocs = data.documents || [];
+                let totalRows = 0;
+                let counts = { pdf: 0, excel: 0, csv: 0 };
+
+                allDocs.forEach(doc => {
+                    totalRows += doc.rows || 0;
+                    if (doc.type === 'pdf') counts.pdf++;
+                    else if (doc.type === 'excel') counts.excel++;
+                    else if (doc.type === 'csv') counts.csv++;
+                });
+
+                // Update stats
+                document.getElementById('totalDocs').textContent = allDocs.length;
+                document.getElementById('totalRows').textContent = totalRows.toLocaleString();
+                document.getElementById('pdfCount').textContent = counts.pdf;
+                document.getElementById('excelCount').textContent = counts.excel;
+                document.getElementById('csvCount').textContent = counts.csv;
+
+                document.getElementById('loadingState').classList.add('hidden');
+
+                if (allDocs.length === 0) {
+                    document.getElementById('emptyState').classList.remove('hidden');
+                } else {
+                    renderDocs(allDocs);
+                }
+
+            } catch (error) {
+                console.error('Error loading vault:', error);
+                document.getElementById('loadingState').innerHTML = `
+                    <p class="text-danger">Error al cargar el vault</p>
+                    <p class="text-ink-3 text-sm mt-2">${error.message}</p>
+                `;
+            }
+        }
+
+        function renderDocs(docs) {
+            const grid = document.getElementById('documentsGrid');
+            grid.innerHTML = '';
+
+            if (docs.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full text-center py-12">
+                        <p class="text-ink-3">No se encontraron documentos</p>
+                    </div>
+                `;
+                return;
+            }
+
+            docs.forEach(doc => {
+                const iconColor = doc.type === 'pdf' ? 'red' : doc.type === 'excel' ? 'green' : 'blue';
+                const date = doc.created_at ? formatDate(new Date(doc.created_at)) : 'Sin fecha';
+
+                const card = document.createElement('div');
+                card.className = 'doc-card rounded-2xl p-5';
+                card.innerHTML = `
+                    <div class="flex items-start gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-${iconColor}-500/10 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-6 h-6 text-${iconColor}-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                            </svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h4 class="font-semibold text-ink truncate" title="${doc.filename}">${doc.filename}</h4>
+                            <p class="text-sm text-ink-3">${doc.store_name || ''} ${doc.period ? '- ' + doc.period : ''}</p>
+                            <p class="text-xs text-ink-3 mt-1">${date} - ${doc.rows || 0} filas</p>
+                        </div>
+                    </div>
+                    <div class="mt-4 flex items-center justify-between">
+                        <span class="px-2.5 py-1 rounded-lg bg-success/10 text-success text-xs font-medium">${(doc.type || 'doc').toUpperCase()}</span>
+                        <div class="flex gap-2">
+                            <button onclick="askJulia('${doc.filename}')" class="w-8 h-8 rounded-lg bg-pizza/10 flex items-center justify-center text-pizza hover:bg-pizza/20 transition-all" title="Preguntar a Julia">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                                </svg>
+                            </button>
+                            <button onclick="deleteDoc(${doc.id})" class="w-8 h-8 rounded-lg bg-surface-3/50 flex items-center justify-center text-ink-3 hover:text-danger hover:bg-danger/10 transition-all" title="Eliminar">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                    <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
             });
-        });
+        }
+
+        function formatDate(date) {
+            const now = new Date();
+            const diff = now - date;
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+            if (hours < 1) return 'Hace unos minutos';
+            if (hours < 24) return `Hace ${hours} hora${hours > 1 ? 's' : ''}`;
+            if (days < 7) return `Hace ${days} dia${days > 1 ? 's' : ''}`;
+            return date.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
+        }
+
+        function filterDocs(type) {
+            currentFilter = type;
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.filter === type);
+            });
+
+            const filtered = type === 'all' ? allDocs : allDocs.filter(d => d.type === type);
+            renderDocs(filtered);
+        }
+
+        function searchDocs(query) {
+            const q = query.toLowerCase();
+            let filtered = allDocs.filter(d => d.filename.toLowerCase().includes(q));
+            if (currentFilter !== 'all') {
+                filtered = filtered.filter(d => d.type === currentFilter);
+            }
+            renderDocs(filtered);
+        }
+
+        async function deleteDoc(docId) {
+            if (!confirm('Eliminar este documento del vault?')) return;
+
+            try {
+                const response = await fetch(API + '/documents/' + docId, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) throw new Error('Error al eliminar');
+
+                allDocs = allDocs.filter(d => d.id !== docId);
+                renderDocs(currentFilter === 'all' ? allDocs : allDocs.filter(d => d.type === currentFilter));
+
+                // Update stats
+                let totalRows = 0;
+                let counts = { pdf: 0, excel: 0, csv: 0 };
+                allDocs.forEach(d => {
+                    totalRows += d.rows || 0;
+                    if (d.type === 'pdf') counts.pdf++;
+                    else if (d.type === 'excel') counts.excel++;
+                    else if (d.type === 'csv') counts.csv++;
+                });
+                document.getElementById('totalDocs').textContent = allDocs.length;
+                document.getElementById('totalRows').textContent = totalRows.toLocaleString();
+                document.getElementById('pdfCount').textContent = counts.pdf;
+                document.getElementById('excelCount').textContent = counts.excel;
+                document.getElementById('csvCount').textContent = counts.csv;
+
+                if (allDocs.length === 0) {
+                    document.getElementById('emptyState').classList.remove('hidden');
+                }
+
+            } catch (error) {
+                console.error('Error deleting:', error);
+                alert('Error al eliminar: ' + error.message);
+            }
+        }
+
+        function askJulia(filename) {
+            window.location.href = `julia.html?ask=Analiza el documento ${filename}`;
+        }
+
+        // Load vault on page load
+        loadVault();
     </script>
 </body>
 </html>

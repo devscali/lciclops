@@ -2,18 +2,20 @@
 CICLOPS Backend - Modo Demo
 Funciona sin Firebase, solo con OpenAI API para análisis
 Soporta: Excel, CSV, PDF
+Incluye: Chat con Julia, Vault de datos
 """
 
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from openai import OpenAI
+from pydantic import BaseModel
 import pandas as pd
 import json
 import os
 from io import BytesIO
 from dotenv import load_dotenv
-from typing import Optional
+from typing import Optional, List, Dict
 import traceback
 import pdfplumber
 
@@ -22,9 +24,21 @@ load_dotenv()
 
 app = FastAPI(
     title="CICLOPS API - Demo Mode",
-    description="API para análisis financiero de Little Caesars",
-    version="1.0.0-demo"
+    description="API para análisis financiero de Little Caesars con Julia AI",
+    version="2.0.0"
 )
+
+
+# Modelos Pydantic
+class ChatMessage(BaseModel):
+    role: str
+    content: str
+
+
+class ChatRequest(BaseModel):
+    message: str
+    context: Optional[str] = ""
+    history: Optional[List[Dict[str, str]]] = []
 
 # CORS - permitir frontend
 app.add_middleware(
@@ -333,6 +347,159 @@ async def list_analyses():
     return {
         "count": len(analysis_store),
         "analyses": analysis_store
+    }
+
+
+# ============================================
+# CHAT CON JULIA - Consultas en lenguaje natural
+# ============================================
+
+@app.post("/chat")
+async def chat_with_julia(request: ChatRequest):
+    """
+    Chat con Julia - Asistente financiera IA
+    Responde preguntas sobre los datos del vault
+    """
+    if not openai_client:
+        raise HTTPException(
+            status_code=503,
+            detail="OpenAI API no configurada. Agrega OPENAI_API_KEY al .env"
+        )
+
+    try:
+        # Construir contexto con datos disponibles
+        data_context = request.context or ""
+
+        # Agregar resumen de documentos en memoria
+        if documents_store:
+            data_context += "\n\nDocumentos cargados en esta sesion:\n"
+            for doc in documents_store:
+                info = doc["info"]
+                data_context += f"- {info['filename']}: {info['rows']} filas, tipo: {info['type']}\n"
+
+                # Incluir datos de preview para contexto
+                if info['type'] == 'pdf':
+                    raw_text = doc.get('raw_text', '')[:3000]
+                    data_context += f"  Contenido:\n{raw_text}\n"
+                else:
+                    preview = doc.get('data', [])[:10]
+                    if preview:
+                        data_context += f"  Columnas: {', '.join(info['columns'])}\n"
+                        data_context += f"  Muestra de datos: {json.dumps(preview[:5], ensure_ascii=False)}\n"
+
+        # Construir mensajes para el chat
+        messages = [
+            {
+                "role": "system",
+                "content": f"""Eres Julia, una asistente experta en análisis financiero para restaurantes Little Caesars en Mexico.
+
+Tu personalidad:
+- Profesional pero amigable
+- Respondes siempre en español
+- Das respuestas claras y accionables
+- Cuando muestras numeros, los formateas en pesos mexicanos
+- Cuando detectas problemas, sugieres soluciones
+
+Capacidades:
+- Analizar estados de resultados (P&L)
+- Comparar rendimiento entre sucursales
+- Identificar tendencias y anomalias
+- Calcular metricas financieras
+- Dar recomendaciones basadas en datos
+
+Datos disponibles:
+{data_context}
+
+Si no tienes datos suficientes para responder, sugieres amablemente que el usuario suba los documentos necesarios.
+Cuando hagas calculos, muestra tu trabajo brevemente.
+Usa emojis con moderacion para hacer las respuestas mas amigables.
+"""
+            }
+        ]
+
+        # Agregar historial de conversacion
+        for msg in (request.history or [])[-6:]:
+            messages.append({
+                "role": msg.get("role", "user"),
+                "content": msg.get("content", "")
+            })
+
+        # Agregar mensaje actual
+        messages.append({
+            "role": "user",
+            "content": request.message
+        })
+
+        # Llamar a OpenAI
+        response = openai_client.chat.completions.create(
+            model="gpt-4o-mini",
+            max_tokens=1500,
+            temperature=0.7,
+            messages=messages
+        )
+
+        return {
+            "success": True,
+            "response": response.choices[0].message.content,
+            "tokens_used": response.usage.total_tokens
+        }
+
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/vault/summary")
+async def get_vault_summary():
+    """
+    Resumen de todos los datos en el vault (memoria)
+    """
+    summary = {
+        "total_documents": len(documents_store),
+        "documents": [],
+        "total_rows": 0,
+        "types": {"pdf": 0, "excel": 0, "csv": 0}
+    }
+
+    for doc in documents_store:
+        info = doc["info"]
+        summary["documents"].append({
+            "id": info["id"],
+            "filename": info["filename"],
+            "type": info["type"],
+            "rows": info["rows"],
+            "status": info.get("status", "uploaded")
+        })
+        summary["total_rows"] += info["rows"]
+        doc_type = info["type"]
+        if doc_type in summary["types"]:
+            summary["types"][doc_type] += 1
+
+    return summary
+
+
+@app.post("/vault/query")
+async def query_vault(query: str):
+    """
+    Consulta especifica al vault
+    """
+    # Por ahora retorna datos raw, despues se puede hacer mas inteligente
+    results = []
+    query_lower = query.lower()
+
+    for doc in documents_store:
+        info = doc["info"]
+        # Busqueda simple por nombre
+        if query_lower in info["filename"].lower():
+            results.append({
+                "document": info,
+                "data_preview": doc.get("data", [])[:20]
+            })
+
+    return {
+        "query": query,
+        "results_count": len(results),
+        "results": results
     }
 
 

@@ -1,5 +1,5 @@
-# Little Caesars Reports - Backend Dependencies
-# Aurelia says: "Keep it lean, install only what you need"
+# CICLOPS Backend - Dependencies
+# PostgreSQL + OpenAI para análisis financiero
 
 # Framework
 fastapi==0.109.0
@@ -11,34 +11,22 @@ pydantic==2.5.3
 pydantic-settings==2.1.0
 email-validator==2.1.0
 
-# Firebase
-firebase-admin==6.4.0
+# Database - PostgreSQL
+sqlalchemy==2.0.25
+psycopg2-binary==2.9.9
+alembic==1.13.1
 
 # AI - OpenAI
 openai==1.12.0
 
 # PDF Processing
-pdf2image==1.17.0
-pytesseract==0.3.10
 pdfplumber==0.10.3
-tabula-py==2.9.0
 
 # Data Processing
 pandas==2.1.4
 numpy==1.26.3
-
-# Report Generation
-reportlab==4.0.8
 openpyxl==3.1.2
 
 # Utils
 python-dotenv==1.0.0
 httpx==0.26.0
-
-# Security
-python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
-
-# Development
-pytest==7.4.4
-black==24.1.1
