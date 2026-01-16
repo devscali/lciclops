@@ -98,8 +98,8 @@
         fetch(API + '/health')
             .then(r => r.json())
             .then(data => {
-                if (data.anthropic === 'connected') {
-                    document.getElementById('status').innerHTML = '🟢 Backend + Claude IA conectados - Todo listo';
+                if (data.openai === 'connected') {
+                    document.getElementById('status').innerHTML = '🟢 Backend + OpenAI GPT-4 conectados - Todo listo';
                 }
             })
             .catch(() => {
@@ -167,7 +167,7 @@
             if (!currentDocId) return;
 
             document.getElementById('analysisResult').classList.remove('hidden');
-            document.getElementById('analysisContent').innerHTML = '<div class="animate-pulse">🔄 Analizando con Claude... esto puede tomar unos segundos</div>';
+            document.getElementById('analysisContent').innerHTML = '<div class="animate-pulse">🔄 Analizando con GPT-4... esto puede tomar unos segundos</div>';
 
             try {
                 const response = await fetch(API + `/analyze/${currentDocId}?analysis_type=general`, {

@@ -1,12 +1,12 @@
 """
 CICLOPS Backend - Modo Demo
-Funciona sin Firebase, solo con Claude API para análisis
+Funciona sin Firebase, solo con OpenAI API para análisis
 """
 
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-import anthropic
+from openai import OpenAI
 import pandas as pd
 import json
 import os
@@ -34,15 +34,15 @@ app.add_middleware(
     expose_headers=["*"],
 )
 
-# Cliente de Anthropic
-anthropic_client = None
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+# Cliente de OpenAI
+openai_client = None
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-if ANTHROPIC_API_KEY:
-    anthropic_client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
-    print("✅ Anthropic API configurada correctamente")
+if OPENAI_API_KEY:
+    openai_client = OpenAI(api_key=OPENAI_API_KEY)
+    print("✅ OpenAI API configurada correctamente")
 else:
-    print("⚠️ ANTHROPIC_API_KEY no encontrada - análisis IA deshabilitado")
+    print("⚠️ OPENAI_API_KEY no encontrada - análisis IA deshabilitado")
 
 # Almacenamiento en memoria (demo)
 documents_store = []
@@ -54,7 +54,7 @@ async def root():
     return {
         "message": "🍕 CICLOPS API - Modo Demo",
         "status": "running",
-        "anthropic_enabled": anthropic_client is not None,
+        "openai_enabled": openai_client is not None,
         "endpoints": {
             "upload": "POST /upload",
             "analyze": "POST /analyze",
@@ -69,7 +69,7 @@ async def health_check():
     return {
         "status": "healthy",
         "mode": "demo",
-        "anthropic": "connected" if anthropic_client else "disabled",
+        "openai": "connected" if openai_client else "disabled",
         "documents_count": len(documents_store)
     }
 
@@ -130,12 +130,12 @@ async def upload_file(file: UploadFile = File(...)):
 @app.post("/analyze/{doc_id}")
 async def analyze_document(doc_id: int, analysis_type: str = "general"):
     """
-    Analiza un documento con Claude AI
+    Analiza un documento con OpenAI GPT-4
     """
-    if not anthropic_client:
+    if not openai_client:
         raise HTTPException(
             status_code=503,
-            detail="Anthropic API no configurada. Agrega ANTHROPIC_API_KEY al .env"
+            detail="OpenAI API no configurada. Agrega OPENAI_API_KEY al .env"
         )
 
     # Buscar documento
@@ -213,11 +213,12 @@ async def analyze_document(doc_id: int, analysis_type: str = "general"):
 
         prompt = prompts.get(analysis_type, prompts["general"])
 
-        # Llamar a Claude
-        message = anthropic_client.messages.create(
-            model="claude-sonnet-4-20250514",
+        # Llamar a OpenAI GPT-4
+        response = openai_client.chat.completions.create(
+            model="gpt-4o-mini",
             max_tokens=2000,
             messages=[
+                {"role": "system", "content": "Eres Julia, una asistente experta en análisis financiero para restaurantes Little Caesars. Respondes siempre en español de manera clara y profesional."},
                 {"role": "user", "content": prompt}
             ]
         )
@@ -226,8 +227,8 @@ async def analyze_document(doc_id: int, analysis_type: str = "general"):
             "doc_id": doc_id,
             "filename": doc["info"]["filename"],
             "analysis_type": analysis_type,
-            "result": message.content[0].text,
-            "tokens_used": message.usage.input_tokens + message.usage.output_tokens
+            "result": response.choices[0].message.content,
+            "tokens_used": response.usage.total_tokens
         }
 
         analysis_store.append(analysis_result)
