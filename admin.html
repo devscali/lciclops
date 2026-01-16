@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CICLOPS - Administración</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Bricolage+Grotesque:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Instrument Sans', system-ui, sans-serif; }
+        .font-display { font-family: 'Bricolage Grotesque', serif; }
+        body { background: #0a0a0b; }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .input-dark {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .input-dark:focus {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: #FF5722;
+            box-shadow: 0 0 0 3px rgba(255, 87, 34, 0.15);
+            outline: none;
+        }
+
+        .input-dark::placeholder { color: rgba(255, 255, 255, 0.3); }
+
+        select.input-dark option {
+            background: #1a1a1b;
+            color: white;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #FF5722 0%, #E64A19 100%);
+            box-shadow: 0 4px 15px rgba(255, 87, 34, 0.3);
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 6px 20px rgba(255, 87, 34, 0.4);
+            transform: translateY(-1px);
+        }
+
+        .tab-active {
+            background: rgba(255, 87, 34, 0.15);
+            border-color: #FF5722;
+            color: #FF5722;
+        }
+
+        .badge {
+            font-size: 0.7rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 9999px;
+        }
+
+        .badge-director { background: rgba(139, 92, 246, 0.2); color: #a78bfa; }
+        .badge-cabeza { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+        .badge-gerente { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+
+        .table-row:hover { background: rgba(255, 255, 255, 0.03); }
+
+        /* iOS fixes */
+        html { -webkit-overflow-scrolling: touch; }
+        button, input, select { min-height: 44px; }
+        input, select { font-size: 16px !important; }
+    </style>
+</head>
+<body class="min-h-screen text-white">
+    <!-- Header -->
+    <header class="border-b border-white/10 bg-black/50 backdrop-blur-xl sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <a href="index.html" class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF5722] to-[#E64A19] flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/>
+                        </svg>
+                    </div>
+                    <span class="font-display text-xl font-bold">CICLOPS</span>
+                </a>
+                <span class="text-gray-500">|</span>
+                <span class="text-gray-400">Administración</span>
+            </div>
+            <div class="flex items-center gap-4">
+                <span id="currentUserName" class="text-sm text-gray-400 hidden sm:block"></span>
+                <button onclick="logout()" class="text-gray-400 hover:text-white transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto px-4 py-8">
+        <!-- Page Title -->
+        <div class="mb-8">
+            <h1 class="font-display text-3xl font-bold mb-2">Panel de Administración</h1>
+            <p class="text-gray-400">Gestiona usuarios, zonas y sucursales del sistema</p>
+        </div>
+
+        <!-- Tabs -->
+        <div class="flex gap-2 mb-8 overflow-x-auto pb-2">
+            <button onclick="showTab('usuarios')" id="tab-usuarios" class="px-4 py-2 rounded-lg border border-white/10 text-sm font-medium transition-all tab-active whitespace-nowrap">
+                👥 Usuarios
+            </button>
+            <button onclick="showTab('zonas')" id="tab-zonas" class="px-4 py-2 rounded-lg border border-white/10 text-sm font-medium transition-all text-gray-400 hover:text-white whitespace-nowrap">
+                🗺️ Zonas
+            </button>
+            <button onclick="showTab('sucursales')" id="tab-sucursales" class="px-4 py-2 rounded-lg border border-white/10 text-sm font-medium transition-all text-gray-400 hover:text-white whitespace-nowrap">
+                🏪 Sucursales
+            </button>
+        </div>
+
+        <!-- Tab: Usuarios -->
+        <div id="content-usuarios" class="space-y-6">
+            <!-- Stats -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div class="glass-card rounded-xl p-4">
+                    <p class="text-gray-400 text-sm">Total Usuarios</p>
+                    <p id="stat-total" class="font-display text-2xl font-bold mt-1">0</p>
+                </div>
+                <div class="glass-card rounded-xl p-4">
+                    <p class="text-gray-400 text-sm">Directores</p>
+                    <p id="stat-directores" class="font-display text-2xl font-bold mt-1 text-purple-400">0</p>
+                </div>
+                <div class="glass-card rounded-xl p-4">
+                    <p class="text-gray-400 text-sm">Cabezas de Zona</p>
+                    <p id="stat-cabezas" class="font-display text-2xl font-bold mt-1 text-blue-400">0</p>
+                </div>
+                <div class="glass-card rounded-xl p-4">
+                    <p class="text-gray-400 text-sm">Gerentes</p>
+                    <p id="stat-gerentes" class="font-display text-2xl font-bold mt-1 text-green-400">0</p>
+                </div>
+            </div>
+
+            <!-- Actions Bar -->
+            <div class="flex flex-col sm:flex-row gap-4 justify-between">
+                <div class="relative flex-1 max-w-md">
+                    <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                    <input type="text" id="searchUsers" placeholder="Buscar usuario..." class="w-full pl-10 pr-4 py-3 rounded-xl input-dark" oninput="filterUsers()">
+                </div>
+                <button onclick="openModal('crear')" class="btn-primary text-white px-6 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Nuevo Usuario
+                </button>
+            </div>
+
+            <!-- Users Table -->
+            <div class="glass-card rounded-2xl overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="border-b border-white/10">
+                                <th class="text-left py-4 px-4 text-sm font-medium text-gray-400">Usuario</th>
+                                <th class="text-left py-4 px-4 text-sm font-medium text-gray-400 hidden sm:table-cell">Rol</th>
+                                <th class="text-left py-4 px-4 text-sm font-medium text-gray-400 hidden md:table-cell">Zona/Sucursal</th>
+                                <th class="text-left py-4 px-4 text-sm font-medium text-gray-400 hidden lg:table-cell">Estado</th>
+                                <th class="text-right py-4 px-4 text-sm font-medium text-gray-400">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody">
+                            <!-- Dynamic content -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="emptyState" class="hidden py-12 text-center">
+                    <svg class="w-16 h-16 mx-auto text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                    </svg>
+                    <p class="text-gray-500">No hay usuarios registrados</p>
+                    <button onclick="openModal('crear')" class="mt-4 text-[#FF5722] hover:text-[#FF8A65] font-medium">Crear el primero</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Zonas -->
+        <div id="content-zonas" class="hidden space-y-6">
+            <div class="flex flex-col sm:flex-row gap-4 justify-between">
+                <h2 class="font-display text-xl font-bold">Zonas Configuradas</h2>
+                <button onclick="openZonaModal()" class="btn-primary text-white px-6 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Nueva Zona
+                </button>
+            </div>
+
+            <div id="zonasGrid" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <!-- Dynamic content -->
+            </div>
+        </div>
+
+        <!-- Tab: Sucursales -->
+        <div id="content-sucursales" class="hidden space-y-6">
+            <div class="flex flex-col sm:flex-row gap-4 justify-between">
+                <h2 class="font-display text-xl font-bold">Sucursales</h2>
+                <button onclick="openSucursalModal()" class="btn-primary text-white px-6 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Nueva Sucursal
+                </button>
+            </div>
+
+            <div id="sucursalesGrid" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <!-- Dynamic content -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Crear/Editar Usuario -->
+    <div id="userModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="glass-card rounded-2xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-6">
+                <h3 id="modalTitle" class="font-display text-xl font-bold">Nuevo Usuario</h3>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-white">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <form id="userForm" class="space-y-4">
+                <input type="hidden" id="userId">
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-2">Nombre completo</label>
+                    <input type="text" id="userName" class="w-full px-4 py-3 rounded-xl input-dark" placeholder="Ej: Juan Pérez" required>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-2">Correo electrónico</label>
+                    <input type="email" id="userEmail" class="w-full px-4 py-3 rounded-xl input-dark" placeholder="usuario@email.com" required>
+                </div>
+
+                <div id="passwordField">
+                    <label class="block text-sm font-medium text-gray-400 mb-2">Contraseña temporal</label>
+                    <input type="password" id="userPassword" class="w-full px-4 py-3 rounded-xl input-dark" placeholder="Mínimo 6 caracteres" minlength="6">
+                    <p class="text-xs text-gray-500 mt-1">El usuario deberá cambiarla en su primer inicio</p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-2">Rol</label>
+                    <select id="userRol" class="w-full px-4 py-3 rounded-xl input-dark" required onchange="onRolChange()">
+                        <option value="">Seleccionar rol...</option>
+                        <option value="director">👑 Director Operativo</option>
+                        <option value="cabeza_zona">🗺️ Cabeza de Zona</option>
+                        <option value="gerente">🏪 Gerente de Sucursal</option>
+                    </select>
+                </div>
+
+                <div id="zonaField" class="hidden">
+                    <label class="block text-sm font-medium text-gray-400 mb-2">Zona asignada</label>
+                    <select id="userZona" class="w-full px-4 py-3 rounded-xl input-dark">
+                        <option value="">Seleccionar zona...</option>
+                    </select>
+                </div>
+
+                <div id="sucursalField" class="hidden">
+                    <label class="block text-sm font-medium text-gray-400 mb-2">Sucursal asignada</label>
+                    <select id="userSucursal" class="w-full px-4 py-3 rounded-xl input-dark">
+                        <option value="">Seleccionar sucursal...</option>
+                    </select>
+                </div>
+
+                <div class="flex items-center gap-3 pt-2">
+                    <input type="checkbox" id="userActivo" checked class="w-5 h-5 rounded border-gray-600 bg-transparent text-[#FF5722] focus:ring-[#FF5722]">
+                    <label for="userActivo" class="text-sm text-gray-300">Usuario activo</label>
+                </div>
+
+                <div class="flex gap-3 pt-4">
+                    <button type="button" onclick="closeModal()" class="flex-1 py-3 rounded-xl border border-white/10 text-gray-400 hover:text-white hover:border-white/20 transition-all font-medium">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="flex-1 btn-primary py-3 rounded-xl text-white font-semibold transition-all">
+                        Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Zona -->
+    <div id="zonaModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="glass-card rounded-2xl p-6 max-w-lg w-full">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="font-display text-xl font-bold">Nueva Zona</h3>
+                <button onclick="closeZonaModal()" class="text-gray-400 hover:text-white">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <form id="zonaForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-2">Nombre de la zona</label>
+                    <input type="text" id="zonaNombre" class="w-full px-4 py-3 rounded-xl input-dark" placeholder="Ej: Baja California Sur" required>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-2">Ciudades (separadas por coma)</label>
+                    <input type="text" id="zonaCiudades" class="w-full px-4 py-3 rounded-xl input-dark" placeholder="Ej: La Paz, Los Cabos" required>
+                </div>
+
+                <div class="flex gap-3 pt-4">
+                    <button type="button" onclick="closeZonaModal()" class="flex-1 py-3 rounded-xl border border-white/10 text-gray-400 hover:text-white transition-all font-medium">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="flex-1 btn-primary py-3 rounded-xl text-white font-semibold transition-all">
+                        Guardar Zona
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Sucursal -->
+    <div id="sucursalModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="glass-card rounded-2xl p-6 max-w-lg w-full">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="font-display text-xl font-bold">Nueva Sucursal</h3>
+                <button onclick="closeSucursalModal()" class="text-gray-400 hover:text-white">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <form id="sucursalForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-2">Código de sucursal</label>
+                    <input type="text" id="sucursalCodigo" class="w-full px-4 py-3 rounded-xl input-dark" placeholder="Ej: LP001" required>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-2">Nombre de la sucursal</label>
+                    <input type="text" id="sucursalNombre" class="w-full px-4 py-3 rounded-xl input-dark" placeholder="Ej: Little Caesars La Paz Centro" required>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-2">Zona</label>
+                    <select id="sucursalZona" class="w-full px-4 py-3 rounded-xl input-dark" required>
+                        <option value="">Seleccionar zona...</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-2">Ciudad</label>
+                    <input type="text" id="sucursalCiudad" class="w-full px-4 py-3 rounded-xl input-dark" placeholder="Ej: La Paz" required>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-2">Dirección</label>
+                    <input type="text" id="sucursalDireccion" class="w-full px-4 py-3 rounded-xl input-dark" placeholder="Dirección completa">
+                </div>
+
+                <div class="flex gap-3 pt-4">
+                    <button type="button" onclick="closeSucursalModal()" class="flex-1 py-3 rounded-xl border border-white/10 text-gray-400 hover:text-white transition-all font-medium">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="flex-1 btn-primary py-3 rounded-xl text-white font-semibold transition-all">
+                        Guardar Sucursal
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="hidden fixed bottom-4 right-4 px-6 py-3 rounded-xl text-white font-medium z-50 transition-all transform translate-y-10 opacity-0">
+        <span id="toastMessage"></span>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+    <script>
+        // Firebase Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyBL8-hBMJR6NlnXN6rWwS8WVcrdMm7m4rY",
+            authDomain: "ciclops-8a2de.firebaseapp.com",
+            projectId: "ciclops-8a2de",
+            storageBucket: "ciclops-8a2de.firebasestorage.app",
+            messagingSenderId: "475876958824",
+            appId: "1:475876958824:web:5ecc315220c66fdd56d1dd"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // Data stores
+        let usuarios = [];
+        let zonas = [];
+        let sucursales = [];
+        let currentUser = null;
+
+        // ====== AUTH ======
+        auth.onAuthStateChanged(async (user) => {
+            if (!user) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            currentUser = user;
+            document.getElementById('currentUserName').textContent = user.displayName || user.email;
+
+            // Check if user is director
+            const userDoc = await db.collection('usuarios').doc(user.uid).get();
+            if (userDoc.exists && userDoc.data().rol !== 'director') {
+                showToast('No tienes permisos de administrador', 'error');
+                setTimeout(() => window.location.href = 'index.html', 2000);
+                return;
+            }
+
+            // Load data
+            loadZonas();
+            loadSucursales();
+            loadUsuarios();
+        });
+
+        function logout() {
+            auth.signOut().then(() => {
+                window.location.href = 'login.html';
+            });
+        }
+
+        // ====== TABS ======
+        function showTab(tab) {
+            ['usuarios', 'zonas', 'sucursales'].forEach(t => {
+                document.getElementById(`content-${t}`).classList.add('hidden');
+                document.getElementById(`tab-${t}`).classList.remove('tab-active');
+                document.getElementById(`tab-${t}`).classList.add('text-gray-400');
+            });
+            document.getElementById(`content-${tab}`).classList.remove('hidden');
+            document.getElementById(`tab-${tab}`).classList.add('tab-active');
+            document.getElementById(`tab-${tab}`).classList.remove('text-gray-400');
+        }
+
+        // ====== ZONAS ======
+        async function loadZonas() {
+            const snapshot = await db.collection('zonas').orderBy('nombre').get();
+            zonas = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            renderZonas();
+            populateZonaSelects();
+        }
+
+        function renderZonas() {
+            const grid = document.getElementById('zonasGrid');
+            if (zonas.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full py-12 text-center">
+                        <p class="text-gray-500 mb-4">No hay zonas configuradas</p>
+                        <button onclick="openZonaModal()" class="text-[#FF5722] font-medium">Crear la primera zona</button>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = zonas.map(zona => `
+                <div class="glass-card rounded-xl p-5">
+                    <div class="flex items-start justify-between mb-3">
+                        <h3 class="font-display font-bold text-lg">${zona.nombre}</h3>
+                        <button onclick="deleteZona('${zona.id}')" class="text-gray-500 hover:text-red-400 transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        ${(zona.ciudades || []).map(c => `<span class="px-2 py-1 rounded-lg bg-white/5 text-gray-400 text-sm">${c}</span>`).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function populateZonaSelects() {
+            const selects = ['userZona', 'sucursalZona'];
+            selects.forEach(id => {
+                const select = document.getElementById(id);
+                if (select) {
+                    const currentValue = select.value;
+                    select.innerHTML = '<option value="">Seleccionar zona...</option>' +
+                        zonas.map(z => `<option value="${z.id}">${z.nombre}</option>`).join('');
+                    select.value = currentValue;
+                }
+            });
+        }
+
+        function openZonaModal() {
+            document.getElementById('zonaForm').reset();
+            document.getElementById('zonaModal').classList.remove('hidden');
+        }
+
+        function closeZonaModal() {
+            document.getElementById('zonaModal').classList.add('hidden');
+        }
+
+        document.getElementById('zonaForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const nombre = document.getElementById('zonaNombre').value.trim();
+            const ciudadesStr = document.getElementById('zonaCiudades').value.trim();
+            const ciudades = ciudadesStr.split(',').map(c => c.trim()).filter(c => c);
+
+            try {
+                await db.collection('zonas').add({
+                    nombre,
+                    ciudades,
+                    creadoPor: currentUser.uid,
+                    fechaCreacion: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                showToast('Zona creada correctamente', 'success');
+                closeZonaModal();
+                loadZonas();
+            } catch (error) {
+                showToast('Error al crear zona: ' + error.message, 'error');
+            }
+        });
+
+        async function deleteZona(id) {
+            if (!confirm('¿Eliminar esta zona?')) return;
+
+            try {
+                await db.collection('zonas').doc(id).delete();
+                showToast('Zona eliminada', 'success');
+                loadZonas();
+            } catch (error) {
+                showToast('Error: ' + error.message, 'error');
+            }
+        }
+
+        // ====== SUCURSALES ======
+        async function loadSucursales() {
+            const snapshot = await db.collection('sucursales').orderBy('nombre').get();
+            sucursales = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            renderSucursales();
+            populateSucursalSelect();
+        }
+
+        function renderSucursales() {
+            const grid = document.getElementById('sucursalesGrid');
+            if (sucursales.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full py-12 text-center">
+                        <p class="text-gray-500 mb-4">No hay sucursales configuradas</p>
+                        <button onclick="openSucursalModal()" class="text-[#FF5722] font-medium">Crear la primera sucursal</button>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = sucursales.map(suc => {
+                const zona = zonas.find(z => z.id === suc.zonaId);
+                return `
+                    <div class="glass-card rounded-xl p-5">
+                        <div class="flex items-start justify-between mb-2">
+                            <span class="px-2 py-1 rounded-lg bg-[#FF5722]/20 text-[#FF5722] text-xs font-medium">${suc.codigo || 'N/A'}</span>
+                            <button onclick="deleteSucursal('${suc.id}')" class="text-gray-500 hover:text-red-400 transition-colors">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <h3 class="font-display font-bold mb-1">${suc.nombre}</h3>
+                        <p class="text-gray-500 text-sm">${suc.ciudad || ''}</p>
+                        <p class="text-gray-600 text-xs mt-2">${zona?.nombre || 'Sin zona'}</p>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function populateSucursalSelect() {
+            const select = document.getElementById('userSucursal');
+            if (select) {
+                const currentValue = select.value;
+                select.innerHTML = '<option value="">Seleccionar sucursal...</option>' +
+                    sucursales.map(s => `<option value="${s.id}">${s.codigo} - ${s.nombre}</option>`).join('');
+                select.value = currentValue;
+            }
+        }
+
+        function openSucursalModal() {
+            document.getElementById('sucursalForm').reset();
+            document.getElementById('sucursalModal').classList.remove('hidden');
+        }
+
+        function closeSucursalModal() {
+            document.getElementById('sucursalModal').classList.add('hidden');
+        }
+
+        document.getElementById('sucursalForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const data = {
+                codigo: document.getElementById('sucursalCodigo').value.trim().toUpperCase(),
+                nombre: document.getElementById('sucursalNombre').value.trim(),
+                zonaId: document.getElementById('sucursalZona').value,
+                ciudad: document.getElementById('sucursalCiudad').value.trim(),
+                direccion: document.getElementById('sucursalDireccion').value.trim(),
+                creadoPor: currentUser.uid,
+                fechaCreacion: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            try {
+                await db.collection('sucursales').add(data);
+                showToast('Sucursal creada correctamente', 'success');
+                closeSucursalModal();
+                loadSucursales();
+            } catch (error) {
+                showToast('Error al crear sucursal: ' + error.message, 'error');
+            }
+        });
+
+        async function deleteSucursal(id) {
+            if (!confirm('¿Eliminar esta sucursal?')) return;
+
+            try {
+                await db.collection('sucursales').doc(id).delete();
+                showToast('Sucursal eliminada', 'success');
+                loadSucursales();
+            } catch (error) {
+                showToast('Error: ' + error.message, 'error');
+            }
+        }
+
+        // ====== USUARIOS ======
+        async function loadUsuarios() {
+            const snapshot = await db.collection('usuarios').orderBy('nombre').get();
+            usuarios = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            renderUsuarios();
+            updateStats();
+        }
+
+        function renderUsuarios(filtered = null) {
+            const data = filtered || usuarios;
+            const tbody = document.getElementById('usersTableBody');
+            const empty = document.getElementById('emptyState');
+
+            if (data.length === 0) {
+                tbody.innerHTML = '';
+                empty.classList.remove('hidden');
+                return;
+            }
+
+            empty.classList.add('hidden');
+
+            tbody.innerHTML = data.map(user => {
+                const rolBadge = {
+                    director: '<span class="badge badge-director">Director</span>',
+                    cabeza_zona: '<span class="badge badge-cabeza">Cabeza de Zona</span>',
+                    gerente: '<span class="badge badge-gerente">Gerente</span>'
+                }[user.rol] || '<span class="badge bg-gray-500/20 text-gray-400">Sin rol</span>';
+
+                let ubicacion = '-';
+                if (user.rol === 'cabeza_zona') {
+                    const zona = zonas.find(z => z.id === user.zonaId);
+                    ubicacion = zona?.nombre || 'Sin zona';
+                } else if (user.rol === 'gerente') {
+                    const suc = sucursales.find(s => s.id === user.sucursalId);
+                    ubicacion = suc ? `${suc.codigo} - ${suc.nombre}` : 'Sin sucursal';
+                } else if (user.rol === 'director') {
+                    ubicacion = 'Todas';
+                }
+
+                return `
+                    <tr class="table-row border-b border-white/5">
+                        <td class="py-4 px-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-[#FF5722]/20 to-[#E64A19]/20 flex items-center justify-center text-[#FF5722] font-bold">
+                                    ${(user.nombre || 'U').charAt(0).toUpperCase()}
+                                </div>
+                                <div class="min-w-0">
+                                    <p class="font-medium truncate">${user.nombre || 'Sin nombre'}</p>
+                                    <p class="text-sm text-gray-500 truncate">${user.email}</p>
+                                    <div class="sm:hidden mt-1">${rolBadge}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-4 px-4 hidden sm:table-cell">${rolBadge}</td>
+                        <td class="py-4 px-4 hidden md:table-cell text-gray-400 text-sm">${ubicacion}</td>
+                        <td class="py-4 px-4 hidden lg:table-cell">
+                            ${user.activo !== false
+                                ? '<span class="flex items-center gap-1 text-green-400 text-sm"><span class="w-2 h-2 rounded-full bg-green-400"></span> Activo</span>'
+                                : '<span class="flex items-center gap-1 text-gray-500 text-sm"><span class="w-2 h-2 rounded-full bg-gray-500"></span> Inactivo</span>'
+                            }
+                        </td>
+                        <td class="py-4 px-4 text-right">
+                            <div class="flex items-center justify-end gap-2">
+                                <button onclick="editUser('${user.id}')" class="p-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition-colors">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                    </svg>
+                                </button>
+                                <button onclick="deleteUser('${user.id}')" class="p-2 rounded-lg hover:bg-red-500/10 text-gray-400 hover:text-red-400 transition-colors">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function updateStats() {
+            document.getElementById('stat-total').textContent = usuarios.length;
+            document.getElementById('stat-directores').textContent = usuarios.filter(u => u.rol === 'director').length;
+            document.getElementById('stat-cabezas').textContent = usuarios.filter(u => u.rol === 'cabeza_zona').length;
+            document.getElementById('stat-gerentes').textContent = usuarios.filter(u => u.rol === 'gerente').length;
+        }
+
+        function filterUsers() {
+            const search = document.getElementById('searchUsers').value.toLowerCase();
+            if (!search) {
+                renderUsuarios();
+                return;
+            }
+            const filtered = usuarios.filter(u =>
+                (u.nombre || '').toLowerCase().includes(search) ||
+                (u.email || '').toLowerCase().includes(search)
+            );
+            renderUsuarios(filtered);
+        }
+
+        // ====== USER MODAL ======
+        function openModal(mode, userId = null) {
+            const form = document.getElementById('userForm');
+            form.reset();
+
+            document.getElementById('zonaField').classList.add('hidden');
+            document.getElementById('sucursalField').classList.add('hidden');
+
+            if (mode === 'crear') {
+                document.getElementById('modalTitle').textContent = 'Nuevo Usuario';
+                document.getElementById('userId').value = '';
+                document.getElementById('passwordField').classList.remove('hidden');
+                document.getElementById('userPassword').required = true;
+            } else {
+                document.getElementById('modalTitle').textContent = 'Editar Usuario';
+                document.getElementById('passwordField').classList.add('hidden');
+                document.getElementById('userPassword').required = false;
+
+                const user = usuarios.find(u => u.id === userId);
+                if (user) {
+                    document.getElementById('userId').value = user.id;
+                    document.getElementById('userName').value = user.nombre || '';
+                    document.getElementById('userEmail').value = user.email || '';
+                    document.getElementById('userRol').value = user.rol || '';
+                    document.getElementById('userActivo').checked = user.activo !== false;
+
+                    onRolChange();
+
+                    if (user.rol === 'cabeza_zona') {
+                        document.getElementById('userZona').value = user.zonaId || '';
+                    } else if (user.rol === 'gerente') {
+                        document.getElementById('userSucursal').value = user.sucursalId || '';
+                    }
+                }
+            }
+
+            document.getElementById('userModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('userModal').classList.add('hidden');
+        }
+
+        function editUser(userId) {
+            openModal('editar', userId);
+        }
+
+        function onRolChange() {
+            const rol = document.getElementById('userRol').value;
+            document.getElementById('zonaField').classList.toggle('hidden', rol !== 'cabeza_zona');
+            document.getElementById('sucursalField').classList.toggle('hidden', rol !== 'gerente');
+        }
+
+        document.getElementById('userForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const userId = document.getElementById('userId').value;
+            const isNew = !userId;
+
+            const data = {
+                nombre: document.getElementById('userName').value.trim(),
+                email: document.getElementById('userEmail').value.trim(),
+                rol: document.getElementById('userRol').value,
+                activo: document.getElementById('userActivo').checked,
+                actualizadoPor: currentUser.uid,
+                fechaActualizacion: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            if (data.rol === 'cabeza_zona') {
+                data.zonaId = document.getElementById('userZona').value;
+                data.sucursalId = null;
+            } else if (data.rol === 'gerente') {
+                data.sucursalId = document.getElementById('userSucursal').value;
+                data.zonaId = null;
+            } else {
+                data.zonaId = null;
+                data.sucursalId = null;
+            }
+
+            try {
+                if (isNew) {
+                    // Create Firebase Auth user
+                    const password = document.getElementById('userPassword').value;
+
+                    // Use secondary auth to create user without logging out admin
+                    const secondaryApp = firebase.initializeApp(firebaseConfig, 'Secondary');
+                    const secondaryAuth = secondaryApp.auth();
+
+                    const userCredential = await secondaryAuth.createUserWithEmailAndPassword(data.email, password);
+                    await userCredential.user.updateProfile({ displayName: data.nombre });
+
+                    // Save to Firestore
+                    data.uid = userCredential.user.uid;
+                    data.creadoPor = currentUser.uid;
+                    data.fechaCreacion = firebase.firestore.FieldValue.serverTimestamp();
+
+                    await db.collection('usuarios').doc(userCredential.user.uid).set(data);
+
+                    // Sign out from secondary and delete app
+                    await secondaryAuth.signOut();
+                    await secondaryApp.delete();
+
+                    showToast('Usuario creado correctamente', 'success');
+                } else {
+                    await db.collection('usuarios').doc(userId).update(data);
+                    showToast('Usuario actualizado', 'success');
+                }
+
+                closeModal();
+                loadUsuarios();
+            } catch (error) {
+                console.error(error);
+                let msg = 'Error al guardar usuario';
+                if (error.code === 'auth/email-already-in-use') {
+                    msg = 'Este correo ya está registrado';
+                } else if (error.code === 'auth/weak-password') {
+                    msg = 'La contraseña es muy débil (mínimo 6 caracteres)';
+                }
+                showToast(msg, 'error');
+            }
+        });
+
+        async function deleteUser(userId) {
+            if (!confirm('¿Eliminar este usuario? Esta acción no se puede deshacer.')) return;
+
+            try {
+                await db.collection('usuarios').doc(userId).delete();
+                showToast('Usuario eliminado', 'success');
+                loadUsuarios();
+            } catch (error) {
+                showToast('Error: ' + error.message, 'error');
+            }
+        }
+
+        // ====== TOAST ======
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+
+            toastMessage.textContent = message;
+            toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-xl text-white font-medium z-50 transition-all transform ${
+                type === 'success' ? 'bg-green-500' : 'bg-red-500'
+            }`;
+
+            toast.classList.remove('hidden', 'translate-y-10', 'opacity-0');
+
+            setTimeout(() => {
+                toast.classList.add('translate-y-10', 'opacity-0');
+                setTimeout(() => toast.classList.add('hidden'), 300);
+            }, 3000);
+        }
+
+        // ====== INIT ======
+        // Create initial director user if needed (run once)
+        async function initFirstDirector() {
+            const snapshot = await db.collection('usuarios').where('rol', '==', 'director').get();
+            if (snapshot.empty && currentUser) {
+                await db.collection('usuarios').doc(currentUser.uid).set({
+                    uid: currentUser.uid,
+                    email: currentUser.email,
+                    nombre: currentUser.displayName || 'Director',
+                    rol: 'director',
+                    activo: true,
+                    fechaCreacion: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                loadUsuarios();
+            }
+        }
+    </script>
+</body>
+</html>
