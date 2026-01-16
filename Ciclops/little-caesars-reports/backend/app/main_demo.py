@@ -174,10 +174,11 @@ Analiza y mapea estos campos."""
 
 
 @app.post("/upload")
-async def upload_file(file: UploadFile = File(...), skip_ai: bool = False):
+async def upload_file(file: UploadFile = File(...)):
     """
-    Sube un archivo Excel/CSV/PDF y extrae los datos
-    - skip_ai: Si True, no ejecuta análisis AI (más rápido para archivos grandes)
+    Sube un archivo Excel/CSV/PDF y extrae los datos.
+    NO hace análisis AI - solo importa rápido.
+    Usa /upload/analyze/{doc_id} para analizar después bajo demanda.
     """
     try:
         # Validar tipo de archivo
@@ -192,12 +193,7 @@ async def upload_file(file: UploadFile = File(...), skip_ai: bool = False):
         # Leer contenido
         content = await file.read()
         file_size_mb = len(content) / (1024 * 1024)
-        print(f"📁 Procesando archivo: {file.filename} ({file_size_mb:.2f} MB)")
-
-        # Auto-skip AI para archivos grandes (> 5MB)
-        if file_size_mb > 5:
-            print(f"⚠️ Archivo grande detectado, desactivando AI analysis")
-            skip_ai = True
+        print(f"📁 Importando archivo: {file.filename} ({file_size_mb:.2f} MB)")
 
         # Parsear según tipo
         is_pdf = filename.endswith('.pdf')
@@ -205,8 +201,6 @@ async def upload_file(file: UploadFile = File(...), skip_ai: bool = False):
         if is_pdf:
             # Extraer texto del PDF
             pdf_text = extract_text_from_pdf(content)
-
-            # Crear un "dataframe" simple con el contenido
             lines = [line.strip() for line in pdf_text.split('\n') if line.strip()]
             df = pd.DataFrame({"contenido": lines})
             data = df.to_dict(orient='records')
@@ -229,9 +223,10 @@ async def upload_file(file: UploadFile = File(...), skip_ai: bool = False):
                 "raw_text": pdf_text
             })
 
+            print(f"✅ PDF importado: {len(lines)} líneas")
             return {
                 "success": True,
-                "message": f"PDF '{file.filename}' procesado",
+                "message": f"PDF '{file.filename}' importado",
                 "sheets_count": 1,
                 "documents": [doc_info]
             }
@@ -245,7 +240,7 @@ async def upload_file(file: UploadFile = File(...), skip_ai: bool = False):
                 print(f"📊 Leyendo hojas del Excel...")
                 excel_file = pd.ExcelFile(BytesIO(content))
                 sheet_names = excel_file.sheet_names
-                print(f"📋 Hojas encontradas: {len(sheet_names)} - {sheet_names[:5]}{'...' if len(sheet_names) > 5 else ''}")
+                print(f"📋 {len(sheet_names)} hojas encontradas")
 
                 sheets_data = {}
                 for sheet_name in sheet_names:
@@ -254,20 +249,14 @@ async def upload_file(file: UploadFile = File(...), skip_ai: bool = False):
                         if not df.empty and len(df.columns) > 0:
                             sheets_data[sheet_name] = df
                     except Exception as e:
-                        print(f"⚠️ Error leyendo hoja '{sheet_name}': {e}")
+                        print(f"⚠️ Error en hoja '{sheet_name}': {e}")
                         continue
 
-            # Procesar cada hoja
+            # Procesar cada hoja (sin AI - solo importar)
             documents_created = []
             total_sheets = len(sheets_data)
 
-            # Limitar AI analysis a máximo 3 hojas para evitar timeout
-            max_ai_sheets = 3 if not skip_ai else 0
-            ai_processed = 0
-
             for idx, (sheet_name, df) in enumerate(sheets_data.items()):
-                print(f"  → Procesando hoja {idx+1}/{total_sheets}: {sheet_name}")
-
                 df.columns = [str(col).strip() for col in df.columns]
                 df = df.dropna(how='all')
 
@@ -277,17 +266,6 @@ async def upload_file(file: UploadFile = File(...), skip_ai: bool = False):
                 data = df.to_dict(orient='records')
                 columns = list(df.columns)
 
-                # Solo analizar con AI las primeras N hojas para evitar timeout
-                ai_analysis = None
-                if not skip_ai and ai_processed < max_ai_sheets and len(df) < 10000:
-                    try:
-                        print(f"    🤖 Analizando con AI...")
-                        ai_analysis = await analyze_fields_with_ai(data, columns, f"{file.filename} - {sheet_name}")
-                        ai_processed += 1
-                    except Exception as e:
-                        print(f"    ⚠️ AI analysis failed: {e}")
-                        ai_analysis = None
-
                 doc_info = {
                     "id": len(documents_store) + 1,
                     "filename": f"{file.filename}" if total_sheets == 1 else f"{file.filename} [{sheet_name}]",
@@ -296,7 +274,7 @@ async def upload_file(file: UploadFile = File(...), skip_ai: bool = False):
                     "rows": len(df),
                     "columns": columns,
                     "preview": data[:5],
-                    "ai_analysis": ai_analysis,
+                    "ai_analysis": None,  # Se analiza después bajo demanda
                     "status": "uploaded"
                 }
 
@@ -311,13 +289,12 @@ async def upload_file(file: UploadFile = File(...), skip_ai: bool = False):
             if not documents_created:
                 raise HTTPException(status_code=400, detail="No se encontraron datos válidos en el archivo")
 
-            print(f"✅ Procesado: {len(documents_created)} hojas, {ai_processed} con AI")
+            print(f"✅ Importado: {len(documents_created)} hojas")
 
             return {
                 "success": True,
-                "message": f"Archivo '{file.filename}' procesado - {len(documents_created)} hoja(s)",
+                "message": f"'{file.filename}' importado - {len(documents_created)} hoja(s)",
                 "sheets_count": len(documents_created),
-                "ai_analyzed": ai_processed,
                 "documents": documents_created
             }
 
