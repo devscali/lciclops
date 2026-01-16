@@ -1,0 +1,188 @@
+/**
+ * Elena: "Estilos globales con el tema Little Caesars"
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply bg-lc-gray-50 text-lc-gray-900 font-sans antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display font-semibold;
+  }
+}
+
+@layer components {
+  /* Buttons */
+  .btn {
+    @apply inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-primary {
+    @apply btn bg-lc-orange-500 text-white hover:bg-lc-orange-600 focus:ring-lc-orange-500;
+  }
+
+  .btn-secondary {
+    @apply btn border-2 border-lc-orange-500 text-lc-orange-500 bg-white hover:bg-lc-orange-50 focus:ring-lc-orange-500;
+  }
+
+  .btn-ghost {
+    @apply btn text-lc-orange-500 hover:bg-lc-gray-100 focus:ring-lc-orange-500;
+  }
+
+  .btn-danger {
+    @apply btn bg-error text-white hover:bg-red-600 focus:ring-error;
+  }
+
+  /* Cards */
+  .card {
+    @apply bg-white rounded-card shadow-card p-6 transition-shadow duration-200 hover:shadow-card-hover;
+  }
+
+  /* Inputs */
+  .input {
+    @apply w-full px-4 py-2 border border-lc-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-lc-orange-500 focus:border-lc-orange-500 transition-colors;
+  }
+
+  .input-error {
+    @apply input border-error focus:ring-error focus:border-error;
+  }
+
+  .label {
+    @apply block text-sm font-medium text-lc-gray-700 mb-1;
+  }
+
+  /* KPI Cards */
+  .kpi-card {
+    @apply card flex flex-col;
+  }
+
+  .kpi-value {
+    @apply text-3xl font-bold text-lc-gray-900 font-mono;
+  }
+
+  .kpi-label {
+    @apply text-sm text-lc-gray-500 uppercase tracking-wide mt-1;
+  }
+
+  .kpi-trend {
+    @apply text-sm font-medium mt-2;
+  }
+
+  .kpi-trend-up {
+    @apply kpi-trend text-success;
+  }
+
+  .kpi-trend-down {
+    @apply kpi-trend text-error;
+  }
+
+  /* Tables */
+  .table-container {
+    @apply overflow-x-auto;
+  }
+
+  .table {
+    @apply w-full text-left;
+  }
+
+  .table th {
+    @apply px-4 py-3 bg-lc-gray-100 text-sm font-semibold text-lc-gray-700 uppercase tracking-wider;
+  }
+
+  .table td {
+    @apply px-4 py-3 text-sm text-lc-gray-900 border-b border-lc-gray-100;
+  }
+
+  .table tr:hover td {
+    @apply bg-lc-orange-50;
+  }
+
+  /* Alerts */
+  .alert {
+    @apply p-4 rounded-lg flex items-start gap-3;
+  }
+
+  .alert-info {
+    @apply alert bg-blue-50 text-blue-800;
+  }
+
+  .alert-warning {
+    @apply alert bg-amber-50 text-amber-800;
+  }
+
+  .alert-error {
+    @apply alert bg-red-50 text-red-800;
+  }
+
+  .alert-success {
+    @apply alert bg-green-50 text-green-800;
+  }
+
+  /* Drop zone */
+  .dropzone {
+    @apply border-2 border-dashed border-lc-gray-300 rounded-card p-8 text-center cursor-pointer transition-colors hover:border-lc-orange-500 hover:bg-lc-orange-50;
+  }
+
+  .dropzone-active {
+    @apply border-lc-orange-500 bg-lc-orange-50;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    @apply fixed left-0 top-0 h-full w-64 bg-white shadow-lg z-40;
+  }
+
+  .sidebar-link {
+    @apply flex items-center gap-3 px-4 py-3 text-lc-gray-600 hover:bg-lc-orange-50 hover:text-lc-orange-500 transition-colors;
+  }
+
+  .sidebar-link-active {
+    @apply sidebar-link bg-lc-orange-50 text-lc-orange-500 border-r-4 border-lc-orange-500;
+  }
+}
+
+@layer utilities {
+  /* Money formatting */
+  .money-positive {
+    @apply text-success font-medium;
+  }
+
+  .money-negative {
+    @apply text-error font-medium;
+  }
+
+  /* Scrollbar styling */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: theme('colors.lc.gray.300') transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: theme('colors.lc.gray.300');
+    border-radius: 3px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background-color: theme('colors.lc.gray.400');
+  }
+}
