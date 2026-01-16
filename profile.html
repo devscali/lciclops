@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Little Caesars Reports - Mi Perfil</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'lc-orange': {
+                            50: '#fff7ed',
+                            100: '#ffedd5',
+                            200: '#fed7aa',
+                            300: '#fdba74',
+                            400: '#fb923c',
+                            500: '#f97316',
+                            600: '#ea580c',
+                            700: '#c2410c',
+                            800: '#9a3412',
+                            900: '#7c2d12',
+                        },
+                        'lc-gray': {
+                            50: '#f9fafb',
+                            100: '#f3f4f6',
+                            200: '#e5e7eb',
+                            300: '#d1d5db',
+                            400: '#9ca3af',
+                            500: '#6b7280',
+                            600: '#4b5563',
+                            700: '#374151',
+                            800: '#1f2937',
+                            900: '#111827',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        /* Smooth scroll on iOS */
+        html { -webkit-overflow-scrolling: touch; }
+        /* Better touch targets */
+        button, input { min-height: 44px; }
+        input { font-size: 16px !important; }
+    </style>
+</head>
+<body class="min-h-screen bg-lc-gray-50">
+    <!-- Header -->
+    <header class="bg-white shadow-sm">
+        <div class="max-w-2xl mx-auto px-4 py-3 sm:py-4 flex items-center justify-between">
+            <a href="index.html" class="flex items-center gap-2 text-lc-gray-600 hover:text-lc-orange-500 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+                Volver al inicio
+            </a>
+            <button id="logoutBtn" class="text-sm text-red-500 hover:text-red-600 font-medium">
+                Cerrar sesion
+            </button>
+        </div>
+    </header>
+
+    <div class="max-w-2xl mx-auto px-4 py-6 sm:py-8">
+        <h1 class="text-xl sm:text-2xl font-bold text-lc-gray-900 mb-6 sm:mb-8">Mi Perfil</h1>
+
+        <!-- Alert Container -->
+        <div id="alertContainer" class="hidden mb-6 p-4 rounded-lg"></div>
+
+        <!-- Profile Info Card -->
+        <div class="bg-white rounded-2xl shadow-sm p-4 sm:p-6 mb-4 sm:mb-6">
+            <div class="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
+                <div id="userAvatar" class="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-lc-orange-100 flex items-center justify-center text-2xl sm:text-3xl font-bold text-lc-orange-500 flex-shrink-0">
+                    ?
+                </div>
+                <div class="min-w-0 flex-1">
+                    <h2 id="userName" class="text-lg sm:text-xl font-semibold text-lc-gray-900 truncate">Cargando...</h2>
+                    <p id="userEmail" class="text-lc-gray-500 text-sm sm:text-base truncate">...</p>
+                    <div id="verificationBadge" class="mt-2"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Update Name -->
+        <div class="bg-white rounded-2xl shadow-sm p-4 sm:p-6 mb-4 sm:mb-6">
+            <h3 class="text-lg font-semibold text-lc-gray-900 mb-4">Cambiar nombre</h3>
+            <form id="nameForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-lc-gray-700 mb-2">Nombre completo</label>
+                    <input
+                        type="text"
+                        id="newName"
+                        class="w-full px-4 py-3 border border-lc-gray-200 rounded-lg focus:ring-2 focus:ring-lc-orange-500 focus:border-transparent outline-none"
+                        required
+                    >
+                </div>
+                <button type="submit" class="w-full sm:w-auto px-6 py-3 sm:py-2 bg-lc-orange-500 hover:bg-lc-orange-600 text-white rounded-lg font-medium transition-colors">
+                    Guardar nombre
+                </button>
+            </form>
+        </div>
+
+        <!-- Update Email -->
+        <div class="bg-white rounded-2xl shadow-sm p-4 sm:p-6 mb-4 sm:mb-6">
+            <h3 class="text-lg font-semibold text-lc-gray-900 mb-2">Cambiar correo electronico</h3>
+            <p class="text-sm text-lc-gray-500 mb-4">Para cambiar tu correo necesitas confirmar tu contrasena actual</p>
+            <form id="emailForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-lc-gray-700 mb-2">Nuevo correo electronico</label>
+                    <input
+                        type="email"
+                        id="newEmail"
+                        class="w-full px-4 py-3 border border-lc-gray-200 rounded-lg focus:ring-2 focus:ring-lc-orange-500 focus:border-transparent outline-none"
+                        required
+                    >
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-lc-gray-700 mb-2">Contrasena actual</label>
+                    <input
+                        type="password"
+                        id="currentPasswordEmail"
+                        class="w-full px-4 py-3 border border-lc-gray-200 rounded-lg focus:ring-2 focus:ring-lc-orange-500 focus:border-transparent outline-none"
+                        required
+                    >
+                </div>
+                <button type="submit" class="w-full sm:w-auto px-6 py-3 sm:py-2 bg-lc-orange-500 hover:bg-lc-orange-600 text-white rounded-lg font-medium transition-colors">
+                    Cambiar correo
+                </button>
+            </form>
+        </div>
+
+        <!-- Update Password -->
+        <div class="bg-white rounded-2xl shadow-sm p-4 sm:p-6 mb-4 sm:mb-6">
+            <h3 class="text-lg font-semibold text-lc-gray-900 mb-2">Cambiar contrasena</h3>
+            <p class="text-sm text-lc-gray-500 mb-4">Ingresa tu contrasena actual y la nueva contrasena</p>
+            <form id="passwordForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-lc-gray-700 mb-2">Contrasena actual</label>
+                    <input
+                        type="password"
+                        id="currentPassword"
+                        class="w-full px-4 py-3 border border-lc-gray-200 rounded-lg focus:ring-2 focus:ring-lc-orange-500 focus:border-transparent outline-none"
+                        required
+                    >
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-lc-gray-700 mb-2">Nueva contrasena</label>
+                    <input
+                        type="password"
+                        id="newPassword"
+                        minlength="6"
+                        class="w-full px-4 py-3 border border-lc-gray-200 rounded-lg focus:ring-2 focus:ring-lc-orange-500 focus:border-transparent outline-none"
+                        required
+                    >
+                    <p class="text-xs text-lc-gray-500 mt-1">Minimo 6 caracteres</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-lc-gray-700 mb-2">Confirmar nueva contrasena</label>
+                    <input
+                        type="password"
+                        id="confirmNewPassword"
+                        class="w-full px-4 py-3 border border-lc-gray-200 rounded-lg focus:ring-2 focus:ring-lc-orange-500 focus:border-transparent outline-none"
+                        required
+                    >
+                </div>
+                <button type="submit" class="w-full sm:w-auto px-6 py-3 sm:py-2 bg-lc-orange-500 hover:bg-lc-orange-600 text-white rounded-lg font-medium transition-colors">
+                    Cambiar contrasena
+                </button>
+            </form>
+        </div>
+
+        <!-- Resend Verification -->
+        <div id="verificationSection" class="hidden bg-yellow-50 rounded-2xl border border-yellow-200 p-4 sm:p-6 mb-4 sm:mb-6">
+            <h3 class="text-lg font-semibold text-yellow-800 mb-2">Verificar correo electronico</h3>
+            <p class="text-sm text-yellow-700 mb-4">Tu correo aun no esta verificado. Verifica tu correo para acceder a todas las funciones.</p>
+            <button id="resendVerification" class="w-full sm:w-auto px-6 py-3 sm:py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg font-medium transition-colors">
+                Reenviar correo de verificacion
+            </button>
+        </div>
+
+        <!-- Danger Zone -->
+        <div class="bg-red-50 rounded-2xl border border-red-200 p-4 sm:p-6">
+            <h3 class="text-lg font-semibold text-red-800 mb-2">Zona de peligro</h3>
+            <p class="text-sm text-red-700 mb-4">Una vez que elimines tu cuenta, no hay vuelta atras. Ten cuidado.</p>
+            <button id="deleteAccountBtn" class="w-full sm:w-auto px-6 py-3 sm:py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors">
+                Eliminar mi cuenta
+            </button>
+        </div>
+    </div>
+
+    <!-- Delete Account Modal -->
+    <div id="deleteModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl p-6 max-w-md w-full">
+            <h3 class="text-xl font-bold text-lc-gray-900 mb-2">Eliminar cuenta</h3>
+            <p class="text-lc-gray-600 mb-4">Esta accion es permanente. Para confirmar, ingresa tu contrasena:</p>
+            <form id="deleteForm">
+                <input
+                    type="password"
+                    id="deletePassword"
+                    placeholder="Tu contrasena"
+                    class="w-full px-4 py-3 border border-lc-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none mb-4"
+                    required
+                >
+                <div class="flex gap-3">
+                    <button type="button" id="cancelDelete" class="flex-1 px-4 py-2 border border-lc-gray-200 rounded-lg hover:bg-lc-gray-50 transition-colors">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="flex-1 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors">
+                        Eliminar cuenta
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+
+    <script>
+        // Firebase Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyBL8-hBMJR6NlnXN6rWwS8WVcrdMm7m4rY",
+            authDomain: "ciclops-8a2de.firebaseapp.com",
+            projectId: "ciclops-8a2de",
+            storageBucket: "ciclops-8a2de.firebasestorage.app",
+            messagingSenderId: "475876958824",
+            appId: "1:475876958824:web:5ecc315220c66fdd56d1dd"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        // Helper functions
+        function showAlert(message, type = 'success') {
+            const container = document.getElementById('alertContainer');
+            container.className = `mb-6 p-4 rounded-lg ${type === 'success' ? 'bg-green-50 border border-green-200 text-green-800' : 'bg-red-50 border border-red-200 text-red-800'}`;
+            container.textContent = message;
+            container.classList.remove('hidden');
+            setTimeout(() => container.classList.add('hidden'), 5000);
+        }
+
+        function getInitials(name) {
+            if (!name) return '?';
+            return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+        }
+
+        // Re-authenticate user (required for sensitive operations)
+        async function reauthenticate(password) {
+            const user = auth.currentUser;
+            const credential = firebase.auth.EmailAuthProvider.credential(user.email, password);
+            return user.reauthenticateWithCredential(credential);
+        }
+
+        // Load user data
+        function loadUserData(user) {
+            document.getElementById('userName').textContent = user.displayName || 'Sin nombre';
+            document.getElementById('userEmail').textContent = user.email;
+            document.getElementById('userAvatar').textContent = getInitials(user.displayName);
+            document.getElementById('newName').value = user.displayName || '';
+
+            // Verification badge
+            const badge = document.getElementById('verificationBadge');
+            if (user.emailVerified) {
+                badge.innerHTML = '<span class="inline-flex items-center gap-1 text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>Verificado</span>';
+                document.getElementById('verificationSection').classList.add('hidden');
+            } else {
+                badge.innerHTML = '<span class="inline-flex items-center gap-1 text-xs text-yellow-600 bg-yellow-100 px-2 py-1 rounded-full"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>Sin verificar</span>';
+                document.getElementById('verificationSection').classList.remove('hidden');
+            }
+        }
+
+        // Auth state
+        auth.onAuthStateChanged(function(user) {
+            if (!user) {
+                window.location.href = 'login.html';
+                return;
+            }
+            loadUserData(user);
+        });
+
+        // Update name
+        document.getElementById('nameForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const newName = document.getElementById('newName').value.trim();
+
+            try {
+                await auth.currentUser.updateProfile({ displayName: newName });
+                loadUserData(auth.currentUser);
+                showAlert('Nombre actualizado correctamente');
+            } catch (error) {
+                showAlert('Error al actualizar el nombre: ' + error.message, 'error');
+            }
+        });
+
+        // Update email
+        document.getElementById('emailForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const newEmail = document.getElementById('newEmail').value.trim();
+            const password = document.getElementById('currentPasswordEmail').value;
+
+            try {
+                await reauthenticate(password);
+                await auth.currentUser.verifyBeforeUpdateEmail(newEmail);
+                showAlert(`Te enviamos un correo de verificacion a ${newEmail}. Confirma el cambio desde tu nuevo correo.`);
+                document.getElementById('emailForm').reset();
+            } catch (error) {
+                let msg = 'Error al cambiar el correo';
+                if (error.code === 'auth/wrong-password') msg = 'Contrasena incorrecta';
+                if (error.code === 'auth/email-already-in-use') msg = 'Este correo ya esta en uso';
+                if (error.code === 'auth/invalid-email') msg = 'El correo no es valido';
+                if (error.code === 'auth/requires-recent-login') msg = 'Necesitas volver a iniciar sesion para hacer este cambio';
+                showAlert(msg, 'error');
+            }
+        });
+
+        // Update password
+        document.getElementById('passwordForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmNewPassword = document.getElementById('confirmNewPassword').value;
+
+            if (newPassword !== confirmNewPassword) {
+                showAlert('Las contrasenas no coinciden', 'error');
+                return;
+            }
+
+            if (newPassword.length < 6) {
+                showAlert('La contrasena debe tener al menos 6 caracteres', 'error');
+                return;
+            }
+
+            try {
+                await reauthenticate(currentPassword);
+                await auth.currentUser.updatePassword(newPassword);
+                showAlert('Contrasena actualizada correctamente');
+                document.getElementById('passwordForm').reset();
+            } catch (error) {
+                let msg = 'Error al cambiar la contrasena';
+                if (error.code === 'auth/wrong-password') msg = 'Contrasena actual incorrecta';
+                if (error.code === 'auth/weak-password') msg = 'La nueva contrasena es muy debil';
+                if (error.code === 'auth/requires-recent-login') msg = 'Necesitas volver a iniciar sesion para hacer este cambio';
+                showAlert(msg, 'error');
+            }
+        });
+
+        // Resend verification
+        document.getElementById('resendVerification').addEventListener('click', async function() {
+            try {
+                await auth.currentUser.sendEmailVerification();
+                showAlert('Correo de verificacion enviado. Revisa tu bandeja de entrada.');
+            } catch (error) {
+                showAlert('Error al enviar el correo: ' + error.message, 'error');
+            }
+        });
+
+        // Delete account
+        const deleteModal = document.getElementById('deleteModal');
+        document.getElementById('deleteAccountBtn').addEventListener('click', () => deleteModal.classList.remove('hidden'));
+        document.getElementById('cancelDelete').addEventListener('click', () => deleteModal.classList.add('hidden'));
+
+        document.getElementById('deleteForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const password = document.getElementById('deletePassword').value;
+
+            try {
+                await reauthenticate(password);
+                await auth.currentUser.delete();
+                window.location.href = 'login.html';
+            } catch (error) {
+                let msg = 'Error al eliminar la cuenta';
+                if (error.code === 'auth/wrong-password') msg = 'Contrasena incorrecta';
+                showAlert(msg, 'error');
+                deleteModal.classList.add('hidden');
+            }
+        });
+
+        // Logout
+        document.getElementById('logoutBtn').addEventListener('click', async function() {
+            await auth.signOut();
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('userEmail');
+            window.location.href = 'login.html';
+        });
+    </script>
+</body>
+</html>

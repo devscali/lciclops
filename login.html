@@ -42,6 +42,10 @@
     </script>
     <style>
         body { font-family: 'Inter', sans-serif; }
+        html { -webkit-overflow-scrolling: touch; }
+        button, input { min-height: 44px; }
+        /* Fix iOS zoom on input focus */
+        input { font-size: 16px !important; }
     </style>
 </head>
 <body class="min-h-screen bg-gradient-to-br from-lc-orange-50 to-white flex items-center justify-center p-4">
@@ -126,7 +130,7 @@
                         <input type="checkbox" class="w-4 h-4 rounded border-lc-gray-300 text-lc-orange-500 focus:ring-lc-orange-500">
                         <span class="text-lc-gray-600">Recordarme</span>
                     </label>
-                    <a href="#" class="text-lc-orange-500 hover:text-lc-orange-600 font-medium">Olvide mi contrasena</a>
+                    <a href="forgot-password.html" class="text-lc-orange-500 hover:text-lc-orange-600 font-medium">Olvide mi contrasena</a>
                 </div>
 
                 <!-- Submit Button -->
@@ -171,7 +175,7 @@
             <!-- Register Link -->
             <p class="text-center text-sm text-lc-gray-500 mt-6">
                 No tienes cuenta?
-                <a href="#" class="text-lc-orange-500 hover:text-lc-orange-600 font-medium">Registrate aqui</a>
+                <a href="register.html" class="text-lc-orange-500 hover:text-lc-orange-600 font-medium">Registrate aqui</a>
             </p>
         </div>
 
@@ -179,21 +183,36 @@
         <p class="text-center text-xs text-lc-gray-400 mt-8">Little Caesars Reports v1.0</p>
     </div>
 
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+
     <script>
-        // Toggle password visibility
+        // ============================================
+        // FIREBASE CONFIG - Actualiza con tus credenciales reales
+        // Obtener de: Firebase Console > Project Settings > General > Your apps
+        // ============================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyBL8-hBMJR6NlnXN6rWwS8WVcrdMm7m4rY",
+            authDomain: "ciclops-8a2de.firebaseapp.com",
+            projectId: "ciclops-8a2de",
+            storageBucket: "ciclops-8a2de.firebasestorage.app",
+            messagingSenderId: "475876958824",
+            appId: "1:475876958824:web:5ecc315220c66fdd56d1dd"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const googleProvider = new firebase.auth.GoogleAuthProvider();
+
+        // ============================================
+        // UI Elements
+        // ============================================
         const togglePassword = document.getElementById('togglePassword');
         const password = document.getElementById('password');
         const eyeIcon = document.getElementById('eyeIcon');
         const eyeOffIcon = document.getElementById('eyeOffIcon');
-
-        togglePassword.addEventListener('click', function() {
-            const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
-            password.setAttribute('type', type);
-            eyeIcon.classList.toggle('hidden');
-            eyeOffIcon.classList.toggle('hidden');
-        });
-
-        // Form submission
         const loginForm = document.getElementById('loginForm');
         const submitBtn = document.getElementById('submitBtn');
         const btnText = document.getElementById('btnText');
@@ -201,27 +220,121 @@
         const errorAlert = document.getElementById('errorAlert');
         const errorMessage = document.getElementById('errorMessage');
 
-        loginForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-
-            // Show loading state
-            btnText.textContent = 'Iniciando...';
-            spinner.classList.remove('hidden');
-            submitBtn.disabled = true;
-
-            // Simulate login (replace with actual Firebase auth)
-            setTimeout(function() {
-                // Redirect to dashboard
-                window.location.href = 'index.html';
-            }, 1500);
+        // Toggle password visibility
+        togglePassword.addEventListener('click', function() {
+            const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+            password.setAttribute('type', type);
+            eyeIcon.classList.toggle('hidden');
+            eyeOffIcon.classList.toggle('hidden');
         });
 
-        // Google login
-        document.getElementById('googleBtn').addEventListener('click', function() {
-            // Simulate Google login
-            setTimeout(function() {
+        // Show error
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorAlert.classList.remove('hidden');
+            btnText.textContent = 'Iniciar Sesion';
+            spinner.classList.add('hidden');
+            submitBtn.disabled = false;
+        }
+
+        // Hide error
+        function hideError() {
+            errorAlert.classList.add('hidden');
+        }
+
+        // Set loading state
+        function setLoading(loading) {
+            if (loading) {
+                btnText.textContent = 'Iniciando...';
+                spinner.classList.remove('hidden');
+                submitBtn.disabled = true;
+            } else {
+                btnText.textContent = 'Iniciar Sesion';
+                spinner.classList.add('hidden');
+                submitBtn.disabled = false;
+            }
+        }
+
+        // ============================================
+        // Login with Email/Password
+        // ============================================
+        loginForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            hideError();
+            setLoading(true);
+
+            const email = document.getElementById('email').value;
+            const pwd = document.getElementById('password').value;
+
+            try {
+                const userCredential = await auth.signInWithEmailAndPassword(email, pwd);
+
+                // Verificar que el email este verificado
+                if (!userCredential.user.emailVerified) {
+                    // Ofrecer reenviar verificacion
+                    await userCredential.user.sendEmailVerification();
+                    await auth.signOut();
+                    showError('Tu correo no esta verificado. Te reenviamos el correo de verificacion. Revisa tu bandeja de entrada y spam.');
+                    return;
+                }
+
+                const token = await userCredential.user.getIdToken();
+                localStorage.setItem('authToken', token);
+                localStorage.setItem('userEmail', userCredential.user.email);
+                localStorage.setItem('userName', userCredential.user.displayName || '');
                 window.location.href = 'index.html';
-            }, 1000);
+            } catch (error) {
+                console.error('Login error:', error);
+                let msg = 'Error al iniciar sesion';
+                switch (error.code) {
+                    case 'auth/user-not-found':
+                        msg = 'Usuario no encontrado';
+                        break;
+                    case 'auth/wrong-password':
+                        msg = 'Contrasena incorrecta';
+                        break;
+                    case 'auth/invalid-email':
+                        msg = 'Email invalido';
+                        break;
+                    case 'auth/too-many-requests':
+                        msg = 'Demasiados intentos. Intenta mas tarde';
+                        break;
+                    case 'auth/invalid-credential':
+                        msg = 'Credenciales invalidas';
+                        break;
+                }
+                showError(msg);
+            }
+        });
+
+        // ============================================
+        // Login with Google
+        // ============================================
+        document.getElementById('googleBtn').addEventListener('click', async function() {
+            hideError();
+
+            try {
+                const result = await auth.signInWithPopup(googleProvider);
+                const token = await result.user.getIdToken();
+                localStorage.setItem('authToken', token);
+                localStorage.setItem('userEmail', result.user.email);
+                window.location.href = 'index.html';
+            } catch (error) {
+                console.error('Google login error:', error);
+                if (error.code !== 'auth/popup-closed-by-user') {
+                    showError('Error al iniciar con Google: ' + error.message);
+                }
+            }
+        });
+
+        // ============================================
+        // Check if already logged in
+        // ============================================
+        auth.onAuthStateChanged(function(user) {
+            if (user && user.emailVerified) {
+                // User is already logged in AND verified, redirect to dashboard
+                window.location.href = 'index.html';
+            }
         });
     </script>
 </body>

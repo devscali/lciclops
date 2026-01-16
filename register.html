@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Little Caesars Reports - Registro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'lc-orange': {
+                            50: '#fff7ed',
+                            100: '#ffedd5',
+                            200: '#fed7aa',
+                            300: '#fdba74',
+                            400: '#fb923c',
+                            500: '#f97316',
+                            600: '#ea580c',
+                            700: '#c2410c',
+                            800: '#9a3412',
+                            900: '#7c2d12',
+                        },
+                        'lc-gray': {
+                            50: '#f9fafb',
+                            100: '#f3f4f6',
+                            200: '#e5e7eb',
+                            300: '#d1d5db',
+                            400: '#9ca3af',
+                            500: '#6b7280',
+                            600: '#4b5563',
+                            700: '#374151',
+                            800: '#1f2937',
+                            900: '#111827',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        html { -webkit-overflow-scrolling: touch; }
+        button, input { min-height: 44px; }
+        input { font-size: 16px !important; }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-lc-orange-50 to-white flex items-center justify-center p-4">
+    <div class="w-full max-w-md">
+        <!-- Logo -->
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center p-4 bg-lc-orange-500 rounded-2xl mb-4">
+                <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10" stroke-width="2"/>
+                    <path stroke-width="2" d="M12 2a10 10 0 0 1 0 20M12 2a10 10 0 0 0 0 20M2 12h20M12 2c2.5 2.5 4 6 4 10s-1.5 7.5-4 10M12 2c-2.5 2.5-4 6-4 10s1.5 7.5 4 10"/>
+                </svg>
+            </div>
+            <h1 class="text-2xl font-bold text-lc-gray-900">Crear Cuenta</h1>
+            <p class="text-lc-gray-500 mt-2">Registrate para acceder al sistema</p>
+        </div>
+
+        <!-- Form -->
+        <div class="bg-white rounded-2xl shadow-lg p-8">
+            <!-- Success Alert (hidden by default) -->
+            <div id="successAlert" class="hidden mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div class="flex items-start gap-3">
+                    <svg class="w-5 h-5 text-green-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <div>
+                        <p class="text-sm text-green-800 font-medium">Cuenta creada exitosamente</p>
+                        <p id="successMessage" class="text-sm text-green-700 mt-1"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Error Alert (hidden by default) -->
+            <div id="errorAlert" class="hidden mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+                <svg class="w-5 h-5 text-red-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <p id="errorMessage" class="text-sm text-red-800"></p>
+            </div>
+
+            <form id="registerForm" class="space-y-4">
+                <!-- Name -->
+                <div>
+                    <label class="block text-sm font-medium text-lc-gray-700 mb-2">Nombre completo</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg class="w-5 h-5 text-lc-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                            </svg>
+                        </div>
+                        <input
+                            type="text"
+                            id="displayName"
+                            placeholder="Juan Perez"
+                            class="w-full pl-10 pr-4 py-3 border border-lc-gray-200 rounded-lg focus:ring-2 focus:ring-lc-orange-500 focus:border-transparent outline-none transition-all"
+                            required
+                        >
+                    </div>
+                </div>
+
+                <!-- Email -->
+                <div>
+                    <label class="block text-sm font-medium text-lc-gray-700 mb-2">Correo electronico</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg class="w-5 h-5 text-lc-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                            </svg>
+                        </div>
+                        <input
+                            type="email"
+                            id="email"
+                            placeholder="tu@email.com"
+                            class="w-full pl-10 pr-4 py-3 border border-lc-gray-200 rounded-lg focus:ring-2 focus:ring-lc-orange-500 focus:border-transparent outline-none transition-all"
+                            required
+                        >
+                    </div>
+                </div>
+
+                <!-- Password -->
+                <div>
+                    <label class="block text-sm font-medium text-lc-gray-700 mb-2">Contrasena</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg class="w-5 h-5 text-lc-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                            </svg>
+                        </div>
+                        <input
+                            type="password"
+                            id="password"
+                            placeholder="Minimo 6 caracteres"
+                            class="w-full pl-10 pr-4 py-3 border border-lc-gray-200 rounded-lg focus:ring-2 focus:ring-lc-orange-500 focus:border-transparent outline-none transition-all"
+                            required
+                            minlength="6"
+                        >
+                    </div>
+                    <p class="text-xs text-lc-gray-500 mt-1">Minimo 6 caracteres</p>
+                </div>
+
+                <!-- Confirm Password -->
+                <div>
+                    <label class="block text-sm font-medium text-lc-gray-700 mb-2">Confirmar contrasena</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg class="w-5 h-5 text-lc-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                            </svg>
+                        </div>
+                        <input
+                            type="password"
+                            id="confirmPassword"
+                            placeholder="Repite tu contrasena"
+                            class="w-full pl-10 pr-4 py-3 border border-lc-gray-200 rounded-lg focus:ring-2 focus:ring-lc-orange-500 focus:border-transparent outline-none transition-all"
+                            required
+                        >
+                    </div>
+                </div>
+
+                <!-- Terms -->
+                <div class="flex items-start gap-2">
+                    <input type="checkbox" id="terms" class="w-4 h-4 mt-1 rounded border-lc-gray-300 text-lc-orange-500 focus:ring-lc-orange-500" required>
+                    <label for="terms" class="text-sm text-lc-gray-600">
+                        Acepto los <a href="#" class="text-lc-orange-500 hover:text-lc-orange-600">terminos y condiciones</a> y la <a href="#" class="text-lc-orange-500 hover:text-lc-orange-600">politica de privacidad</a>
+                    </label>
+                </div>
+
+                <!-- Submit Button -->
+                <button
+                    type="submit"
+                    id="submitBtn"
+                    class="w-full bg-lc-orange-500 hover:bg-lc-orange-600 text-white py-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
+                >
+                    <span id="btnText">Crear Cuenta</span>
+                    <svg id="spinner" class="hidden w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </button>
+            </form>
+
+            <!-- Login Link -->
+            <p class="text-center text-sm text-lc-gray-500 mt-6">
+                Ya tienes cuenta?
+                <a href="login.html" class="text-lc-orange-500 hover:text-lc-orange-600 font-medium">Inicia sesion</a>
+            </p>
+        </div>
+
+        <!-- Footer -->
+        <p class="text-center text-xs text-lc-gray-400 mt-8">Little Caesars Reports v1.0</p>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+
+    <script>
+        // Firebase Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyBL8-hBMJR6NlnXN6rWwS8WVcrdMm7m4rY",
+            authDomain: "ciclops-8a2de.firebaseapp.com",
+            projectId: "ciclops-8a2de",
+            storageBucket: "ciclops-8a2de.firebasestorage.app",
+            messagingSenderId: "475876958824",
+            appId: "1:475876958824:web:5ecc315220c66fdd56d1dd"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        // UI Elements
+        const registerForm = document.getElementById('registerForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const btnText = document.getElementById('btnText');
+        const spinner = document.getElementById('spinner');
+        const errorAlert = document.getElementById('errorAlert');
+        const errorMessage = document.getElementById('errorMessage');
+        const successAlert = document.getElementById('successAlert');
+        const successMessage = document.getElementById('successMessage');
+
+        function showError(message) {
+            successAlert.classList.add('hidden');
+            errorMessage.textContent = message;
+            errorAlert.classList.remove('hidden');
+            setLoading(false);
+        }
+
+        function showSuccess(message) {
+            errorAlert.classList.add('hidden');
+            successMessage.textContent = message;
+            successAlert.classList.remove('hidden');
+            setLoading(false);
+        }
+
+        function setLoading(loading) {
+            if (loading) {
+                btnText.textContent = 'Creando cuenta...';
+                spinner.classList.remove('hidden');
+                submitBtn.disabled = true;
+            } else {
+                btnText.textContent = 'Crear Cuenta';
+                spinner.classList.add('hidden');
+                submitBtn.disabled = false;
+            }
+        }
+
+        // Register form
+        registerForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const displayName = document.getElementById('displayName').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            // Validations
+            if (password !== confirmPassword) {
+                showError('Las contrasenas no coinciden');
+                return;
+            }
+
+            if (password.length < 6) {
+                showError('La contrasena debe tener al menos 6 caracteres');
+                return;
+            }
+
+            setLoading(true);
+
+            try {
+                // Create user
+                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+
+                // Update profile with display name
+                await userCredential.user.updateProfile({
+                    displayName: displayName
+                });
+
+                // Send verification email
+                await userCredential.user.sendEmailVerification();
+
+                // Show success
+                showSuccess(`Te enviamos un correo de verificacion a ${email}. Revisa tu bandeja de entrada (y spam) para activar tu cuenta.`);
+
+                // Hide form
+                registerForm.classList.add('hidden');
+
+                // Sign out so they have to verify first
+                await auth.signOut();
+
+            } catch (error) {
+                console.error('Register error:', error);
+                let msg = 'Error al crear la cuenta';
+                switch (error.code) {
+                    case 'auth/email-already-in-use':
+                        msg = 'Este correo ya esta registrado. Intenta iniciar sesion.';
+                        break;
+                    case 'auth/invalid-email':
+                        msg = 'El correo electronico no es valido';
+                        break;
+                    case 'auth/weak-password':
+                        msg = 'La contrasena es muy debil. Usa al menos 6 caracteres.';
+                        break;
+                    case 'auth/operation-not-allowed':
+                        msg = 'El registro con email no esta habilitado. Contacta al administrador.';
+                        break;
+                }
+                showError(msg);
+            }
+        });
+
+        // If already logged in, redirect
+        auth.onAuthStateChanged(function(user) {
+            if (user && user.emailVerified) {
+                window.location.href = 'index.html';
+            }
+        });
+    </script>
+</body>
+</html>
