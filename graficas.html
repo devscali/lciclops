@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Graficas - CICLOPS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Bricolage+Grotesque:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'pizza': '#FF5722',
+                        'pizza-light': '#FF8A65',
+                        'pizza-dark': '#E64A19',
+                        'midnight': '#0a0a0b',
+                        'surface': '#141416',
+                        'surface-2': '#1c1c1f',
+                        'surface-3': '#242428',
+                        'ink': '#ffffff',
+                        'ink-2': '#a1a1a6',
+                        'ink-3': '#636366',
+                        'success': '#34C759',
+                        'warning': '#FF9500',
+                        'danger': '#FF3B30',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        :root { --pizza: #FF5722; --bg: #0a0a0b; }
+        * { font-family: 'Instrument Sans', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+        .font-display { font-family: 'Bricolage Grotesque', serif; letter-spacing: -0.03em; }
+        body { background: var(--bg); min-height: 100vh; }
+
+        .blob {
+            position: fixed; width: 600px; height: 600px;
+            background: radial-gradient(circle, rgba(255,87,34,0.15) 0%, transparent 70%);
+            filter: blur(60px); animation: morph 15s infinite ease-in-out; pointer-events: none; z-index: 0;
+        }
+        @keyframes morph { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(-30px, 50px); } }
+
+        .glass-nav {
+            display: flex; align-items: center; gap: 0.25rem; padding: 0.375rem;
+            background: rgba(255,255,255,0.05); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-radius: 100px; border: 1px solid rgba(255,255,255,0.08);
+            box-shadow: 0 4px 30px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05);
+        }
+
+        .nav-pill {
+            position: relative; padding: 0.625rem 1.125rem; border-radius: 100px;
+            font-weight: 500; font-size: 0.875rem; color: rgba(255,255,255,0.5);
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .nav-pill.active { color: #fff; background: linear-gradient(135deg, #FF5722 0%, #E64A19 100%); box-shadow: 0 2px 12px rgba(255,87,34,0.4); }
+        .nav-pill:not(.active):hover { color: rgba(255,255,255,0.85); background: rgba(255,255,255,0.08); }
+
+        .chart-card {
+            background: linear-gradient(145deg, #18181b 0%, #0f0f11 100%);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 24px; transition: all 0.3s ease;
+        }
+        .chart-card:hover { border-color: rgba(255,87,34,0.2); transform: translateY(-2px); }
+
+        .mobile-nav {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: rgba(10,10,11,0.9); backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255,255,255,0.05); padding: 0.75rem 1rem; z-index: 100; display: none;
+        }
+        @media (max-width: 1024px) { .mobile-nav { display: flex; justify-content: space-around; } .desktop-nav { display: none; } body { padding-bottom: 80px; } }
+
+        /* Light Theme */
+        .theme-light { --bg: #f8f8fa; background: linear-gradient(180deg, #f8f8fa 0%, #f0f0f2 100%) !important; }
+        .theme-light .text-ink { color: #1a1a1a; }
+        .theme-light .text-ink-2 { color: #525252; }
+        .theme-light .text-ink-3 { color: #787878; }
+        .theme-light .chart-card { background: #ffffff; border: 1px solid rgba(0,0,0,0.06); box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.05); }
+        .theme-light .chart-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08), 0 8px 24px rgba(255,87,34,0.08); }
+        .theme-light .bg-surface-2 { background: #ffffff; }
+        .theme-light .bg-surface-3 { background: #f0f0f2; }
+        .theme-light .border-white\/5 { border-color: rgba(0,0,0,0.08); }
+        .theme-light .glass-nav { background: rgba(255,255,255,0.7); border-color: rgba(0,0,0,0.08); box-shadow: 0 4px 30px rgba(0,0,0,0.08); }
+        .theme-light .nav-pill:not(.active) { color: #525252; }
+        .theme-light .nav-pill:not(.active):hover { color: #1a1a1a; background: rgba(0,0,0,0.06); }
+        .theme-light .blob { background: radial-gradient(circle, rgba(255,87,34,0.06) 0%, transparent 70%); filter: blur(80px); }
+        .theme-light .mobile-nav { background: rgba(255,255,255,0.95); border-top-color: rgba(0,0,0,0.08); }
+
+        /* Filter tabs */
+        .filter-btn { padding: 0.5rem 1rem; border-radius: 12px; font-size: 0.875rem; font-weight: 500; color: #636366; transition: all 0.2s; }
+        .filter-btn.active { background: rgba(255,87,34,0.1); color: #FF5722; }
+        .filter-btn:hover:not(.active) { background: rgba(255,255,255,0.05); color: #a1a1a6; }
+        .theme-light .filter-btn:hover:not(.active) { background: rgba(0,0,0,0.04); color: #1a1a1a; }
+    </style>
+</head>
+<body class="text-ink" id="app">
+    <div class="blob -top-48 -right-48"></div>
+    <div class="blob -bottom-48 -left-48" style="animation-delay: -7s;"></div>
+
+    <!-- Desktop Navigation -->
+    <header class="desktop-nav fixed top-0 left-0 right-0 z-50 px-6 py-4">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <a href="index.html" class="flex items-center gap-3 group">
+                <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-pizza to-pizza-dark flex items-center justify-center shadow-lg shadow-pizza/30">
+                    <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/>
+                    </svg>
+                </div>
+                <div>
+                    <span class="font-display text-xl font-bold text-ink">CICLOPS</span>
+                    <span class="block text-[10px] text-ink-3 tracking-[0.2em] uppercase">Little Caesars Intel</span>
+                </div>
+            </a>
+
+            <nav class="glass-nav">
+                <a href="index.html" class="nav-pill"><span class="flex items-center gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>Dashboard</span></a>
+                <a href="upload.html" class="nav-pill"><span class="flex items-center gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Subir</span></a>
+                <a href="graficas.html" class="nav-pill active"><span class="flex items-center gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Graficas</span></a>
+                <a href="julia.html" class="nav-pill"><span class="flex items-center gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Julia</span></a>
+                <a href="documents.html" class="nav-pill"><span class="flex items-center gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>Vault</span></a>
+            </nav>
+
+            <div class="flex items-center gap-3">
+                <button onclick="toggleTheme()" class="w-10 h-10 rounded-xl bg-surface-2 border border-white/5 flex items-center justify-center text-ink-3 hover:text-ink transition-all">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/></svg>
+                </button>
+                <div class="relative">
+                    <button onclick="toggleUserMenu()" class="flex items-center gap-2 p-1 rounded-xl hover:bg-surface-3/50 transition-all" id="userMenuBtn">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-pizza to-pizza-dark flex items-center justify-center text-white font-bold text-sm">LC</div>
+                        <svg class="w-4 h-4 text-ink-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div id="userMenu" class="hidden absolute right-0 top-14 w-56 bg-surface-2 border border-white/10 rounded-2xl shadow-2xl shadow-black/50 overflow-hidden z-50">
+                        <div class="p-4 border-b border-white/5">
+                            <p class="font-semibold text-ink">Little Caesars</p>
+                            <p class="text-sm text-ink-3">admin@lciclops.com</p>
+                        </div>
+                        <div class="p-2">
+                            <a href="settings.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-ink-2 hover:bg-surface-3/50 hover:text-ink transition-all">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                                Configuracion
+                            </a>
+                        </div>
+                        <div class="p-2 border-t border-white/5">
+                            <button onclick="logout()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-danger hover:bg-danger/10 transition-all">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                                Cerrar sesion
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Mobile Navigation -->
+    <nav class="mobile-nav">
+        <a href="index.html" class="flex flex-col items-center gap-1 text-ink-3"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="2"/></svg><span class="text-[10px]">Dashboard</span></a>
+        <a href="upload.html" class="flex flex-col items-center gap-1 text-ink-3"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><polyline points="17 8 12 3 7 8"/></svg><span class="text-[10px]">Subir</span></a>
+        <a href="graficas.html" class="flex flex-col items-center gap-1 text-pizza"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg><span class="text-[10px]">Graficas</span></a>
+        <a href="julia.html" class="flex flex-col items-center gap-1 text-ink-3"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="text-[10px]">Julia</span></a>
+        <a href="documents.html" class="flex flex-col items-center gap-1 text-ink-3"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg><span class="text-[10px]">Vault</span></a>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="relative z-10 pt-28 pb-8 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto">
+            <!-- Header -->
+            <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
+                <div>
+                    <p class="text-ink-3 text-sm font-medium mb-2">Analytics Dashboard</p>
+                    <h1 class="font-display text-4xl sm:text-5xl font-extrabold text-ink">
+                        Graficas <span class="text-transparent bg-clip-text bg-gradient-to-r from-pizza to-pizza-light">en vivo</span>
+                    </h1>
+                </div>
+                <div class="flex gap-2">
+                    <button class="filter-btn active" data-period="week">7 dias</button>
+                    <button class="filter-btn" data-period="month">30 dias</button>
+                    <button class="filter-btn" data-period="quarter">Trimestre</button>
+                    <button class="filter-btn" data-period="year">Anual</button>
+                </div>
+            </div>
+
+            <!-- KPI Cards Row -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <div class="chart-card p-5">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="w-2 h-2 rounded-full bg-success"></span>
+                        <span class="text-xs text-ink-3 uppercase tracking-wider">Ventas Totales</span>
+                    </div>
+                    <p class="font-display text-3xl font-bold text-ink">$285,000</p>
+                    <p class="text-sm text-success mt-1">+12.5% vs periodo anterior</p>
+                </div>
+                <div class="chart-card p-5">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                        <span class="text-xs text-ink-3 uppercase tracking-wider">Ticket Promedio</span>
+                    </div>
+                    <p class="font-display text-3xl font-bold text-ink">$187</p>
+                    <p class="text-sm text-success mt-1">+5.2% vs periodo anterior</p>
+                </div>
+                <div class="chart-card p-5">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="w-2 h-2 rounded-full bg-purple-500"></span>
+                        <span class="text-xs text-ink-3 uppercase tracking-wider">Transacciones</span>
+                    </div>
+                    <p class="font-display text-3xl font-bold text-ink">1,524</p>
+                    <p class="text-sm text-success mt-1">+8.7% vs periodo anterior</p>
+                </div>
+                <div class="chart-card p-5">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="w-2 h-2 rounded-full bg-warning"></span>
+                        <span class="text-xs text-ink-3 uppercase tracking-wider">Margen Bruto</span>
+                    </div>
+                    <p class="font-display text-3xl font-bold text-ink">32.5%</p>
+                    <p class="text-sm text-danger mt-1">-1.2% vs periodo anterior</p>
+                </div>
+            </div>
+
+            <!-- Charts Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <!-- Ventas por Dia -->
+                <div class="chart-card p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h3 class="font-display text-lg font-bold text-ink">Ventas Diarias</h3>
+                            <p class="text-sm text-ink-3">Tendencia de los ultimos 30 dias</p>
+                        </div>
+                        <div class="flex gap-3 text-xs">
+                            <span class="flex items-center gap-1"><span class="w-3 h-1 rounded bg-pizza"></span> Ventas</span>
+                            <span class="flex items-center gap-1"><span class="w-3 h-1 rounded bg-blue-500"></span> Meta</span>
+                        </div>
+                    </div>
+                    <div class="h-64">
+                        <canvas id="salesLineChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Ventas por Canal -->
+                <div class="chart-card p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h3 class="font-display text-lg font-bold text-ink">Ventas por Canal</h3>
+                            <p class="text-sm text-ink-3">Distribucion de ingresos</p>
+                        </div>
+                    </div>
+                    <div class="h-64">
+                        <canvas id="channelBarChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Distribucion de Gastos -->
+                <div class="chart-card p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h3 class="font-display text-lg font-bold text-ink">Distribucion de Gastos</h3>
+                            <p class="text-sm text-ink-3">Desglose mensual</p>
+                        </div>
+                    </div>
+                    <div class="h-64 flex items-center justify-center">
+                        <div class="w-full max-w-xs">
+                            <canvas id="expensesPieChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Comparativo Mensual -->
+                <div class="chart-card p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h3 class="font-display text-lg font-bold text-ink">Comparativo Mensual</h3>
+                            <p class="text-sm text-ink-3">Ingresos vs Gastos</p>
+                        </div>
+                    </div>
+                    <div class="h-64">
+                        <canvas id="comparisonChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Full Width Charts -->
+            <div class="grid grid-cols-1 gap-6 mb-6">
+                <!-- Tendencia Anual -->
+                <div class="chart-card p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h3 class="font-display text-lg font-bold text-ink">Tendencia Anual</h3>
+                            <p class="text-sm text-ink-3">Ventas mensuales 2025-2026</p>
+                        </div>
+                        <div class="flex gap-3 text-xs">
+                            <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-pizza"></span> 2026</span>
+                            <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-ink-3"></span> 2025</span>
+                        </div>
+                    </div>
+                    <div class="h-80">
+                        <canvas id="yearlyTrendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Row -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Top Products -->
+                <div class="chart-card p-6">
+                    <div class="mb-4">
+                        <h3 class="font-display text-lg font-bold text-ink">Top Productos</h3>
+                        <p class="text-sm text-ink-3">Por volumen de ventas</p>
+                    </div>
+                    <div class="h-64">
+                        <canvas id="topProductsChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Ventas por Hora -->
+                <div class="chart-card p-6">
+                    <div class="mb-4">
+                        <h3 class="font-display text-lg font-bold text-ink">Ventas por Hora</h3>
+                        <p class="text-sm text-ink-3">Patron de demanda diaria</p>
+                    </div>
+                    <div class="h-64">
+                        <canvas id="hourlyChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Margen por Categoria -->
+                <div class="chart-card p-6">
+                    <div class="mb-4">
+                        <h3 class="font-display text-lg font-bold text-ink">Margen por Categoria</h3>
+                        <p class="text-sm text-ink-3">Rentabilidad</p>
+                    </div>
+                    <div class="h-64">
+                        <canvas id="marginChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Theme
+        function toggleTheme() {
+            const body = document.getElementById('app');
+            body.classList.toggle('theme-light');
+            localStorage.setItem('theme', body.classList.contains('theme-light') ? 'light' : 'dark');
+        }
+        if (localStorage.getItem('theme') === 'light') document.getElementById('app').classList.add('theme-light');
+
+        // User Menu
+        function toggleUserMenu() { document.getElementById('userMenu').classList.toggle('hidden'); }
+        document.addEventListener('click', (e) => {
+            const menu = document.getElementById('userMenu');
+            const btn = document.getElementById('userMenuBtn');
+            if (!btn?.contains(e.target) && !menu?.contains(e.target)) menu?.classList.add('hidden');
+        });
+
+        // Filter buttons
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                // Here you would reload charts with new data based on period
+            });
+        });
+
+        // Chart.js Configuration
+        Chart.defaults.color = '#636366';
+        Chart.defaults.borderColor = 'rgba(255,255,255,0.04)';
+        Chart.defaults.font.family = 'Instrument Sans';
+
+        const pizzaColors = {
+            primary: '#FF5722',
+            light: '#FF8A65',
+            lighter: '#FFAB91',
+            lightest: '#FFCCBC',
+            dark: '#E64A19',
+            gray: '#242428',
+            success: '#34C759',
+            blue: '#3B82F6',
+            purple: '#8B5CF6'
+        };
+
+        // 1. Sales Line Chart
+        new Chart(document.getElementById('salesLineChart'), {
+            type: 'line',
+            data: {
+                labels: Array.from({length: 30}, (_, i) => i + 1),
+                datasets: [
+                    {
+                        label: 'Ventas',
+                        data: [8.5, 9.2, 8.8, 10.1, 12.5, 14.2, 11.8, 9.5, 10.2, 9.8, 11.5, 13.2, 15.1, 12.8, 10.5, 11.2, 10.8, 12.5, 14.8, 16.2, 13.5, 11.2, 12.5, 11.8, 13.2, 15.5, 17.2, 14.8, 12.5, 13.2],
+                        borderColor: pizzaColors.primary,
+                        backgroundColor: 'rgba(255,87,34,0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 0,
+                        pointHoverRadius: 6,
+                        pointHoverBackgroundColor: pizzaColors.primary
+                    },
+                    {
+                        label: 'Meta',
+                        data: Array(30).fill(12),
+                        borderColor: pizzaColors.blue,
+                        borderDash: [5, 5],
+                        pointRadius: 0,
+                        fill: false
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { display: false }, ticks: { maxTicksLimit: 10 } },
+                    y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { callback: v => '$' + v + 'k' } }
+                },
+                interaction: { intersect: false, mode: 'index' }
+            }
+        });
+
+        // 2. Channel Bar Chart
+        new Chart(document.getElementById('channelBarChart'), {
+            type: 'bar',
+            data: {
+                labels: ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'],
+                datasets: [
+                    { label: 'Mostrador', data: [12, 15, 13, 14, 20, 28, 22], backgroundColor: pizzaColors.primary, borderRadius: 6 },
+                    { label: 'Delivery', data: [8, 9, 7.5, 8.5, 12, 18, 14], backgroundColor: pizzaColors.light, borderRadius: 6 },
+                    { label: 'App', data: [3, 4, 3.5, 4, 6, 8, 6], backgroundColor: pizzaColors.lighter, borderRadius: 6 }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, pointStyle: 'circle', padding: 20 } } },
+                scales: {
+                    x: { stacked: true, grid: { display: false } },
+                    y: { stacked: true, grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { callback: v => '$' + v + 'k' } }
+                }
+            }
+        });
+
+        // 3. Expenses Pie Chart
+        new Chart(document.getElementById('expensesPieChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Nomina', 'Renta', 'CFE', 'Gas', 'Insumos', 'Marketing', 'Otros'],
+                datasets: [{
+                    data: [68, 35, 18.5, 8.2, 45, 12, 10],
+                    backgroundColor: [pizzaColors.primary, pizzaColors.light, pizzaColors.lighter, pizzaColors.lightest, pizzaColors.blue, pizzaColors.purple, pizzaColors.gray],
+                    borderWidth: 0,
+                    spacing: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                cutout: '60%',
+                plugins: {
+                    legend: { position: 'right', labels: { padding: 12, usePointStyle: true, pointStyle: 'circle', font: { size: 11 } } }
+                }
+            }
+        });
+
+        // 4. Comparison Chart (Ingresos vs Gastos)
+        new Chart(document.getElementById('comparisonChart'), {
+            type: 'bar',
+            data: {
+                labels: ['Ago', 'Sep', 'Oct', 'Nov', 'Dic', 'Ene'],
+                datasets: [
+                    { label: 'Ingresos', data: [220, 235, 245, 254, 268, 285], backgroundColor: pizzaColors.primary, borderRadius: 6 },
+                    { label: 'Gastos', data: [180, 188, 195, 200, 212, 220], backgroundColor: pizzaColors.gray, borderRadius: 6 }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, pointStyle: 'circle', padding: 20 } } },
+                scales: {
+                    x: { grid: { display: false } },
+                    y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { callback: v => '$' + v + 'k' } }
+                }
+            }
+        });
+
+        // 5. Yearly Trend Chart
+        new Chart(document.getElementById('yearlyTrendChart'), {
+            type: 'line',
+            data: {
+                labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
+                datasets: [
+                    {
+                        label: '2026',
+                        data: [285, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                        borderColor: pizzaColors.primary,
+                        backgroundColor: 'rgba(255,87,34,0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 4,
+                        pointBackgroundColor: pizzaColors.primary
+                    },
+                    {
+                        label: '2025',
+                        data: [210, 225, 235, 228, 245, 258, 242, 220, 235, 245, 254, 268],
+                        borderColor: '#636366',
+                        borderDash: [5, 5],
+                        tension: 0.4,
+                        pointRadius: 0,
+                        fill: false
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { display: false } },
+                    y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { callback: v => '$' + v + 'k' }, min: 150 }
+                }
+            }
+        });
+
+        // 6. Top Products Horizontal Bar
+        new Chart(document.getElementById('topProductsChart'), {
+            type: 'bar',
+            data: {
+                labels: ['Pepperoni', 'Cheese', 'Supreme', 'Hawaiian', 'Meat Lovers'],
+                datasets: [{
+                    data: [2850, 2340, 1890, 1520, 1280],
+                    backgroundColor: [pizzaColors.primary, pizzaColors.light, pizzaColors.lighter, pizzaColors.lightest, pizzaColors.gray],
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { callback: v => v.toLocaleString() } },
+                    y: { grid: { display: false } }
+                }
+            }
+        });
+
+        // 7. Hourly Sales
+        new Chart(document.getElementById('hourlyChart'), {
+            type: 'bar',
+            data: {
+                labels: ['10am', '11am', '12pm', '1pm', '2pm', '3pm', '4pm', '5pm', '6pm', '7pm', '8pm', '9pm'],
+                datasets: [{
+                    data: [5, 8, 25, 35, 22, 15, 12, 18, 32, 45, 38, 25],
+                    backgroundColor: (ctx) => {
+                        const value = ctx.raw;
+                        if (value >= 35) return pizzaColors.primary;
+                        if (value >= 20) return pizzaColors.light;
+                        return pizzaColors.lighter;
+                    },
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { display: false } },
+                    y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { callback: v => v + ' txns' } }
+                }
+            }
+        });
+
+        // 8. Margin by Category
+        new Chart(document.getElementById('marginChart'), {
+            type: 'radar',
+            data: {
+                labels: ['Pizzas', 'Bebidas', 'Extras', 'Combos', 'Postres'],
+                datasets: [{
+                    label: 'Margen %',
+                    data: [32, 65, 45, 28, 55],
+                    backgroundColor: 'rgba(255,87,34,0.2)',
+                    borderColor: pizzaColors.primary,
+                    pointBackgroundColor: pizzaColors.primary,
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: pizzaColors.primary
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    r: {
+                        beginAtZero: true,
+                        max: 80,
+                        ticks: { stepSize: 20, display: false },
+                        grid: { color: 'rgba(255,255,255,0.05)' },
+                        angleLines: { color: 'rgba(255,255,255,0.05)' },
+                        pointLabels: { color: '#a1a1a6', font: { size: 11 } }
+                    }
+                }
+            }
+        });
+    </script>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBL8-hBMJR6NlnXN6rWwS8WVcrdMm7m4rY",
+            authDomain: "ciclops-8a2de.firebaseapp.com",
+            projectId: "ciclops-8a2de",
+            storageBucket: "ciclops-8a2de.firebasestorage.app",
+            messagingSenderId: "475876958824",
+            appId: "1:475876958824:web:5ecc315220c66fdd56d1dd"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        function logout() {
+            auth.signOut().then(() => {
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('userEmail');
+                localStorage.removeItem('userName');
+                window.location.href = 'login.html';
+            });
+        }
+    </script>
+</body>
+</html>
