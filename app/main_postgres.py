@@ -13,8 +13,10 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, desc
 from openai import OpenAI
 import pandas as pd
+import numpy as np
 import json
 import os
+import math
 from io import BytesIO
 from dotenv import load_dotenv
 from typing import Optional, List
@@ -101,6 +103,21 @@ async def health_check(db: Session = Depends(get_db)):
 # ============================================
 # UPLOAD Y DOCUMENTOS
 # ============================================
+
+def clean_nan_values(obj):
+    """Limpia NaN/Infinity de objetos para JSON válido en PostgreSQL"""
+    if isinstance(obj, dict):
+        return {k: clean_nan_values(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [clean_nan_values(item) for item in obj]
+    elif isinstance(obj, float):
+        if math.isnan(obj) or math.isinf(obj):
+            return None
+        return obj
+    elif pd.isna(obj):
+        return None
+    return obj
+
 
 def extract_text_from_pdf(content: bytes) -> str:
     """Extrae texto de un PDF usando pdfplumber"""
@@ -270,11 +287,14 @@ async def upload_file(
                 if df.empty:
                     continue
 
+                # Convertir a dict y limpiar NaN para JSON válido
                 data = df.to_dict(orient='records')
+                data = clean_nan_values(data)
                 columns = list(df.columns)
 
                 # Analizar campos con AI
                 ai_analysis = await analyze_fields_with_ai(data, columns, f"{file.filename} - {sheet_name}")
+                ai_analysis = clean_nan_values(ai_analysis)
 
                 # Crear documento en DB
                 doc = models.Document(
