@@ -488,10 +488,16 @@
                 const formData = new FormData();
                 formData.append('file', file);
 
-                const response = await fetch(API + '/upload', {
+                // 5 minute timeout for large files
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 300000);
+
+                const response = await fetch(API + '/upload?skip_ai=true', {
                     method: 'POST',
-                    body: formData
+                    body: formData,
+                    signal: controller.signal
                 });
+                clearTimeout(timeoutId);
 
                 clearInterval(progressInterval);
 
@@ -510,34 +516,19 @@
                 const documents = data.documents || [data.document];
                 const sheetsCount = documents.length;
 
-                if (sheetsCount === 1) {
-                    // Single sheet - show preview button
-                    progress.innerHTML = `
-                        <button onclick="showPreview(${JSON.stringify(documents[0]).replace(/"/g, '&quot;')}, this.closest('.file-item'))" class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-pizza/10 text-pizza text-sm font-medium hover:bg-pizza/20 transition-colors">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                                <circle cx="12" cy="12" r="3"/>
-                            </svg>
-                            Ver preview
-                        </button>
-                    `;
-                    showPreview(documents[0], fileCard);
-                } else {
-                    // Multiple sheets - show sheet selector
-                    progress.innerHTML = `
-                        <div class="flex items-center gap-2">
-                            <span class="text-sm text-success font-medium">${sheetsCount} hojas</span>
-                            <button onclick="showSheetsModal(${JSON.stringify(documents).replace(/"/g, '&quot;')}, this.closest('.file-item'))" class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-pizza/10 text-pizza text-sm font-medium hover:bg-pizza/20 transition-colors">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                                    <line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/>
-                                </svg>
-                                Ver hojas
-                            </button>
-                        </div>
-                    `;
-                    showSheetsModal(documents, fileCard);
-                }
+                // Auto-confirm ALL documents to vault (no questions asked)
+                progress.innerHTML = `
+                    <div class="flex items-center gap-2 text-pizza">
+                        <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <circle cx="12" cy="12" r="10" stroke-opacity="0.25"/>
+                            <path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/>
+                        </svg>
+                        <span class="text-sm">Guardando ${sheetsCount} hoja(s)...</span>
+                    </div>
+                `;
+
+                // Auto-confirm all sheets
+                await autoConfirmAll(documents, progress);
 
             } catch (err) {
                 clearInterval(progressInterval);
@@ -696,6 +687,70 @@
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+
+        async function autoConfirmAll(documents, progressDiv) {
+            const defaultPeriod = new Date().toLocaleDateString('es-MX', { month: 'long', year: 'numeric' });
+            let confirmed = 0;
+            let errors = 0;
+
+            for (const doc of documents) {
+                try {
+                    const response = await fetch(API + '/upload/confirm', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            doc_id: doc.id,
+                            store_id: 'ALL',
+                            store_name: 'Todas las tiendas',
+                            period: defaultPeriod,
+                            confirm: true
+                        })
+                    });
+
+                    if (response.ok) {
+                        confirmed++;
+                    } else {
+                        errors++;
+                    }
+
+                    // Update progress
+                    progressDiv.innerHTML = `
+                        <div class="flex items-center gap-2 text-pizza">
+                            <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <circle cx="12" cy="12" r="10" stroke-opacity="0.25"/>
+                                <path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/>
+                            </svg>
+                            <span class="text-sm">${confirmed}/${documents.length} guardadas...</span>
+                        </div>
+                    `;
+                } catch (err) {
+                    errors++;
+                    console.error('Error confirming doc:', doc.id, err);
+                }
+            }
+
+            // Final status
+            if (errors === 0) {
+                progressDiv.innerHTML = `
+                    <div class="flex items-center gap-2 text-success">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                        <span class="text-sm font-medium">${confirmed} en Vault</span>
+                    </div>
+                `;
+            } else {
+                progressDiv.innerHTML = `
+                    <div class="flex items-center gap-2 text-warning">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                            <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                        </svg>
+                        <span class="text-sm font-medium">${confirmed} ok, ${errors} error(s)</span>
+                    </div>
+                `;
+            }
         }
 
         async function confirmAndSave() {

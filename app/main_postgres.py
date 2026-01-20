@@ -205,7 +205,8 @@ Analiza y mapea estos campos."""
 @app.post("/upload")
 async def upload_file(
     file: UploadFile = File(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    skip_ai: bool = Query(default=False, description="Skip AI analysis for faster uploads")
 ):
     """Sube un archivo y retorna preview para confirmación"""
     try:
@@ -292,9 +293,17 @@ async def upload_file(
                 data = clean_nan_values(data)
                 columns = list(df.columns)
 
-                # Analizar campos con AI
-                ai_analysis = await analyze_fields_with_ai(data, columns, f"{file.filename} - {sheet_name}")
-                ai_analysis = clean_nan_values(ai_analysis)
+                # Analizar campos con AI (opcional para uploads rápidos)
+                if skip_ai:
+                    ai_analysis = {
+                        "data_type": "imported",
+                        "detected_fields": {col: {"mapped_to": col, "type": "text"} for col in columns},
+                        "summary": f"Importado directamente - {len(df)} filas",
+                        "recommended_category": "general"
+                    }
+                else:
+                    ai_analysis = await analyze_fields_with_ai(data, columns, f"{file.filename} - {sheet_name}")
+                    ai_analysis = clean_nan_values(ai_analysis)
 
                 # Crear documento en DB
                 doc = models.Document(
