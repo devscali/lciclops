@@ -459,7 +459,7 @@
                 if (!response.ok) throw new Error('Financial API not available');
 
                 const data = await response.json();
-                console.log('Financial data loaded:', data);
+                // Data loaded successfully
 
                 if (!data.success) return;
 
@@ -540,7 +540,7 @@
                 }
 
             } catch (error) {
-                console.log('Financial data error:', error.message);
+                // Financial data error - show fallback UI
                 document.getElementById('storesTableBody').innerHTML = '<tr><td colspan="4" class="py-8 text-center text-danger">Error cargando datos</td></tr>';
             }
         }
@@ -552,7 +552,7 @@
                 if (!response.ok) throw new Error('API not available');
 
                 const data = await response.json();
-                console.log('Dashboard stats loaded:', data);
+                // Dashboard stats loaded
 
                 // Financial data takes priority, this is fallback
                 if (data.total_documents === 0) {
@@ -561,7 +561,7 @@
                 }
 
             } catch (error) {
-                console.log('Dashboard API error:', error.message);
+                // Dashboard API error
             }
         }
 
@@ -584,6 +584,14 @@
         };
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
+
+        // Auth check - redirect to login if not authenticated
+        auth.onAuthStateChanged(function(user) {
+            if (!user) {
+                window.location.href = '/login';
+                return;
+            }
+        });
 
         function logout() {
             auth.signOut().then(() => {
