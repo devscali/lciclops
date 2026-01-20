@@ -189,32 +189,32 @@
                         <span class="w-2 h-2 rounded-full bg-success"></span>
                         <span class="text-xs text-ink-3 uppercase tracking-wider">Ventas Totales</span>
                     </div>
-                    <p class="font-display text-3xl font-bold text-ink">$285,000</p>
-                    <p class="text-sm text-success mt-1">+12.5% vs periodo anterior</p>
+                    <p id="kpi-ventas" class="font-display text-3xl font-bold text-ink">$--</p>
+                    <p id="kpi-ventas-trend" class="text-sm text-success mt-1">Cargando...</p>
                 </div>
                 <div class="chart-card p-5">
                     <div class="flex items-center gap-2 mb-2">
                         <span class="w-2 h-2 rounded-full bg-blue-500"></span>
-                        <span class="text-xs text-ink-3 uppercase tracking-wider">Ticket Promedio</span>
+                        <span class="text-xs text-ink-3 uppercase tracking-wider">Utilidad Neta</span>
                     </div>
-                    <p class="font-display text-3xl font-bold text-ink">$187</p>
-                    <p class="text-sm text-success mt-1">+5.2% vs periodo anterior</p>
+                    <p id="kpi-utilidad" class="font-display text-3xl font-bold text-ink">$--</p>
+                    <p id="kpi-utilidad-trend" class="text-sm text-success mt-1">Cargando...</p>
                 </div>
                 <div class="chart-card p-5">
                     <div class="flex items-center gap-2 mb-2">
                         <span class="w-2 h-2 rounded-full bg-purple-500"></span>
-                        <span class="text-xs text-ink-3 uppercase tracking-wider">Transacciones</span>
+                        <span class="text-xs text-ink-3 uppercase tracking-wider">Margen Neto</span>
                     </div>
-                    <p class="font-display text-3xl font-bold text-ink">1,524</p>
-                    <p class="text-sm text-success mt-1">+8.7% vs periodo anterior</p>
+                    <p id="kpi-margen" class="font-display text-3xl font-bold text-ink">--%</p>
+                    <p id="kpi-margen-trend" class="text-sm text-ink-3 mt-1">Cargando...</p>
                 </div>
                 <div class="chart-card p-5">
                     <div class="flex items-center gap-2 mb-2">
                         <span class="w-2 h-2 rounded-full bg-warning"></span>
-                        <span class="text-xs text-ink-3 uppercase tracking-wider">Margen Bruto</span>
+                        <span class="text-xs text-ink-3 uppercase tracking-wider">Documentos</span>
                     </div>
-                    <p class="font-display text-3xl font-bold text-ink">32.5%</p>
-                    <p class="text-sm text-danger mt-1">-1.2% vs periodo anterior</p>
+                    <p id="kpi-docs" class="font-display text-3xl font-bold text-ink">--</p>
+                    <p id="kpi-docs-trend" class="text-sm text-ink-3 mt-1">procesados</p>
                 </div>
             </div>
 
@@ -604,6 +604,70 @@
                 }
             }
         });
+
+        // ==========================================
+        // API CONNECTION - Load real data
+        // ==========================================
+        const API = 'https://lciclops-production.up.railway.app';
+
+        // Format currency
+        function formatMoney(amount) {
+            return new Intl.NumberFormat('es-MX', {
+                style: 'currency',
+                currency: 'MXN',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(amount || 0);
+        }
+
+        // Load dashboard data from API
+        async function loadDashboardData() {
+            try {
+                const response = await fetch(`${API}/dashboard/stats`);
+                if (!response.ok) throw new Error('API not available');
+
+                const data = await response.json();
+
+                // Update KPIs from actual data
+                document.getElementById('kpi-docs').textContent = data.total_documents || 0;
+                document.getElementById('kpi-docs-trend').textContent = `${data.total_stores || 0} sucursales`;
+
+                // Check for monthly summaries
+                if (data.monthly_summaries && data.monthly_summaries.length > 0) {
+                    const latest = data.monthly_summaries[0];
+                    document.getElementById('kpi-ventas').textContent = formatMoney(latest.total_sales);
+                    document.getElementById('kpi-utilidad').textContent = formatMoney(latest.net_profit);
+                    document.getElementById('kpi-margen').textContent = (latest.net_margin || 0).toFixed(1) + '%';
+                    document.getElementById('kpi-ventas-trend').textContent = latest.period || 'periodo actual';
+                    document.getElementById('kpi-utilidad-trend').textContent = 'utilidad neta';
+                    document.getElementById('kpi-margen-trend').textContent = 'margen neto';
+                } else {
+                    // No financial data yet, show docs stats
+                    document.getElementById('kpi-ventas').textContent = data.total_documents || 0;
+                    document.getElementById('kpi-ventas-trend').textContent = 'documentos en vault';
+                    document.getElementById('kpi-utilidad').textContent = data.total_analyses || 0;
+                    document.getElementById('kpi-utilidad-trend').textContent = 'analisis realizados';
+                    document.getElementById('kpi-margen').textContent = data.total_stores || 0;
+                    document.getElementById('kpi-margen-trend').textContent = 'sucursales activas';
+                }
+
+                console.log('Dashboard data loaded:', data);
+
+            } catch (error) {
+                console.log('Using demo data - API:', error.message);
+                // Set demo data if API fails
+                document.getElementById('kpi-ventas').textContent = '$285,000';
+                document.getElementById('kpi-utilidad').textContent = '$42,550';
+                document.getElementById('kpi-margen').textContent = '14.9%';
+                document.getElementById('kpi-docs').textContent = '12';
+                document.getElementById('kpi-ventas-trend').textContent = '+12% vs periodo anterior';
+                document.getElementById('kpi-utilidad-trend').textContent = '+8.2% crecimiento';
+                document.getElementById('kpi-margen-trend').textContent = 'margen saludable';
+            }
+        }
+
+        // Initialize
+        loadDashboardData();
     </script>
 
     <!-- Firebase SDK -->
