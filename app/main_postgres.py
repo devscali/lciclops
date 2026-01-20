@@ -64,15 +64,30 @@ app.add_middleware(
     expose_headers=["*"],
 )
 
-# Cliente de OpenAI
+# Clientes de AI
 openai_client = None
+anthropic_client = None
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+AI_PROVIDER = os.getenv("AI_PROVIDER", "anthropic")  # Default to Anthropic/Claude
 
+# Inicializar OpenAI si hay key
 if OPENAI_API_KEY:
     openai_client = OpenAI(api_key=OPENAI_API_KEY)
     print("✅ OpenAI API configurada")
 else:
     print("⚠️ OPENAI_API_KEY no encontrada")
+
+# Inicializar Anthropic si hay key
+try:
+    import anthropic
+    if ANTHROPIC_API_KEY:
+        anthropic_client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+        print("✅ Anthropic API configurada")
+    else:
+        print("⚠️ ANTHROPIC_API_KEY no encontrada")
+except ImportError:
+    print("⚠️ anthropic module not installed")
 
 
 # ============================================
@@ -96,7 +111,79 @@ async def health_check(db: Session = Depends(get_db)):
         "status": "healthy",
         "database": "connected",
         "openai": "connected" if openai_client else "disabled",
+        "anthropic": "connected" if anthropic_client else "disabled",
+        "ai_provider": AI_PROVIDER,
         "documents_count": doc_count
+    }
+
+
+# ============================================
+# SETTINGS - API Keys Configuration
+# ============================================
+
+@app.get("/settings")
+async def get_settings():
+    """Retorna estado de configuracion (sin exponer keys)"""
+    return {
+        "openai_key_set": bool(OPENAI_API_KEY),
+        "anthropic_key_set": bool(ANTHROPIC_API_KEY),
+        "ai_provider": AI_PROVIDER,
+        "openai_connected": openai_client is not None,
+        "anthropic_connected": anthropic_client is not None
+    }
+
+
+@app.post("/settings")
+async def save_settings(settings: dict):
+    """Guarda configuracion de API keys (requiere restart para aplicar)"""
+    global OPENAI_API_KEY, ANTHROPIC_API_KEY, AI_PROVIDER, openai_client, anthropic_client
+
+    messages = []
+
+    # Update OpenAI key if provided
+    if settings.get("openai_key") and settings["openai_key"] != "":
+        new_key = settings["openai_key"]
+        if not new_key.startswith("sk-"):
+            return {"success": False, "error": "OpenAI key debe empezar con 'sk-'"}
+        try:
+            # Test the key
+            test_client = OpenAI(api_key=new_key)
+            openai_client = test_client
+            OPENAI_API_KEY = new_key
+            os.environ["OPENAI_API_KEY"] = new_key
+            messages.append("OpenAI API key actualizada")
+        except Exception as e:
+            return {"success": False, "error": f"OpenAI key inválida: {str(e)}"}
+
+    # Update Anthropic key if provided
+    if settings.get("anthropic_key") and settings["anthropic_key"] != "":
+        new_key = settings["anthropic_key"]
+        if not new_key.startswith("sk-ant-"):
+            return {"success": False, "error": "Anthropic key debe empezar con 'sk-ant-'"}
+        try:
+            import anthropic
+            test_client = anthropic.Anthropic(api_key=new_key)
+            anthropic_client = test_client
+            ANTHROPIC_API_KEY = new_key
+            os.environ["ANTHROPIC_API_KEY"] = new_key
+            messages.append("Anthropic API key actualizada")
+        except Exception as e:
+            return {"success": False, "error": f"Anthropic key inválida: {str(e)}"}
+
+    # Update AI provider preference
+    if settings.get("ai_provider"):
+        AI_PROVIDER = settings["ai_provider"]
+        os.environ["AI_PROVIDER"] = AI_PROVIDER
+        messages.append(f"Proveedor AI cambiado a: {AI_PROVIDER}")
+
+    return {
+        "success": True,
+        "messages": messages,
+        "status": {
+            "openai_connected": openai_client is not None,
+            "anthropic_connected": anthropic_client is not None,
+            "ai_provider": AI_PROVIDER
+        }
     }
 
 
