@@ -20,7 +20,8 @@ import traceback
 import pdfplumber
 
 from .database import engine, get_db, Base
-from . import models, schemas
+from . import db_models as models
+from . import schemas
 
 # Cargar variables de entorno
 load_dotenv()
