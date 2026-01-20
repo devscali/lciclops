@@ -218,34 +218,30 @@
                 </div>
             </div>
 
-            <!-- Charts Grid -->
+            <!-- Charts Grid - SOLO DATA REAL -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                <!-- Ventas por Dia -->
+                <!-- Ingresos por Sucursal -->
                 <div class="chart-card p-6">
                     <div class="flex items-center justify-between mb-4">
                         <div>
-                            <h3 class="font-display text-lg font-bold text-ink">Ventas Diarias</h3>
-                            <p class="text-sm text-ink-3">Tendencia de los ultimos 30 dias</p>
-                        </div>
-                        <div class="flex gap-3 text-xs">
-                            <span class="flex items-center gap-1"><span class="w-3 h-1 rounded bg-pizza"></span> Ventas</span>
-                            <span class="flex items-center gap-1"><span class="w-3 h-1 rounded bg-blue-500"></span> Meta</span>
+                            <h3 class="font-display text-lg font-bold text-ink">Ingresos por Sucursal</h3>
+                            <p class="text-sm text-ink-3">Datos del Estado de Resultados</p>
                         </div>
                     </div>
-                    <div class="h-64">
+                    <div class="h-72">
                         <canvas id="salesLineChart"></canvas>
                     </div>
                 </div>
 
-                <!-- Ventas por Canal -->
+                <!-- Comparativo Tiendas -->
                 <div class="chart-card p-6">
                     <div class="flex items-center justify-between mb-4">
                         <div>
-                            <h3 class="font-display text-lg font-bold text-ink">Ventas por Canal</h3>
-                            <p class="text-sm text-ink-3">Distribucion de ingresos</p>
+                            <h3 class="font-display text-lg font-bold text-ink">Comparativo por Tienda</h3>
+                            <p class="text-sm text-ink-3">Ingresos vs Utilidad</p>
                         </div>
                     </div>
-                    <div class="h-64">
+                    <div class="h-72">
                         <canvas id="channelBarChart"></canvas>
                     </div>
                 </div>
@@ -254,84 +250,53 @@
                 <div class="chart-card p-6">
                     <div class="flex items-center justify-between mb-4">
                         <div>
-                            <h3 class="font-display text-lg font-bold text-ink">Distribucion de Gastos</h3>
-                            <p class="text-sm text-ink-3">Desglose mensual</p>
+                            <h3 class="font-display text-lg font-bold text-ink">Categorias de Gastos</h3>
+                            <p class="text-sm text-ink-3">Nomina, Renta, Servicios</p>
                         </div>
                     </div>
-                    <div class="h-64 flex items-center justify-center">
+                    <div class="h-72 flex items-center justify-center">
                         <div class="w-full max-w-xs">
                             <canvas id="expensesPieChart"></canvas>
                         </div>
                     </div>
                 </div>
 
-                <!-- Comparativo Mensual -->
+                <!-- Total Ingresos vs Egresos -->
                 <div class="chart-card p-6">
                     <div class="flex items-center justify-between mb-4">
                         <div>
-                            <h3 class="font-display text-lg font-bold text-ink">Comparativo Mensual</h3>
-                            <p class="text-sm text-ink-3">Ingresos vs Gastos</p>
+                            <h3 class="font-display text-lg font-bold text-ink">Ingresos vs Egresos</h3>
+                            <p class="text-sm text-ink-3">Periodo actual - Total todas las tiendas</p>
                         </div>
                     </div>
-                    <div class="h-64">
+                    <div class="h-72">
                         <canvas id="comparisonChart"></canvas>
                     </div>
                 </div>
             </div>
 
-            <!-- Full Width Charts -->
-            <div class="grid grid-cols-1 gap-6 mb-6">
-                <!-- Tendencia Anual -->
-                <div class="chart-card p-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <div>
-                            <h3 class="font-display text-lg font-bold text-ink">Tendencia Anual</h3>
-                            <p class="text-sm text-ink-3">Ventas mensuales 2025-2026</p>
-                        </div>
-                        <div class="flex gap-3 text-xs">
-                            <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-pizza"></span> 2026</span>
-                            <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-ink-3"></span> 2025</span>
-                        </div>
-                    </div>
-                    <div class="h-80">
-                        <canvas id="yearlyTrendChart"></canvas>
+            <!-- Tabla de Detalle por Tienda -->
+            <div class="chart-card p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h3 class="font-display text-lg font-bold text-ink">Detalle por Sucursal</h3>
+                        <p class="text-sm text-ink-3">Datos extraidos del Estado de Resultados</p>
                     </div>
                 </div>
-            </div>
-
-            <!-- Bottom Row -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <!-- Top Products -->
-                <div class="chart-card p-6">
-                    <div class="mb-4">
-                        <h3 class="font-display text-lg font-bold text-ink">Top Productos</h3>
-                        <p class="text-sm text-ink-3">Por volumen de ventas</p>
-                    </div>
-                    <div class="h-64">
-                        <canvas id="topProductsChart"></canvas>
-                    </div>
-                </div>
-
-                <!-- Ventas por Hora -->
-                <div class="chart-card p-6">
-                    <div class="mb-4">
-                        <h3 class="font-display text-lg font-bold text-ink">Ventas por Hora</h3>
-                        <p class="text-sm text-ink-3">Patron de demanda diaria</p>
-                    </div>
-                    <div class="h-64">
-                        <canvas id="hourlyChart"></canvas>
-                    </div>
-                </div>
-
-                <!-- Margen por Categoria -->
-                <div class="chart-card p-6">
-                    <div class="mb-4">
-                        <h3 class="font-display text-lg font-bold text-ink">Margen por Categoria</h3>
-                        <p class="text-sm text-ink-3">Rentabilidad</p>
-                    </div>
-                    <div class="h-64">
-                        <canvas id="marginChart"></canvas>
-                    </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="border-b border-white/10">
+                                <th class="text-left py-3 px-4 text-ink-3 font-medium">Sucursal</th>
+                                <th class="text-right py-3 px-4 text-ink-3 font-medium">Ingresos</th>
+                                <th class="text-right py-3 px-4 text-ink-3 font-medium">Egresos</th>
+                                <th class="text-right py-3 px-4 text-ink-3 font-medium">Utilidad</th>
+                            </tr>
+                        </thead>
+                        <tbody id="storesTableBody">
+                            <tr><td colspan="4" class="py-8 text-center text-ink-3">Cargando datos...</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -471,129 +436,9 @@
             }
         });
 
-        // 5. Yearly Trend Chart
-        new Chart(document.getElementById('yearlyTrendChart'), {
-            type: 'line',
-            data: {
-                labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
-                datasets: [
-                    {
-                        label: '2026',
-                        data: [285, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                        borderColor: pizzaColors.primary,
-                        backgroundColor: 'rgba(255,87,34,0.1)',
-                        fill: true,
-                        tension: 0.4,
-                        pointRadius: 4,
-                        pointBackgroundColor: pizzaColors.primary
-                    },
-                    {
-                        label: '2025',
-                        data: [210, 225, 235, 228, 245, 258, 242, 220, 235, 245, 254, 268],
-                        borderColor: '#636366',
-                        borderDash: [5, 5],
-                        tension: 0.4,
-                        pointRadius: 0,
-                        fill: false
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    x: { grid: { display: false } },
-                    y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { callback: v => '$' + v + 'k' }, min: 150 }
-                }
-            }
-        });
-
-        // 6. Top Products Horizontal Bar
-        new Chart(document.getElementById('topProductsChart'), {
-            type: 'bar',
-            data: {
-                labels: ['Pepperoni', 'Cheese', 'Supreme', 'Hawaiian', 'Meat Lovers'],
-                datasets: [{
-                    data: [2850, 2340, 1890, 1520, 1280],
-                    backgroundColor: [pizzaColors.primary, pizzaColors.light, pizzaColors.lighter, pizzaColors.lightest, pizzaColors.gray],
-                    borderRadius: 6
-                }]
-            },
-            options: {
-                indexAxis: 'y',
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    x: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { callback: v => v.toLocaleString() } },
-                    y: { grid: { display: false } }
-                }
-            }
-        });
-
-        // 7. Hourly Sales
-        new Chart(document.getElementById('hourlyChart'), {
-            type: 'bar',
-            data: {
-                labels: ['10am', '11am', '12pm', '1pm', '2pm', '3pm', '4pm', '5pm', '6pm', '7pm', '8pm', '9pm'],
-                datasets: [{
-                    data: [5, 8, 25, 35, 22, 15, 12, 18, 32, 45, 38, 25],
-                    backgroundColor: (ctx) => {
-                        const value = ctx.raw;
-                        if (value >= 35) return pizzaColors.primary;
-                        if (value >= 20) return pizzaColors.light;
-                        return pizzaColors.lighter;
-                    },
-                    borderRadius: 4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    x: { grid: { display: false } },
-                    y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { callback: v => v + ' txns' } }
-                }
-            }
-        });
-
-        // 8. Margin by Category
-        new Chart(document.getElementById('marginChart'), {
-            type: 'radar',
-            data: {
-                labels: ['Pizzas', 'Bebidas', 'Extras', 'Combos', 'Postres'],
-                datasets: [{
-                    label: 'Margen %',
-                    data: [32, 65, 45, 28, 55],
-                    backgroundColor: 'rgba(255,87,34,0.2)',
-                    borderColor: pizzaColors.primary,
-                    pointBackgroundColor: pizzaColors.primary,
-                    pointBorderColor: '#fff',
-                    pointHoverBackgroundColor: '#fff',
-                    pointHoverBorderColor: pizzaColors.primary
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    r: {
-                        beginAtZero: true,
-                        max: 80,
-                        ticks: { stepSize: 20, display: false },
-                        grid: { color: 'rgba(255,255,255,0.05)' },
-                        angleLines: { color: 'rgba(255,255,255,0.05)' },
-                        pointLabels: { color: '#a1a1a6', font: { size: 11 } }
-                    }
-                }
-            }
-        });
-
         // ==========================================
         // API CONNECTION - Load real data
+        // Solo mostramos datos REALES del vault
         // ==========================================
         const API = 'https://lc.calidevs.com';
 
@@ -668,8 +513,35 @@
                 comparisonChart.data.datasets[1].data = [summary.total_egresos];
                 comparisonChart.update();
 
+                // Populate stores table with real data
+                const rawStores = data.raw_stores || {};
+                const tableBody = document.getElementById('storesTableBody');
+
+                if (Object.keys(rawStores).length > 0) {
+                    let tableHTML = '';
+                    for (const [storeName, storeData] of Object.entries(rawStores)) {
+                        const ingresos = storeData.ingresos || 0;
+                        const egresos = storeData.egresos || 0;
+                        const utilidad = ingresos - egresos;
+                        const utilidadClass = utilidad >= 0 ? 'text-success' : 'text-danger';
+
+                        tableHTML += `
+                            <tr class="border-b border-white/5 hover:bg-white/5">
+                                <td class="py-3 px-4 font-medium text-ink">${storeName}</td>
+                                <td class="py-3 px-4 text-right text-ink-2">${formatMoney(ingresos)}</td>
+                                <td class="py-3 px-4 text-right text-ink-2">${formatMoney(egresos)}</td>
+                                <td class="py-3 px-4 text-right font-medium ${utilidadClass}">${formatMoney(utilidad)}</td>
+                            </tr>
+                        `;
+                    }
+                    tableBody.innerHTML = tableHTML;
+                } else {
+                    tableBody.innerHTML = '<tr><td colspan="4" class="py-8 text-center text-ink-3">No hay datos de sucursales</td></tr>';
+                }
+
             } catch (error) {
                 console.log('Financial data error:', error.message);
+                document.getElementById('storesTableBody').innerHTML = '<tr><td colspan="4" class="py-8 text-center text-danger">Error cargando datos</td></tr>';
             }
         }
 
