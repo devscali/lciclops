@@ -821,21 +821,24 @@
         // Load dashboard stats from API
         async function loadDashboardStats() {
             try {
+                // Load basic stats
                 const response = await fetch(API + '/dashboard/stats');
                 if (!response.ok) return;
-
                 const stats = await response.json();
-
-                // Update vault stats in activity section if we have data
-                if (stats.total_documents > 0) {
-                    console.log('Dashboard stats:', stats);
-                    // Stats are available for future use
-                    // When you have financial data, these will populate the charts
-                }
 
                 // Update recent activity with real documents
                 if (stats.recent_documents && stats.recent_documents.length > 0) {
                     updateRecentActivity(stats.recent_documents);
+                }
+
+                // Load financial data for KPIs and charts
+                const finResponse = await fetch(API + '/charts/financial');
+                if (finResponse.ok) {
+                    const finData = await finResponse.json();
+                    if (finData.success) {
+                        updateDashboardKPIs(finData.summary, stats);
+                        updateDashboardCharts(finData);
+                    }
                 }
 
             } catch (e) {
@@ -843,26 +846,83 @@
             }
         }
 
+        function formatMoney(amount) {
+            if (amount >= 1000000) {
+                return '$' + (amount / 1000000).toFixed(1) + 'M';
+            }
+            return new Intl.NumberFormat('es-MX', {
+                style: 'currency',
+                currency: 'MXN',
+                minimumFractionDigits: 0
+            }).format(amount || 0);
+        }
+
+        function updateDashboardKPIs(summary, stats) {
+            // Find KPI elements and update them
+            const kpiCards = document.querySelectorAll('.bento-item');
+            kpiCards.forEach(card => {
+                const label = card.querySelector('.text-ink-3')?.textContent?.toLowerCase() || '';
+                const valueEl = card.querySelector('.text-4xl, .text-3xl');
+                const trendEl = card.querySelector('.text-success, .text-ink-3:last-child');
+
+                if (label.includes('venta') && valueEl) {
+                    valueEl.textContent = formatMoney(summary.total_ingresos);
+                    if (trendEl) trendEl.textContent = summary.num_tiendas + ' tiendas';
+                }
+                if (label.includes('utilidad') && valueEl) {
+                    valueEl.textContent = formatMoney(summary.utilidad_bruta);
+                    if (trendEl) trendEl.textContent = 'utilidad bruta';
+                }
+                if (label.includes('margen') && valueEl) {
+                    valueEl.textContent = summary.margen.toFixed(1) + '%';
+                    if (trendEl) trendEl.textContent = 'margen bruto';
+                }
+                if (label.includes('documento') && valueEl) {
+                    valueEl.textContent = stats.total_documents || summary.num_documentos;
+                    if (trendEl) trendEl.textContent = 'en vault';
+                }
+            });
+        }
+
+        function updateDashboardCharts(finData) {
+            // Update revenue chart with real store data
+            if (window.revenueChart && finData.stores?.names?.length > 0) {
+                const storeNames = finData.stores.names.slice(0, 7);
+                const storeVentas = finData.stores.ventas.slice(0, 7).map(v => v / 1000000);
+
+                window.revenueChart.data.labels = storeNames;
+                window.revenueChart.data.datasets = [{
+                    label: 'Ingresos (M)',
+                    data: storeVentas,
+                    backgroundColor: '#FF5722',
+                    borderRadius: 6
+                }];
+                window.revenueChart.update();
+            }
+        }
+
         function updateRecentActivity(docs) {
-            const activityContainer = document.querySelector('.bento-item:last-child .space-y-2');
+            const activityContainer = document.querySelector('.space-y-3');
             if (!activityContainer || docs.length === 0) return;
 
-            activityContainer.innerHTML = docs.map(doc => {
-                const icon = doc.type === 'pdf' ? 'red' : doc.type === 'excel' ? 'green' : 'blue';
+            activityContainer.innerHTML = docs.slice(0, 5).map(doc => {
+                const colorClass = doc.type === 'pdf' ? 'purple' : 'success';
                 const timeAgo = doc.created_at ? formatTimeAgo(new Date(doc.created_at)) : 'Reciente';
+                const shortName = doc.filename.length > 30 ? doc.filename.substring(0, 30) + '...' : doc.filename;
+
                 return `
                     <div class="flex items-center gap-4 p-3 rounded-xl hover:bg-surface-3/30 transition-colors">
-                        <div class="w-10 h-10 rounded-xl bg-${icon}-500/10 flex items-center justify-center">
-                            <svg class="w-5 h-5 text-${icon}-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                        <div class="w-10 h-10 rounded-xl bg-${colorClass}/10 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-${colorClass}" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                                 <polyline points="14 2 14 8 20 8"/>
                             </svg>
                         </div>
                         <div class="flex-1 min-w-0">
-                            <p class="font-medium text-ink truncate">${doc.filename}</p>
-                            <p class="text-sm text-ink-3">${doc.store_name || ''} - ${timeAgo}</p>
+                            <p class="font-medium text-ink truncate">${shortName}</p>
+                            <p class="text-sm text-ink-3">${doc.period || ''} - ${timeAgo}</p>
                         </div>
-                        <span class="px-2 py-1 rounded-md bg-${icon}-500/10 text-${icon}-400 text-xs font-medium">${(doc.type || 'doc').toUpperCase()}</span>
+                        <span class="px-2 py-1 rounded-md bg-${colorClass}/10 text-${colorClass} text-xs font-medium">${(doc.type || 'doc').toUpperCase()}</span>
                     </div>
                 `;
             }).join('');
@@ -888,8 +948,8 @@
         Chart.defaults.borderColor = 'rgba(255,255,255,0.04)';
         Chart.defaults.font.family = 'Instrument Sans';
 
-        // Revenue Chart
-        new Chart(document.getElementById('revenueChart'), {
+        // Revenue Chart - guardamos referencia para actualizar con datos reales
+        window.revenueChart = new Chart(document.getElementById('revenueChart'), {
             type: 'bar',
             data: {
                 labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],

@@ -289,6 +289,46 @@ Analiza y mapea estos campos."""
         }
 
 
+def detect_period_from_filename(filename: str) -> str:
+    """Detecta el periodo/fecha del nombre del archivo"""
+    import re
+
+    # Mapeo de periodos a meses
+    period_months = {
+        'P1': 'Enero', 'P2': 'Febrero', 'P3': 'Marzo', 'P4': 'Abril',
+        'P5': 'Mayo', 'P6': 'Junio', 'P7': 'Julio', 'P8': 'Agosto',
+        'P9': 'Septiembre', 'P10': 'Octubre', 'P11': 'Noviembre', 'P12': 'Diciembre'
+    }
+
+    # Buscar patrón P## (periodo)
+    period_match = re.search(r'P(\d{1,2})', filename.upper())
+    if period_match:
+        period_num = f"P{period_match.group(1)}"
+        month = period_months.get(period_num, f"Periodo {period_match.group(1)}")
+
+        # Buscar semanas S## A S##
+        weeks_match = re.search(r'S(\d+)\s*A\s*S(\d+)', filename.upper())
+        if weeks_match:
+            return f"{month} (S{weeks_match.group(1)}-S{weeks_match.group(2)})"
+        return month
+
+    # Buscar meses en español
+    months_es = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+                 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
+    for month in months_es:
+        if month in filename.lower():
+            return month.capitalize()
+
+    # Buscar año
+    year_match = re.search(r'20\d{2}', filename)
+    if year_match:
+        return year_match.group(0)
+
+    # Default: fecha actual
+    from datetime import datetime
+    return datetime.now().strftime('%B %Y').capitalize()
+
+
 @app.post("/upload")
 async def upload_file(
     file: UploadFile = File(...),
@@ -298,6 +338,7 @@ async def upload_file(
     """Sube un archivo y retorna preview para confirmación"""
     try:
         filename = file.filename.lower()
+        detected_period = detect_period_from_filename(file.filename)
         allowed_extensions = ['.xlsx', '.xls', '.csv', '.pdf']
         if not any(filename.endswith(ext) for ext in allowed_extensions):
             raise HTTPException(
@@ -318,6 +359,7 @@ async def upload_file(
                 file_type="pdf",
                 rows_count=len(lines),
                 columns=["contenido"],
+                period=detected_period,
                 status="pending_confirmation"
             )
             db.add(doc)
@@ -398,6 +440,7 @@ async def upload_file(
                     file_type="excel" if not filename.endswith('.csv') else "csv",
                     rows_count=len(df),
                     columns=columns,
+                    period=detected_period,
                     status="pending_confirmation"
                 )
                 db.add(doc)
