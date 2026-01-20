@@ -1084,20 +1084,27 @@ async def get_charts_financial_data(db: Session = Depends(get_db)):
 import pathlib
 STATIC_DIR = pathlib.Path(__file__).parent.parent
 
-# Servir archivos estáticos (CSS, JS, images si los hay)
-# app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+# Paginas disponibles (friendly URLs)
+PAGES = ["upload", "julia", "documents", "graficas", "reports", "settings", "login", "profile"]
 
 # Servir index.html en la raíz
 @app.get("/", response_class=FileResponse)
 async def serve_index():
     return FileResponse(STATIC_DIR / "index.html")
 
-# Servir cualquier archivo HTML
-@app.get("/{filename}.html", response_class=FileResponse)
-async def serve_html(filename: str):
-    file_path = STATIC_DIR / f"{filename}.html"
-    if file_path.exists():
-        return FileResponse(file_path)
+# Friendly URLs - sin .html (ej: /upload, /julia, /graficas)
+@app.get("/{page}")
+async def serve_page(page: str):
+    # Si es una pagina conocida, servir el HTML
+    if page in PAGES:
+        file_path = STATIC_DIR / f"{page}.html"
+        if file_path.exists():
+            return FileResponse(file_path)
+    # Si termina en .html, servirlo directamente
+    if page.endswith(".html"):
+        file_path = STATIC_DIR / page
+        if file_path.exists():
+            return FileResponse(file_path)
     raise HTTPException(status_code=404, detail="Page not found")
 
 

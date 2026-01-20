@@ -413,7 +413,7 @@
         // ====== AUTH ======
         auth.onAuthStateChanged(async (user) => {
             if (!user) {
-                window.location.href = 'login.html';
+                window.location.href = '/login';
                 return;
             }
 
@@ -424,7 +424,7 @@
             const userDoc = await db.collection('usuarios').doc(user.uid).get();
             if (userDoc.exists && userDoc.data().rol !== 'director') {
                 showToast('No tienes permisos de administrador', 'error');
-                setTimeout(() => window.location.href = 'index.html', 2000);
+                setTimeout(() => window.location.href = '/', 2000);
                 return;
             }
 
@@ -436,7 +436,7 @@
 
         function logout() {
             auth.signOut().then(() => {
-                window.location.href = 'login.html';
+                window.location.href = '/login';
             });
         }
 

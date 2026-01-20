@@ -362,7 +362,7 @@
                 localStorage.setItem('authToken', token);
                 localStorage.setItem('userEmail', userCredential.user.email);
                 localStorage.setItem('userName', userCredential.user.displayName || '');
-                window.location.href = 'index.html';
+                window.location.href = '/';
             } catch (error) {
                 console.error('Login error:', error);
                 let msg = 'Error al iniciar sesion';
@@ -390,7 +390,7 @@
         // Check if already logged in
         auth.onAuthStateChanged(function(user) {
             if (user && user.emailVerified) {
-                window.location.href = 'index.html';
+                window.location.href = '/';
             }
         });
     </script>
