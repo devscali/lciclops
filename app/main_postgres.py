@@ -3,10 +3,12 @@ CICLOPS Backend - Producción con PostgreSQL
 API para análisis financiero de Little Caesars
 """
 
-from fastapi import FastAPI, File, UploadFile, HTTPException, Depends, Query
+from fastapi import FastAPI, File, UploadFile, HTTPException, Depends, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc
 from openai import OpenAI
@@ -34,6 +36,21 @@ app = FastAPI(
     description="API para análisis financiero de Little Caesars con Julia AI",
     version="2.0.0"
 )
+
+
+# Middleware para forzar HTTPS (Railway usa proxy)
+class ForceHTTPSMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        # Railway pone el protocolo original en X-Forwarded-Proto
+        forwarded_proto = request.headers.get("x-forwarded-proto", "https")
+        if forwarded_proto == "http":
+            url = request.url.replace(scheme="https")
+            return RedirectResponse(url=str(url), status_code=301)
+        return await call_next(request)
+
+
+# Agregar middleware (orden importa: HTTPS primero)
+app.add_middleware(ForceHTTPSMiddleware)
 
 # CORS
 app.add_middleware(
