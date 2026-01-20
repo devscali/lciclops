@@ -3,352 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CICLOPS - Registro</title>
+    <title>CICLOPS - Registro Deshabilitado</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Bricolage+Grotesque:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         * { font-family: 'Instrument Sans', system-ui, sans-serif; }
         .font-display { font-family: 'Bricolage Grotesque', serif; }
-
         body {
             background: #0a0a0b;
             min-height: 100vh;
-            overflow-x: hidden;
         }
-
         .bg-gradient {
             position: fixed;
             inset: 0;
             background:
                 radial-gradient(ellipse 80% 50% at 50% -20%, rgba(255, 87, 34, 0.15), transparent),
                 radial-gradient(ellipse 60% 40% at 100% 100%, rgba(255, 138, 101, 0.1), transparent);
-            animation: pulse 8s ease-in-out infinite alternate;
         }
-
-        @keyframes pulse {
-            0% { opacity: 0.8; }
-            100% { opacity: 1; }
-        }
-
         .glass-card {
             background: rgba(255, 255, 255, 0.03);
             backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.08);
         }
-
-        .input-dark {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: white;
-            transition: all 0.3s ease;
-        }
-
-        .input-dark:focus {
-            background: rgba(255, 255, 255, 0.05);
-            border-color: #FF5722;
-            box-shadow: 0 0 0 3px rgba(255, 87, 34, 0.15);
-            outline: none;
-        }
-
-        .input-dark::placeholder { color: rgba(255, 255, 255, 0.3); }
-
-        .btn-glow {
-            background: linear-gradient(135deg, #FF5722 0%, #E64A19 100%);
-            box-shadow: 0 4px 15px rgba(255, 87, 34, 0.4);
-            transition: all 0.3s ease;
-        }
-
-        .btn-glow:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(255, 87, 34, 0.5);
-        }
-
-        .shape {
-            position: absolute;
-            border-radius: 50%;
-            filter: blur(60px);
-            opacity: 0.5;
-            animation: float 20s ease-in-out infinite;
-        }
-
-        .shape-1 {
-            width: 300px;
-            height: 300px;
-            background: #FF5722;
-            top: -100px;
-            left: -100px;
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translate(0, 0) scale(1); }
-            50% { transform: translate(30px, 30px) scale(1.1); }
-        }
-
-        .logo-ring { animation: spin 20s linear infinite; }
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-
-        html { -webkit-overflow-scrolling: touch; }
-        button, input { min-height: 44px; }
-        input { font-size: 16px !important; }
-
-        .link-hover { position: relative; }
-        .link-hover::after {
-            content: '';
-            position: absolute;
-            bottom: -2px;
-            left: 0;
-            width: 0;
-            height: 1px;
-            background: #FF5722;
-            transition: width 0.3s ease;
-        }
-        .link-hover:hover::after { width: 100%; }
     </style>
 </head>
-<body class="flex items-center justify-center p-4">
+<body class="text-white flex items-center justify-center min-h-screen p-4">
     <div class="bg-gradient"></div>
-    <div class="shape shape-1"></div>
 
     <div class="relative z-10 w-full max-w-md">
         <!-- Logo -->
         <div class="text-center mb-8">
-            <div class="relative inline-flex items-center justify-center mb-6">
-                <div class="absolute w-24 h-24 rounded-full border border-[#FF5722]/30 logo-ring"></div>
-                <div class="w-20 h-20 rounded-2xl bg-gradient-to-br from-[#FF5722] to-[#E64A19] flex items-center justify-center shadow-lg shadow-[#FF5722]/30">
-                    <svg class="w-10 h-10 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                        <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/>
-                    </svg>
-                </div>
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-[#FF5722] to-[#E64A19] mb-4 shadow-lg shadow-orange-500/30">
+                <svg class="w-8 h-8 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/>
+                </svg>
             </div>
-            <h1 class="font-display text-4xl font-bold text-white mb-2">Crear Cuenta</h1>
-            <p class="text-gray-400">Registrate para acceder al sistema</p>
+            <h1 class="font-display text-3xl font-bold">CICLOPS</h1>
+            <p class="text-gray-400 mt-1">Little Caesars Intelligence</p>
         </div>
 
-        <!-- Form Card -->
-        <div class="glass-card rounded-3xl p-8">
-            <!-- Success Alert -->
-            <div id="successAlert" class="hidden mb-6 p-4 bg-green-500/10 border border-green-500/20 rounded-xl">
-                <div class="flex items-start gap-3">
-                    <svg class="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    <div>
-                        <p class="text-sm text-green-300 font-medium">Cuenta creada exitosamente</p>
-                        <p id="successMessage" class="text-sm text-green-400/80 mt-1"></p>
-                    </div>
-                </div>
+        <!-- Card -->
+        <div class="glass-card rounded-2xl p-8 text-center">
+            <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-yellow-500/10 flex items-center justify-center">
+                <svg class="w-8 h-8 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
             </div>
 
-            <!-- Error Alert -->
-            <div id="errorAlert" class="hidden mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
-                <div class="flex items-start gap-3">
-                    <svg class="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    <p id="errorMessage" class="text-sm text-red-300"></p>
-                </div>
-            </div>
-
-            <form id="registerForm" class="space-y-5">
-                <!-- Name -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-400 mb-2">Nombre completo</label>
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                            <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                            </svg>
-                        </div>
-                        <input type="text" id="displayName" placeholder="Juan Pérez" class="w-full pl-12 pr-4 py-3.5 rounded-xl input-dark" required>
-                    </div>
-                </div>
-
-                <!-- Email -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-400 mb-2">Correo electronico</label>
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                            <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                            </svg>
-                        </div>
-                        <input type="email" id="email" placeholder="tu@email.com" class="w-full pl-12 pr-4 py-3.5 rounded-xl input-dark" required>
-                    </div>
-                </div>
-
-                <!-- Password -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-400 mb-2">Contrasena</label>
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                            <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-                            </svg>
-                        </div>
-                        <input type="password" id="password" placeholder="Minimo 6 caracteres" class="w-full pl-12 pr-4 py-3.5 rounded-xl input-dark" required minlength="6">
-                    </div>
-                    <p class="text-xs text-gray-500 mt-2">Minimo 6 caracteres</p>
-                </div>
-
-                <!-- Confirm Password -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-400 mb-2">Confirmar contrasena</label>
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                            <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-                            </svg>
-                        </div>
-                        <input type="password" id="confirmPassword" placeholder="Repite tu contrasena" class="w-full pl-12 pr-4 py-3.5 rounded-xl input-dark" required>
-                    </div>
-                </div>
-
-                <!-- Terms -->
-                <div class="flex items-start gap-3">
-                    <input type="checkbox" id="terms" class="w-5 h-5 mt-0.5 rounded border-gray-600 bg-transparent text-[#FF5722] focus:ring-[#FF5722]" required>
-                    <label for="terms" class="text-sm text-gray-400">
-                        Acepto los <a href="#" class="text-[#FF5722] hover:text-[#FF8A65] link-hover">terminos y condiciones</a> y la <a href="#" class="text-[#FF5722] hover:text-[#FF8A65] link-hover">politica de privacidad</a>
-                    </label>
-                </div>
-
-                <!-- Submit -->
-                <button type="submit" id="submitBtn" class="w-full btn-glow text-white py-4 rounded-xl font-semibold flex items-center justify-center gap-2 mt-6">
-                    <span id="btnText">Crear Cuenta</span>
-                    <svg id="spinner" class="hidden w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <svg id="arrowIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
-                    </svg>
-                </button>
-            </form>
-
-            <!-- Login Link -->
-            <p class="text-center text-gray-500 mt-8">
-                Ya tienes cuenta?
-                <a href="login.html" class="text-[#FF5722] hover:text-[#FF8A65] font-medium link-hover ml-1">Inicia sesion</a>
+            <h2 class="font-display text-xl font-bold mb-2">Registro Deshabilitado</h2>
+            <p class="text-gray-400 mb-6">
+                El registro publico no esta disponible.<br>
+                Contacta al administrador para obtener acceso.
             </p>
+
+            <div class="space-y-3">
+                <a href="/login" class="block w-full py-3 px-4 rounded-xl bg-gradient-to-r from-[#FF5722] to-[#E64A19] text-white font-semibold shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40 transition-all">
+                    Ir a Iniciar Sesion
+                </a>
+                <a href="mailto:admin@lciclops.com" class="block text-gray-400 hover:text-white transition-colors text-sm">
+                    Solicitar acceso al administrador
+                </a>
+            </div>
         </div>
 
-        <!-- Footer -->
-        <p class="text-center text-xs text-gray-600 mt-8">
-            CICLOPS v1.0 &bull; Little Caesars Reports
+        <p class="text-center text-gray-600 text-sm mt-6">
+            Solo usuarios autorizados pueden acceder al sistema
         </p>
     </div>
-
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-
-    <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyBL8-hBMJR6NlnXN6rWwS8WVcrdMm7m4rY",
-            authDomain: "ciclops-8a2de.firebaseapp.com",
-            projectId: "ciclops-8a2de",
-            storageBucket: "ciclops-8a2de.firebasestorage.app",
-            messagingSenderId: "475876958824",
-            appId: "1:475876958824:web:5ecc315220c66fdd56d1dd"
-        };
-
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-
-        const registerForm = document.getElementById('registerForm');
-        const submitBtn = document.getElementById('submitBtn');
-        const btnText = document.getElementById('btnText');
-        const spinner = document.getElementById('spinner');
-        const arrowIcon = document.getElementById('arrowIcon');
-        const errorAlert = document.getElementById('errorAlert');
-        const errorMessage = document.getElementById('errorMessage');
-        const successAlert = document.getElementById('successAlert');
-        const successMessage = document.getElementById('successMessage');
-
-        function showError(message) {
-            successAlert.classList.add('hidden');
-            errorMessage.textContent = message;
-            errorAlert.classList.remove('hidden');
-            setLoading(false);
-        }
-
-        function showSuccess(message) {
-            errorAlert.classList.add('hidden');
-            successMessage.textContent = message;
-            successAlert.classList.remove('hidden');
-            setLoading(false);
-        }
-
-        function setLoading(loading) {
-            if (loading) {
-                btnText.textContent = 'Creando cuenta...';
-                spinner.classList.remove('hidden');
-                arrowIcon.classList.add('hidden');
-                submitBtn.disabled = true;
-                submitBtn.style.opacity = '0.7';
-            } else {
-                btnText.textContent = 'Crear Cuenta';
-                spinner.classList.add('hidden');
-                arrowIcon.classList.remove('hidden');
-                submitBtn.disabled = false;
-                submitBtn.style.opacity = '1';
-            }
-        }
-
-        registerForm.addEventListener('submit', async function(e) {
-            e.preventDefault();
-
-            const displayName = document.getElementById('displayName').value.trim();
-            const email = document.getElementById('email').value.trim();
-            const password = document.getElementById('password').value;
-            const confirmPassword = document.getElementById('confirmPassword').value;
-
-            if (password !== confirmPassword) {
-                showError('Las contrasenas no coinciden');
-                return;
-            }
-
-            if (password.length < 6) {
-                showError('La contrasena debe tener al menos 6 caracteres');
-                return;
-            }
-
-            setLoading(true);
-
-            try {
-                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-                await userCredential.user.updateProfile({ displayName: displayName });
-                await userCredential.user.sendEmailVerification();
-
-                showSuccess(`Te enviamos un correo de verificacion a ${email}. Revisa tu bandeja de entrada (y spam) para activar tu cuenta.`);
-                registerForm.classList.add('hidden');
-                await auth.signOut();
-
-            } catch (error) {
-                console.error('Register error:', error);
-                let msg = 'Error al crear la cuenta';
-                switch (error.code) {
-                    case 'auth/email-already-in-use':
-                        msg = 'Este correo ya esta registrado. Intenta iniciar sesion.';
-                        break;
-                    case 'auth/invalid-email':
-                        msg = 'El correo electronico no es valido';
-                        break;
-                    case 'auth/weak-password':
-                        msg = 'La contrasena es muy debil. Usa al menos 6 caracteres.';
-                        break;
-                }
-                showError(msg);
-            }
-        });
-
-        auth.onAuthStateChanged(function(user) {
-            if (user && user.emailVerified) {
-                window.location.href = '/';
-            }
-        });
-    </script>
 </body>
 </html>
