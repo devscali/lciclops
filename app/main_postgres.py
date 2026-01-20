@@ -1084,27 +1084,46 @@ async def get_charts_financial_data(db: Session = Depends(get_db)):
 import pathlib
 STATIC_DIR = pathlib.Path(__file__).parent.parent
 
-# Paginas disponibles (friendly URLs)
-PAGES = ["upload", "julia", "documents", "graficas", "reports", "settings", "login", "profile"]
-
 # Servir index.html en la raíz
 @app.get("/", response_class=FileResponse)
 async def serve_index():
     return FileResponse(STATIC_DIR / "index.html")
 
-# Friendly URLs - sin .html (ej: /upload, /julia, /graficas)
-@app.get("/{page}")
-async def serve_page(page: str):
-    # Si es una pagina conocida, servir el HTML
-    if page in PAGES:
-        file_path = STATIC_DIR / f"{page}.html"
-        if file_path.exists():
-            return FileResponse(file_path)
-    # Si termina en .html, servirlo directamente
-    if page.endswith(".html"):
-        file_path = STATIC_DIR / page
-        if file_path.exists():
-            return FileResponse(file_path)
+# Friendly URLs - rutas explícitas para cada página
+@app.get("/subir", response_class=FileResponse)
+async def serve_upload():
+    return FileResponse(STATIC_DIR / "upload.html")
+
+@app.get("/julia", response_class=FileResponse)
+async def serve_julia():
+    return FileResponse(STATIC_DIR / "julia.html")
+
+@app.get("/vault", response_class=FileResponse)
+async def serve_documents():
+    return FileResponse(STATIC_DIR / "documents.html")
+
+@app.get("/graficas", response_class=FileResponse)
+async def serve_graficas():
+    return FileResponse(STATIC_DIR / "graficas.html")
+
+@app.get("/reportes", response_class=FileResponse)
+async def serve_reports():
+    return FileResponse(STATIC_DIR / "reports.html")
+
+@app.get("/config", response_class=FileResponse)
+async def serve_settings():
+    return FileResponse(STATIC_DIR / "settings.html")
+
+@app.get("/login", response_class=FileResponse)
+async def serve_login():
+    return FileResponse(STATIC_DIR / "login.html")
+
+# También servir archivos .html directamente
+@app.get("/{filename}.html", response_class=FileResponse)
+async def serve_html(filename: str):
+    file_path = STATIC_DIR / f"{filename}.html"
+    if file_path.exists():
+        return FileResponse(file_path)
     raise HTTPException(status_code=404, detail="Page not found")
 
 
