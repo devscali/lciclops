@@ -380,54 +380,41 @@
             purple: '#8B5CF6'
         };
 
-        // 1. Sales Line Chart
-        new Chart(document.getElementById('salesLineChart'), {
-            type: 'line',
+        // Store chart references for updates
+        let salesChart, storesChart, expensesChart, comparisonChart;
+
+        // 1. Sales by Store Chart (será actualizado con datos reales)
+        salesChart = new Chart(document.getElementById('salesLineChart'), {
+            type: 'bar',
             data: {
-                labels: Array.from({length: 30}, (_, i) => i + 1),
-                datasets: [
-                    {
-                        label: 'Ventas',
-                        data: [8.5, 9.2, 8.8, 10.1, 12.5, 14.2, 11.8, 9.5, 10.2, 9.8, 11.5, 13.2, 15.1, 12.8, 10.5, 11.2, 10.8, 12.5, 14.8, 16.2, 13.5, 11.2, 12.5, 11.8, 13.2, 15.5, 17.2, 14.8, 12.5, 13.2],
-                        borderColor: pizzaColors.primary,
-                        backgroundColor: 'rgba(255,87,34,0.1)',
-                        fill: true,
-                        tension: 0.4,
-                        pointRadius: 0,
-                        pointHoverRadius: 6,
-                        pointHoverBackgroundColor: pizzaColors.primary
-                    },
-                    {
-                        label: 'Meta',
-                        data: Array(30).fill(12),
-                        borderColor: pizzaColors.blue,
-                        borderDash: [5, 5],
-                        pointRadius: 0,
-                        fill: false
-                    }
-                ]
+                labels: ['Cargando...'],
+                datasets: [{
+                    label: 'Ventas por Tienda',
+                    data: [0],
+                    backgroundColor: pizzaColors.primary,
+                    borderRadius: 6
+                }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                indexAxis: 'y',
                 plugins: { legend: { display: false } },
                 scales: {
-                    x: { grid: { display: false }, ticks: { maxTicksLimit: 10 } },
-                    y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { callback: v => '$' + v + 'k' } }
-                },
-                interaction: { intersect: false, mode: 'index' }
+                    x: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { callback: v => '$' + (v/1000000).toFixed(1) + 'M' } },
+                    y: { grid: { display: false } }
+                }
             }
         });
 
-        // 2. Channel Bar Chart
-        new Chart(document.getElementById('channelBarChart'), {
+        // 2. Stores Comparison Chart
+        storesChart = new Chart(document.getElementById('channelBarChart'), {
             type: 'bar',
             data: {
-                labels: ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'],
+                labels: ['Cargando...'],
                 datasets: [
-                    { label: 'Mostrador', data: [12, 15, 13, 14, 20, 28, 22], backgroundColor: pizzaColors.primary, borderRadius: 6 },
-                    { label: 'Delivery', data: [8, 9, 7.5, 8.5, 12, 18, 14], backgroundColor: pizzaColors.light, borderRadius: 6 },
-                    { label: 'App', data: [3, 4, 3.5, 4, 6, 8, 6], backgroundColor: pizzaColors.lighter, borderRadius: 6 }
+                    { label: 'Ingresos', data: [0], backgroundColor: pizzaColors.primary, borderRadius: 6 },
+                    { label: 'Utilidad', data: [0], backgroundColor: pizzaColors.success, borderRadius: 6 }
                 ]
             },
             options: {
@@ -435,20 +422,20 @@
                 maintainAspectRatio: false,
                 plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, pointStyle: 'circle', padding: 20 } } },
                 scales: {
-                    x: { stacked: true, grid: { display: false } },
-                    y: { stacked: true, grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { callback: v => '$' + v + 'k' } }
+                    x: { grid: { display: false } },
+                    y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { callback: v => '$' + (v/1000000).toFixed(1) + 'M' } }
                 }
             }
         });
 
         // 3. Expenses Pie Chart
-        new Chart(document.getElementById('expensesPieChart'), {
+        expensesChart = new Chart(document.getElementById('expensesPieChart'), {
             type: 'doughnut',
             data: {
-                labels: ['Nomina', 'Renta', 'CFE', 'Gas', 'Insumos', 'Marketing', 'Otros'],
+                labels: ['Cargando...'],
                 datasets: [{
-                    data: [68, 35, 18.5, 8.2, 45, 12, 10],
-                    backgroundColor: [pizzaColors.primary, pizzaColors.light, pizzaColors.lighter, pizzaColors.lightest, pizzaColors.blue, pizzaColors.purple, pizzaColors.gray],
+                    data: [1],
+                    backgroundColor: [pizzaColors.primary],
                     borderWidth: 0,
                     spacing: 2
                 }]
@@ -463,14 +450,14 @@
             }
         });
 
-        // 4. Comparison Chart (Ingresos vs Gastos)
-        new Chart(document.getElementById('comparisonChart'), {
+        // 4. Comparison Chart (Ingresos vs Egresos totales)
+        comparisonChart = new Chart(document.getElementById('comparisonChart'), {
             type: 'bar',
             data: {
-                labels: ['Ago', 'Sep', 'Oct', 'Nov', 'Dic', 'Ene'],
+                labels: ['Total'],
                 datasets: [
-                    { label: 'Ingresos', data: [220, 235, 245, 254, 268, 285], backgroundColor: pizzaColors.primary, borderRadius: 6 },
-                    { label: 'Gastos', data: [180, 188, 195, 200, 212, 220], backgroundColor: pizzaColors.gray, borderRadius: 6 }
+                    { label: 'Ingresos', data: [0], backgroundColor: pizzaColors.primary, borderRadius: 6 },
+                    { label: 'Egresos', data: [0], backgroundColor: pizzaColors.gray, borderRadius: 6 }
                 ]
             },
             options: {
@@ -479,7 +466,7 @@
                 plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, pointStyle: 'circle', padding: 20 } } },
                 scales: {
                     x: { grid: { display: false } },
-                    y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { callback: v => '$' + v + 'k' } }
+                    y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { callback: v => '$' + (v/1000000).toFixed(1) + 'M' } }
                 }
             }
         });
@@ -620,54 +607,95 @@
             }).format(amount || 0);
         }
 
-        // Load dashboard data from API
+        // Load financial chart data from API
+        async function loadFinancialData() {
+            try {
+                const response = await fetch(`${API}/charts/financial`);
+                if (!response.ok) throw new Error('Financial API not available');
+
+                const data = await response.json();
+                console.log('Financial data loaded:', data);
+
+                if (!data.success) return;
+
+                const summary = data.summary;
+                const stores = data.stores;
+                const categories = data.categories;
+
+                // Update KPIs with real financial data
+                document.getElementById('kpi-ventas').textContent = formatMoney(summary.total_ingresos);
+                document.getElementById('kpi-ventas-trend').textContent = `${summary.num_tiendas} tiendas`;
+
+                document.getElementById('kpi-utilidad').textContent = formatMoney(summary.utilidad_bruta);
+                document.getElementById('kpi-utilidad-trend').textContent = 'utilidad bruta';
+
+                document.getElementById('kpi-margen').textContent = summary.margen.toFixed(1) + '%';
+                document.getElementById('kpi-margen-trend').textContent = 'margen bruto';
+
+                document.getElementById('kpi-docs').textContent = summary.num_documentos;
+                document.getElementById('kpi-docs-trend').textContent = 'docs procesados';
+
+                // Update Sales Chart (Ventas por tienda - horizontal bar)
+                if (stores.names.length > 0) {
+                    salesChart.data.labels = stores.names;
+                    salesChart.data.datasets[0].data = stores.ventas;
+                    salesChart.update();
+                }
+
+                // Update Stores Comparison Chart (Ingresos vs Utilidad)
+                if (stores.names.length > 0) {
+                    storesChart.data.labels = stores.names.slice(0, 7);
+                    storesChart.data.datasets[0].data = stores.ventas.slice(0, 7);
+                    storesChart.data.datasets[1].data = stores.utilidad.slice(0, 7);
+                    storesChart.update();
+                }
+
+                // Update Expenses Pie Chart
+                if (Object.keys(categories).length > 0) {
+                    const catLabels = Object.keys(categories);
+                    const catValues = Object.values(categories);
+                    const catColors = [pizzaColors.primary, pizzaColors.light, pizzaColors.lighter, pizzaColors.blue, pizzaColors.purple, pizzaColors.success, pizzaColors.gray];
+
+                    expensesChart.data.labels = catLabels;
+                    expensesChart.data.datasets[0].data = catValues;
+                    expensesChart.data.datasets[0].backgroundColor = catColors.slice(0, catLabels.length);
+                    expensesChart.update();
+                }
+
+                // Update Comparison Chart (Total Ingresos vs Egresos)
+                comparisonChart.data.labels = ['Periodo Actual'];
+                comparisonChart.data.datasets[0].data = [summary.total_ingresos];
+                comparisonChart.data.datasets[1].data = [summary.total_egresos];
+                comparisonChart.update();
+
+            } catch (error) {
+                console.log('Financial data error:', error.message);
+            }
+        }
+
+        // Load dashboard stats
         async function loadDashboardData() {
             try {
                 const response = await fetch(`${API}/dashboard/stats`);
                 if (!response.ok) throw new Error('API not available');
 
                 const data = await response.json();
+                console.log('Dashboard stats loaded:', data);
 
-                // Update KPIs from actual data
-                document.getElementById('kpi-docs').textContent = data.total_documents || 0;
-                document.getElementById('kpi-docs-trend').textContent = `${data.total_stores || 0} sucursales`;
-
-                // Check for monthly summaries
-                if (data.monthly_summaries && data.monthly_summaries.length > 0) {
-                    const latest = data.monthly_summaries[0];
-                    document.getElementById('kpi-ventas').textContent = formatMoney(latest.total_sales);
-                    document.getElementById('kpi-utilidad').textContent = formatMoney(latest.net_profit);
-                    document.getElementById('kpi-margen').textContent = (latest.net_margin || 0).toFixed(1) + '%';
-                    document.getElementById('kpi-ventas-trend').textContent = latest.period || 'periodo actual';
-                    document.getElementById('kpi-utilidad-trend').textContent = 'utilidad neta';
-                    document.getElementById('kpi-margen-trend').textContent = 'margen neto';
-                } else {
-                    // No financial data yet, show docs stats
-                    document.getElementById('kpi-ventas').textContent = data.total_documents || 0;
-                    document.getElementById('kpi-ventas-trend').textContent = 'documentos en vault';
-                    document.getElementById('kpi-utilidad').textContent = data.total_analyses || 0;
-                    document.getElementById('kpi-utilidad-trend').textContent = 'analisis realizados';
-                    document.getElementById('kpi-margen').textContent = data.total_stores || 0;
-                    document.getElementById('kpi-margen-trend').textContent = 'sucursales activas';
+                // Financial data takes priority, this is fallback
+                if (data.total_documents === 0) {
+                    document.getElementById('kpi-docs').textContent = '0';
+                    document.getElementById('kpi-docs-trend').textContent = 'sube un archivo';
                 }
 
-                console.log('Dashboard data loaded:', data);
-
             } catch (error) {
-                console.log('Using demo data - API:', error.message);
-                // Set demo data if API fails
-                document.getElementById('kpi-ventas').textContent = '$285,000';
-                document.getElementById('kpi-utilidad').textContent = '$42,550';
-                document.getElementById('kpi-margen').textContent = '14.9%';
-                document.getElementById('kpi-docs').textContent = '12';
-                document.getElementById('kpi-ventas-trend').textContent = '+12% vs periodo anterior';
-                document.getElementById('kpi-utilidad-trend').textContent = '+8.2% crecimiento';
-                document.getElementById('kpi-margen-trend').textContent = 'margen saludable';
+                console.log('Dashboard API error:', error.message);
             }
         }
 
-        // Initialize
+        // Initialize - load both
         loadDashboardData();
+        loadFinancialData();
     </script>
 
     <!-- Firebase SDK -->

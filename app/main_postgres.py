@@ -885,6 +885,111 @@ async def get_dashboard_stats(db: Session = Depends(get_db)):
 
 
 # ============================================
+# CHARTS - Datos para gráficas en vivo
+# ============================================
+
+@app.get("/charts/financial")
+async def get_charts_financial_data(db: Session = Depends(get_db)):
+    """Extrae datos financieros de los documentos para las gráficas"""
+
+    # Buscar documentos de Estado de Resultados confirmados
+    docs = db.query(models.Document).filter(
+        models.Document.status == "confirmed",
+        models.Document.filename.ilike("%ESTADO DE RESULTADOS%")
+    ).order_by(desc(models.Document.created_at)).limit(5).all()
+
+    stores_data = {}
+    total_ingresos = 0
+    total_egresos = 0
+    categories = {}
+
+    for doc in docs:
+        raw = db.query(models.RawDocumentData).filter(
+            models.RawDocumentData.document_id == doc.id
+        ).first()
+
+        if not raw or not raw.raw_json:
+            continue
+
+        data = raw.raw_json.get("data", [])
+        if not data:
+            continue
+
+        # Primera fila tiene nombres de tiendas
+        header_row = data[0] if data else {}
+
+        # Extraer nombres de tiendas (columnas impares que no son %)
+        store_names = []
+        for key, val in header_row.items():
+            if val and isinstance(val, str) and val != "%" and "Unnamed" not in key:
+                store_names.append(val)
+
+        # Buscar filas de INGRESOS, EGRESOS, UTILIDAD
+        for row in data:
+            first_col = list(row.values())[0] if row else None
+            if not first_col:
+                continue
+
+            first_col_str = str(first_col).upper().strip()
+
+            # Extraer valores por tienda
+            col_idx = 0
+            for key, val in row.items():
+                if "Unnamed" in key or not val:
+                    continue
+                if isinstance(val, (int, float)) and col_idx < len(store_names):
+                    store_name = store_names[col_idx] if col_idx < len(store_names) else f"Tienda {col_idx}"
+
+                    if store_name not in stores_data:
+                        stores_data[store_name] = {"ingresos": 0, "egresos": 0, "utilidad": 0}
+
+                    if first_col_str == "INGRESOS" or "VENTA" in first_col_str:
+                        stores_data[store_name]["ingresos"] = val
+                        total_ingresos += val
+                    elif first_col_str == "TOTAL EGRESOS" or first_col_str == "EGRESOS":
+                        stores_data[store_name]["egresos"] = val
+                        total_egresos += val
+                    elif "UTILIDAD" in first_col_str and "NETA" in first_col_str:
+                        stores_data[store_name]["utilidad"] = val
+
+                    # Categorizar gastos
+                    if any(x in first_col_str for x in ["NOMINA", "SALARIO", "SUELDO"]):
+                        categories["Nómina"] = categories.get("Nómina", 0) + val
+                    elif any(x in first_col_str for x in ["RENTA", "ALQUILER"]):
+                        categories["Renta"] = categories.get("Renta", 0) + val
+                    elif any(x in first_col_str for x in ["LUZ", "ELECTRICIDAD", "CFE"]):
+                        categories["Servicios"] = categories.get("Servicios", 0) + val
+                    elif any(x in first_col_str for x in ["COSTO", "INGREDIENTE", "MATERIA"]):
+                        categories["Costo de Venta"] = categories.get("Costo de Venta", 0) + val
+
+                col_idx += 1
+
+    # Preparar datos para gráficas
+    stores_list = list(stores_data.keys())[:10]  # Top 10 tiendas
+    ventas_por_tienda = [stores_data.get(s, {}).get("ingresos", 0) for s in stores_list]
+    utilidad_por_tienda = [stores_data.get(s, {}).get("utilidad", 0) for s in stores_list]
+
+    return {
+        "success": True,
+        "summary": {
+            "total_ingresos": total_ingresos,
+            "total_egresos": total_egresos,
+            "utilidad_bruta": total_ingresos - total_egresos,
+            "margen": ((total_ingresos - total_egresos) / total_ingresos * 100) if total_ingresos > 0 else 0,
+            "num_tiendas": len(stores_data),
+            "num_documentos": len(docs)
+        },
+        "stores": {
+            "names": stores_list,
+            "ventas": ventas_por_tienda,
+            "utilidad": utilidad_por_tienda
+        },
+        "categories": categories,
+        "raw_stores": stores_data
+    }
+
+
+# ============================================
 # STATIC FILES - Servir frontend HTML
 # ============================================
 
