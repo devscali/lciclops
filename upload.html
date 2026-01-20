@@ -346,7 +346,7 @@
                     <button onclick="rejectAndReupload()" class="px-5 py-2.5 rounded-xl bg-danger/10 text-danger font-medium hover:bg-danger/20 transition-colors">
                         No, resubir
                     </button>
-                    <button onclick="confirmAndSave()" class="px-5 py-2.5 rounded-xl bg-success text-white font-medium hover:bg-success/90 transition-colors flex items-center gap-2">
+                    <button id="confirmSaveBtn" onclick="confirmAndSave()" class="px-5 py-2.5 rounded-xl bg-success text-white font-medium hover:bg-success/90 transition-colors flex items-center gap-2">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                             <polyline points="20 6 9 17 4 12"/>
                         </svg>
@@ -363,7 +363,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 
     <script>
-        const API = 'https://lciclops-production.up.railway.app';
+        const API = 'https://lc.calidevs.com';
         let currentDocData = null;
         let currentFileCard = null;
 
@@ -611,7 +611,7 @@
             document.getElementById('previewContent').innerHTML = html;
 
             // Hide confirm button when showing sheets list
-            document.querySelector('#previewModal .bg-pizza').style.display = 'none';
+            document.getElementById('confirmSaveBtn').style.display = 'none';
             document.getElementById('previewModal').classList.remove('hidden');
         }
 
@@ -684,7 +684,7 @@
             content.innerHTML = html;
 
             // Show confirm button
-            document.querySelector('#previewModal .bg-pizza').style.display = '';
+            document.getElementById('confirmSaveBtn').style.display = '';
             document.getElementById('previewModal').classList.remove('hidden');
         }
 
