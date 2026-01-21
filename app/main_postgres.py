@@ -3,7 +3,7 @@ CICLOPS Backend - Producción con PostgreSQL
 API para análisis financiero de Little Caesars
 """
 
-from fastapi import FastAPI, File, UploadFile, HTTPException, Depends, Query, Request
+from fastapi import FastAPI, File, UploadFile, HTTPException, Depends, Query, Request, Header, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -22,6 +22,8 @@ from dotenv import load_dotenv
 from typing import Optional, List
 import traceback
 import pdfplumber
+import firebase_admin
+from firebase_admin import credentials, auth as firebase_auth
 
 from .database import engine, get_db, Base
 from . import db_models as models
@@ -54,15 +56,135 @@ class ForceHTTPSMiddleware(BaseHTTPMiddleware):
 # Agregar middleware (orden importa: HTTPS primero)
 app.add_middleware(ForceHTTPSMiddleware)
 
-# CORS
+# CORS - Restringido a orígenes permitidos
+ALLOWED_ORIGINS = [
+    "https://lciclops-production.up.railway.app",
+    "https://lciclops.up.railway.app",
+    "http://localhost:3000",
+    "http://localhost:8000",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:8000",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
     expose_headers=["*"],
 )
+
+
+# ============================================
+# AUTENTICACIÓN CON FIREBASE
+# ============================================
+
+# Inicializar Firebase Admin si no está inicializado
+_firebase_initialized = False
+
+def init_firebase_admin():
+    """Inicializa Firebase Admin SDK"""
+    global _firebase_initialized
+    if _firebase_initialized:
+        return
+
+    try:
+        # Intentar obtener la app existente
+        firebase_admin.get_app()
+        _firebase_initialized = True
+    except ValueError:
+        # No existe, inicializar
+        cred_path = os.getenv("FIREBASE_CREDENTIALS_PATH", "firebase-credentials.json")
+        if os.path.exists(cred_path):
+            cred = credentials.Certificate(cred_path)
+            firebase_admin.initialize_app(cred)
+            _firebase_initialized = True
+            print("✅ Firebase Admin inicializado")
+        else:
+            print(f"⚠️ Firebase credentials no encontradas en {cred_path}")
+
+
+# Inicializar al cargar el módulo
+init_firebase_admin()
+
+
+async def get_current_user(
+    authorization: str = Header(None, description="Bearer token de Firebase")
+) -> dict:
+    """
+    Verifica el token de Firebase y retorna los datos del usuario.
+    Si no hay token o es inválido, lanza HTTPException 401.
+    """
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token de autorización requerido",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Formato de token inválido. Use: Bearer <token>",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+
+    token = authorization.split(" ")[1]
+
+    try:
+        decoded_token = firebase_auth.verify_id_token(token)
+        return {
+            "uid": decoded_token.get("uid"),
+            "email": decoded_token.get("email"),
+            "name": decoded_token.get("name"),
+            "role": decoded_token.get("role", "user")
+        }
+    except firebase_admin.exceptions.FirebaseError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Token inválido o expirado: {str(e)}",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Error verificando token",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+
+
+async def get_optional_user(
+    authorization: str = Header(None, description="Bearer token de Firebase (opcional)")
+) -> Optional[dict]:
+    """
+    Verifica el token si existe, pero no falla si no hay token.
+    Útil para endpoints que pueden funcionar con o sin autenticación.
+    """
+    if not authorization or not authorization.startswith("Bearer "):
+        return None
+
+    try:
+        token = authorization.split(" ")[1]
+        decoded_token = firebase_auth.verify_id_token(token)
+        return {
+            "uid": decoded_token.get("uid"),
+            "email": decoded_token.get("email"),
+            "name": decoded_token.get("name"),
+            "role": decoded_token.get("role", "user")
+        }
+    except Exception:
+        return None
+
+
+def require_admin(current_user: dict = Depends(get_current_user)) -> dict:
+    """Verifica que el usuario sea administrador"""
+    if current_user.get("role") != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Se requieren permisos de administrador"
+        )
+    return current_user
 
 # Clientes de AI
 openai_client = None
@@ -134,15 +256,21 @@ async def get_settings():
 
 
 @app.post("/settings")
-async def save_settings(settings: dict):
-    """Guarda configuracion de API keys (requiere restart para aplicar)"""
+async def save_settings(
+    settings_data: dict,
+    current_user: dict = Depends(require_admin)
+):
+    """
+    Guarda configuracion de API keys (requiere restart para aplicar)
+    PROTEGIDO: Solo administradores pueden modificar configuración
+    """
     global OPENAI_API_KEY, ANTHROPIC_API_KEY, AI_PROVIDER, openai_client, anthropic_client
 
     messages = []
 
     # Update OpenAI key if provided
-    if settings.get("openai_key") and settings["openai_key"] != "":
-        new_key = settings["openai_key"]
+    if settings_data.get("openai_key") and settings_data["openai_key"] != "":
+        new_key = settings_data["openai_key"]
         if not new_key.startswith("sk-"):
             return {"success": False, "error": "OpenAI key debe empezar con 'sk-'"}
         try:
@@ -156,8 +284,8 @@ async def save_settings(settings: dict):
             return {"success": False, "error": f"OpenAI key inválida: {str(e)}"}
 
     # Update Anthropic key if provided
-    if settings.get("anthropic_key") and settings["anthropic_key"] != "":
-        new_key = settings["anthropic_key"]
+    if settings_data.get("anthropic_key") and settings_data["anthropic_key"] != "":
+        new_key = settings_data["anthropic_key"]
         if not new_key.startswith("sk-ant-"):
             return {"success": False, "error": "Anthropic key debe empezar con 'sk-ant-'"}
         try:
@@ -171,8 +299,8 @@ async def save_settings(settings: dict):
             return {"success": False, "error": f"Anthropic key inválida: {str(e)}"}
 
     # Update AI provider preference
-    if settings.get("ai_provider"):
-        AI_PROVIDER = settings["ai_provider"]
+    if settings_data.get("ai_provider"):
+        AI_PROVIDER = settings_data["ai_provider"]
         os.environ["AI_PROVIDER"] = AI_PROVIDER
         messages.append(f"Proveedor AI cambiado a: {AI_PROVIDER}")
 
@@ -333,9 +461,13 @@ def detect_period_from_filename(filename: str) -> str:
 async def upload_file(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    skip_ai: bool = Query(default=False, description="Skip AI analysis for faster uploads")
+    skip_ai: bool = Query(default=False, description="Skip AI analysis for faster uploads"),
+    current_user: dict = Depends(get_current_user)
 ):
-    """Sube un archivo y retorna preview para confirmación"""
+    """
+    Sube un archivo y retorna preview para confirmación
+    PROTEGIDO: Requiere autenticación
+    """
     try:
         filename = file.filename.lower()
         detected_period = detect_period_from_filename(file.filename)
@@ -490,9 +622,13 @@ async def upload_file(
 @app.post("/upload/confirm")
 async def confirm_upload(
     confirm_data: schemas.UploadConfirm,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
 ):
-    """Confirma un documento y lo guarda en el vault"""
+    """
+    Confirma un documento y lo guarda en el vault
+    PROTEGIDO: Requiere autenticación
+    """
     doc = db.query(models.Document).filter(models.Document.id == confirm_data.doc_id).first()
     if not doc:
         raise HTTPException(status_code=404, detail="Documento no encontrado")
@@ -518,9 +654,13 @@ async def list_documents(
     db: Session = Depends(get_db),
     status: Optional[str] = None,
     store_id: Optional[str] = None,
-    limit: int = 50
+    limit: int = 50,
+    current_user: dict = Depends(get_current_user)
 ):
-    """Lista documentos del vault"""
+    """
+    Lista documentos del vault
+    PROTEGIDO: Requiere autenticación
+    """
     query = db.query(models.Document)
 
     if status:
@@ -550,8 +690,15 @@ async def list_documents(
 
 
 @app.get("/documents/{doc_id}")
-async def get_document(doc_id: int, db: Session = Depends(get_db)):
-    """Obtiene detalles de un documento"""
+async def get_document(
+    doc_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Obtiene detalles de un documento
+    PROTEGIDO: Requiere autenticación
+    """
     doc = db.query(models.Document).filter(models.Document.id == doc_id).first()
     if not doc:
         raise HTTPException(status_code=404, detail="Documento no encontrado")
@@ -577,8 +724,15 @@ async def get_document(doc_id: int, db: Session = Depends(get_db)):
 
 
 @app.delete("/documents/{doc_id}")
-async def delete_document(doc_id: int, db: Session = Depends(get_db)):
-    """Elimina un documento del vault"""
+async def delete_document(
+    doc_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Elimina un documento del vault
+    PROTEGIDO: Requiere autenticación
+    """
     doc = db.query(models.Document).filter(models.Document.id == doc_id).first()
     if not doc:
         raise HTTPException(status_code=404, detail="Documento no encontrado")
@@ -605,9 +759,13 @@ async def delete_document(doc_id: int, db: Session = Depends(get_db)):
 async def analyze_document(
     doc_id: int,
     analysis_type: str = "general",
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
 ):
-    """Analiza un documento con OpenAI GPT-4"""
+    """
+    Analiza un documento con OpenAI GPT-4
+    PROTEGIDO: Requiere autenticación
+    """
     if not openai_client:
         raise HTTPException(status_code=503, detail="OpenAI API no configurada")
 
@@ -721,9 +879,13 @@ async def analyze_document(
 @app.post("/chat")
 async def chat_with_julia(
     request: schemas.ChatRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
 ):
-    """Chat con Julia - consultas en lenguaje natural"""
+    """
+    Chat con Julia - consultas en lenguaje natural
+    PROTEGIDO: Requiere autenticación
+    """
     if not openai_client:
         raise HTTPException(status_code=503, detail="OpenAI API no configurada")
 
@@ -829,8 +991,14 @@ Si no tienes datos suficientes, sugiere amablemente que suban los documentos nec
 # ============================================
 
 @app.get("/vault/summary")
-async def get_vault_summary(db: Session = Depends(get_db)):
-    """Resumen del vault"""
+async def get_vault_summary(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Resumen del vault
+    PROTEGIDO: Requiere autenticación
+    """
     total_docs = db.query(models.Document).filter(
         models.Document.status == "confirmed"
     ).count()
@@ -872,8 +1040,14 @@ async def get_vault_summary(db: Session = Depends(get_db)):
 
 
 @app.get("/vault/stores")
-async def get_stores(db: Session = Depends(get_db)):
-    """Lista sucursales con datos"""
+async def get_stores(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Lista sucursales con datos
+    PROTEGIDO: Requiere autenticación
+    """
     stores = db.query(
         models.Document.store_id,
         models.Document.store_name,
@@ -898,9 +1072,13 @@ async def get_stores(db: Session = Depends(get_db)):
 @app.get("/analyses")
 async def list_analyses(
     db: Session = Depends(get_db),
-    limit: int = 20
+    limit: int = 20,
+    current_user: dict = Depends(get_current_user)
 ):
-    """Lista análisis realizados"""
+    """
+    Lista análisis realizados
+    PROTEGIDO: Requiere autenticación
+    """
     analyses = db.query(models.Analysis).order_by(
         desc(models.Analysis.created_at)
     ).limit(limit).all()
@@ -926,8 +1104,14 @@ async def list_analyses(
 # ============================================
 
 @app.get("/dashboard/stats")
-async def get_dashboard_stats(db: Session = Depends(get_db)):
-    """Estadísticas para el dashboard principal"""
+async def get_dashboard_stats(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Estadísticas para el dashboard principal
+    PROTEGIDO: Requiere autenticación
+    """
 
     # Total documentos confirmados
     total_docs = db.query(models.Document).filter(
@@ -1019,8 +1203,14 @@ async def get_dashboard_stats(db: Session = Depends(get_db)):
 # ============================================
 
 @app.get("/charts/financial")
-async def get_charts_financial_data(db: Session = Depends(get_db)):
-    """Extrae datos financieros de los documentos para las gráficas"""
+async def get_charts_financial_data(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Extrae datos financieros de los documentos para las gráficas
+    PROTEGIDO: Requiere autenticación
+    """
 
     # Buscar documentos de Estado de Resultados confirmados
     docs = db.query(models.Document).filter(
