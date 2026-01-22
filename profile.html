@@ -217,25 +217,28 @@
         </div>
     </div>
 
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-
     <script>
-        // Firebase Config
-        const firebaseConfig = {
-            apiKey: "AIzaSyBL8-hBMJR6NlnXN6rWwS8WVcrdMm7m4rY",
-            authDomain: "ciclops-8a2de.firebaseapp.com",
-            projectId: "ciclops-8a2de",
-            storageBucket: "ciclops-8a2de.firebasestorage.app",
-            messagingSenderId: "475876958824",
-            appId: "1:475876958824:web:5ecc315220c66fdd56d1dd"
-        };
+        // Auth check and load user data
+        (async function checkAuth() {
+            const token = localStorage.getItem('authToken');
+            if (!token) { window.location.href = '/login'; return; }
+            try {
+                const res = await fetch('/auth/me', { headers: { 'Authorization': `Bearer ${token}` } });
+                if (!res.ok) { localStorage.clear(); window.location.href = '/login'; return; }
 
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
+                const user = await res.json();
+                document.getElementById('userName').textContent = user.name || 'Sin nombre';
+                document.getElementById('userEmail').textContent = user.email;
+                document.getElementById('userAvatar').textContent = (user.name || user.email).substring(0, 2).toUpperCase();
+                document.getElementById('newName').value = user.name || '';
 
-        // Helper functions
+                // Hide verification section (not applicable with JWT)
+                document.getElementById('verificationBadge').innerHTML = '<span class="inline-flex items-center gap-1 text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">Activo</span>';
+                const verSection = document.getElementById('verificationSection');
+                if (verSection) verSection.classList.add('hidden');
+            } catch (e) { localStorage.clear(); window.location.href = '/login'; }
+        })();
+
         function showAlert(message, type = 'success') {
             const container = document.getElementById('alertContainer');
             container.className = `mb-6 p-4 rounded-lg ${type === 'success' ? 'bg-green-50 border border-green-200 text-green-800' : 'bg-red-50 border border-red-200 text-red-800'}`;
@@ -244,147 +247,21 @@
             setTimeout(() => container.classList.add('hidden'), 5000);
         }
 
-        function getInitials(name) {
-            if (!name) return '?';
-            return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
-        }
-
-        // Re-authenticate user (required for sensitive operations)
-        async function reauthenticate(password) {
-            const user = auth.currentUser;
-            const credential = firebase.auth.EmailAuthProvider.credential(user.email, password);
-            return user.reauthenticateWithCredential(credential);
-        }
-
-        // Load user data
-        function loadUserData(user) {
-            document.getElementById('userName').textContent = user.displayName || 'Sin nombre';
-            document.getElementById('userEmail').textContent = user.email;
-            document.getElementById('userAvatar').textContent = getInitials(user.displayName);
-            document.getElementById('newName').value = user.displayName || '';
-
-            // Verification badge
-            const badge = document.getElementById('verificationBadge');
-            if (user.emailVerified) {
-                badge.innerHTML = '<span class="inline-flex items-center gap-1 text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>Verificado</span>';
-                document.getElementById('verificationSection').classList.add('hidden');
-            } else {
-                badge.innerHTML = '<span class="inline-flex items-center gap-1 text-xs text-yellow-600 bg-yellow-100 px-2 py-1 rounded-full"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>Sin verificar</span>';
-                document.getElementById('verificationSection').classList.remove('hidden');
-            }
-        }
-
-        // Auth state
-        auth.onAuthStateChanged(function(user) {
-            if (!user) {
-                window.location.href = '/login';
-                return;
-            }
-            loadUserData(user);
-        });
-
-        // Update name
-        document.getElementById('nameForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const newName = document.getElementById('newName').value.trim();
-
-            try {
-                await auth.currentUser.updateProfile({ displayName: newName });
-                loadUserData(auth.currentUser);
-                showAlert('Nombre actualizado correctamente');
-            } catch (error) {
-                showAlert('Error al actualizar el nombre: ' + error.message, 'error');
-            }
-        });
-
-        // Update email
-        document.getElementById('emailForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const newEmail = document.getElementById('newEmail').value.trim();
-            const password = document.getElementById('currentPasswordEmail').value;
-
-            try {
-                await reauthenticate(password);
-                await auth.currentUser.verifyBeforeUpdateEmail(newEmail);
-                showAlert(`Te enviamos un correo de verificacion a ${newEmail}. Confirma el cambio desde tu nuevo correo.`);
-                document.getElementById('emailForm').reset();
-            } catch (error) {
-                let msg = 'Error al cambiar el correo';
-                if (error.code === 'auth/wrong-password') msg = 'Contrasena incorrecta';
-                if (error.code === 'auth/email-already-in-use') msg = 'Este correo ya esta en uso';
-                if (error.code === 'auth/invalid-email') msg = 'El correo no es valido';
-                if (error.code === 'auth/requires-recent-login') msg = 'Necesitas volver a iniciar sesion para hacer este cambio';
-                showAlert(msg, 'error');
-            }
-        });
-
-        // Update password
-        document.getElementById('passwordForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const currentPassword = document.getElementById('currentPassword').value;
-            const newPassword = document.getElementById('newPassword').value;
-            const confirmNewPassword = document.getElementById('confirmNewPassword').value;
-
-            if (newPassword !== confirmNewPassword) {
-                showAlert('Las contrasenas no coinciden', 'error');
-                return;
-            }
-
-            if (newPassword.length < 6) {
-                showAlert('La contrasena debe tener al menos 6 caracteres', 'error');
-                return;
-            }
-
-            try {
-                await reauthenticate(currentPassword);
-                await auth.currentUser.updatePassword(newPassword);
-                showAlert('Contrasena actualizada correctamente');
-                document.getElementById('passwordForm').reset();
-            } catch (error) {
-                let msg = 'Error al cambiar la contrasena';
-                if (error.code === 'auth/wrong-password') msg = 'Contrasena actual incorrecta';
-                if (error.code === 'auth/weak-password') msg = 'La nueva contrasena es muy debil';
-                if (error.code === 'auth/requires-recent-login') msg = 'Necesitas volver a iniciar sesion para hacer este cambio';
-                showAlert(msg, 'error');
-            }
-        });
-
-        // Resend verification
-        document.getElementById('resendVerification').addEventListener('click', async function() {
-            try {
-                await auth.currentUser.sendEmailVerification();
-                showAlert('Correo de verificacion enviado. Revisa tu bandeja de entrada.');
-            } catch (error) {
-                showAlert('Error al enviar el correo: ' + error.message, 'error');
-            }
-        });
+        // Forms - show "coming soon" message
+        document.getElementById('nameForm')?.addEventListener('submit', e => { e.preventDefault(); showAlert('Funcion proximamente disponible', 'error'); });
+        document.getElementById('emailForm')?.addEventListener('submit', e => { e.preventDefault(); showAlert('Funcion proximamente disponible', 'error'); });
+        document.getElementById('passwordForm')?.addEventListener('submit', e => { e.preventDefault(); showAlert('Funcion proximamente disponible', 'error'); });
+        document.getElementById('resendVerification')?.addEventListener('click', () => showAlert('Funcion proximamente disponible', 'error'));
 
         // Delete account
         const deleteModal = document.getElementById('deleteModal');
-        document.getElementById('deleteAccountBtn').addEventListener('click', () => deleteModal.classList.remove('hidden'));
-        document.getElementById('cancelDelete').addEventListener('click', () => deleteModal.classList.add('hidden'));
-
-        document.getElementById('deleteForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const password = document.getElementById('deletePassword').value;
-
-            try {
-                await reauthenticate(password);
-                await auth.currentUser.delete();
-                window.location.href = '/login';
-            } catch (error) {
-                let msg = 'Error al eliminar la cuenta';
-                if (error.code === 'auth/wrong-password') msg = 'Contrasena incorrecta';
-                showAlert(msg, 'error');
-                deleteModal.classList.add('hidden');
-            }
-        });
+        document.getElementById('deleteAccountBtn')?.addEventListener('click', () => deleteModal?.classList.remove('hidden'));
+        document.getElementById('cancelDelete')?.addEventListener('click', () => deleteModal?.classList.add('hidden'));
+        document.getElementById('deleteForm')?.addEventListener('submit', e => { e.preventDefault(); showAlert('Funcion proximamente disponible', 'error'); deleteModal?.classList.add('hidden'); });
 
         // Logout
-        document.getElementById('logoutBtn').addEventListener('click', async function() {
-            await auth.signOut();
-            localStorage.removeItem('authToken');
-            localStorage.removeItem('userEmail');
+        document.getElementById('logoutBtn')?.addEventListener('click', function() {
+            localStorage.clear();
             window.location.href = '/login';
         });
     </script>

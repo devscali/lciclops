@@ -508,25 +508,19 @@
         </div>
     </main>
 
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-
     <script>
-        const API = 'https://lc.calidevs.com';
+        const API = '';
 
-        // Firebase Config
-        const firebaseConfig = {
-            apiKey: "AIzaSyBL8-hBMJR6NlnXN6rWwS8WVcrdMm7m4rY",
-            authDomain: "ciclops-8a2de.firebaseapp.com",
-            projectId: "ciclops-8a2de",
-            storageBucket: "ciclops-8a2de.firebasestorage.app",
-            messagingSenderId: "475876958824",
-            appId: "1:475876958824:web:5ecc315220c66fdd56d1dd"
-        };
-
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
+        // Auth check
+        (async function checkAuth() {
+            const token = localStorage.getItem('authToken');
+            if (!token) { window.location.href = '/login'; return; }
+            try {
+                const res = await fetch('/auth/me', { headers: { 'Authorization': `Bearer ${token}` } });
+                if (!res.ok) { localStorage.clear(); window.location.href = '/login'; }
+            } catch (e) { localStorage.clear(); window.location.href = '/login'; }
+        })();
+        function logout() { localStorage.clear(); window.location.href = '/login'; }
 
         // Theme Toggle
         function toggleTheme() {
@@ -676,15 +670,6 @@
                 document.getElementById('backendStatus').className = 'text-sm text-red-400';
             }
         }
-
-        // Auth state
-        auth.onAuthStateChanged(function(user) {
-            if (!user) {
-                window.location.href = '/login';
-                return;
-            }
-            document.getElementById('firebaseStatus').textContent = 'Conectado';
-        });
 
         // Init
         loadSettings();

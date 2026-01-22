@@ -274,24 +274,7 @@
         </p>
     </div>
 
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-
     <script>
-        // Firebase Config
-        const firebaseConfig = {
-            apiKey: "AIzaSyBL8-hBMJR6NlnXN6rWwS8WVcrdMm7m4rY",
-            authDomain: "ciclops-8a2de.firebaseapp.com",
-            projectId: "ciclops-8a2de",
-            storageBucket: "ciclops-8a2de.firebasestorage.app",
-            messagingSenderId: "475876958824",
-            appId: "1:475876958824:web:5ecc315220c66fdd56d1dd"
-        };
-
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-
         // UI Elements
         const togglePassword = document.getElementById('togglePassword');
         const password = document.getElementById('password');
@@ -349,50 +332,46 @@
             const pwd = document.getElementById('password').value;
 
             try {
-                const userCredential = await auth.signInWithEmailAndPassword(email, pwd);
+                const response = await fetch('/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password: pwd })
+                });
 
-                if (!userCredential.user.emailVerified) {
-                    await userCredential.user.sendEmailVerification();
-                    await auth.signOut();
-                    showError('Tu correo no esta verificado. Te reenviamos el correo de verificacion. Revisa tu bandeja de entrada y spam.');
-                    return;
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.detail || 'Error al iniciar sesion');
                 }
 
-                const token = await userCredential.user.getIdToken();
-                localStorage.setItem('authToken', token);
-                localStorage.setItem('userEmail', userCredential.user.email);
-                localStorage.setItem('userName', userCredential.user.displayName || '');
+                // Guardar token y datos del usuario
+                localStorage.setItem('authToken', data.access_token);
+                localStorage.setItem('userEmail', data.user.email);
+                localStorage.setItem('userName', data.user.name || '');
+                localStorage.setItem('userRole', data.user.role);
+                localStorage.setItem('userId', data.user.id);
+
                 window.location.href = '/';
             } catch (error) {
                 console.error('Login error:', error);
-                let msg = 'Error al iniciar sesion';
-                switch (error.code) {
-                    case 'auth/user-not-found':
-                        msg = 'Usuario no encontrado';
-                        break;
-                    case 'auth/wrong-password':
-                        msg = 'Contrasena incorrecta';
-                        break;
-                    case 'auth/invalid-email':
-                        msg = 'Email invalido';
-                        break;
-                    case 'auth/too-many-requests':
-                        msg = 'Demasiados intentos. Intenta mas tarde';
-                        break;
-                    case 'auth/invalid-credential':
-                        msg = 'Credenciales invalidas';
-                        break;
-                }
-                showError(msg);
+                showError(error.message || 'Error al iniciar sesion');
             }
         });
 
         // Check if already logged in
-        auth.onAuthStateChanged(function(user) {
-            if (user && user.emailVerified) {
-                window.location.href = '/';
-            }
-        });
+        const token = localStorage.getItem('authToken');
+        if (token) {
+            // Verificar que el token sea válido
+            fetch('/auth/me', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            }).then(res => {
+                if (res.ok) {
+                    window.location.href = '/';
+                } else {
+                    localStorage.clear();
+                }
+            }).catch(() => localStorage.clear());
+        }
     </script>
 </body>
 </html>

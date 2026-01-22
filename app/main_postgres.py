@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from starlette.middleware.base import BaseHTTPMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc
@@ -22,8 +23,9 @@ from dotenv import load_dotenv
 from typing import Optional, List
 import traceback
 import pdfplumber
-import firebase_admin
-from firebase_admin import credentials, auth as firebase_auth
+from datetime import datetime, timedelta
+from jose import JWTError, jwt
+from passlib.context import CryptContext
 
 from .database import engine, get_db, Base
 from . import db_models as models
@@ -77,103 +79,100 @@ app.add_middleware(
 
 
 # ============================================
-# AUTENTICACIÓN CON FIREBASE
+# AUTENTICACIÓN CON JWT
 # ============================================
 
-# Inicializar Firebase Admin si no está inicializado
-_firebase_initialized = False
+# Configuración JWT
+SECRET_KEY = os.getenv("JWT_SECRET_KEY", "tu-secret-key-cambiar-en-produccion-123")
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 días
 
-def init_firebase_admin():
-    """Inicializa Firebase Admin SDK"""
-    global _firebase_initialized
-    if _firebase_initialized:
-        return
+# Password hashing
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-    try:
-        # Intentar obtener la app existente
-        firebase_admin.get_app()
-        _firebase_initialized = True
-    except ValueError:
-        # No existe, inicializar
-        cred_path = os.getenv("FIREBASE_CREDENTIALS_PATH", "firebase-credentials.json")
-        if os.path.exists(cred_path):
-            cred = credentials.Certificate(cred_path)
-            firebase_admin.initialize_app(cred)
-            _firebase_initialized = True
-            print("✅ Firebase Admin inicializado")
-        else:
-            print(f"⚠️ Firebase credentials no encontradas en {cred_path}")
+# Security scheme
+security = HTTPBearer(auto_error=False)
 
 
-# Inicializar al cargar el módulo
-init_firebase_admin()
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return pwd_context.verify(plain_password, hashed_password)
+
+
+def get_password_hash(password: str) -> str:
+    return pwd_context.hash(password)
+
+
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+    to_encode = data.copy()
+    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
 async def get_current_user(
-    authorization: str = Header(None, description="Bearer token de Firebase")
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db)
 ) -> dict:
-    """
-    Verifica el token de Firebase y retorna los datos del usuario.
-    Si no hay token o es inválido, lanza HTTPException 401.
-    """
-    if not authorization:
+    """Verifica el token JWT y retorna los datos del usuario."""
+    if not credentials:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token de autorización requerido",
             headers={"WWW-Authenticate": "Bearer"}
         )
 
-    if not authorization.startswith("Bearer "):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Formato de token inválido. Use: Bearer <token>",
-            headers={"WWW-Authenticate": "Bearer"}
-        )
-
-    token = authorization.split(" ")[1]
-
+    token = credentials.credentials
     try:
-        decoded_token = firebase_auth.verify_id_token(token)
-        return {
-            "uid": decoded_token.get("uid"),
-            "email": decoded_token.get("email"),
-            "name": decoded_token.get("name"),
-            "role": decoded_token.get("role", "user")
-        }
-    except firebase_admin.exceptions.FirebaseError as e:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id: int = payload.get("sub")
+        if user_id is None:
+            raise HTTPException(status_code=401, detail="Token inválido")
+    except JWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Token inválido o expirado: {str(e)}",
+            detail="Token inválido o expirado",
             headers={"WWW-Authenticate": "Bearer"}
         )
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Error verificando token",
-            headers={"WWW-Authenticate": "Bearer"}
-        )
+
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user or not user.is_active:
+        raise HTTPException(status_code=401, detail="Usuario no encontrado o inactivo")
+
+    return {
+        "id": user.id,
+        "uid": str(user.id),  # Compatibilidad con código existente
+        "email": user.email,
+        "name": user.name,
+        "role": user.role
+    }
 
 
 async def get_optional_user(
-    authorization: str = Header(None, description="Bearer token de Firebase (opcional)")
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db)
 ) -> Optional[dict]:
-    """
-    Verifica el token si existe, pero no falla si no hay token.
-    Útil para endpoints que pueden funcionar con o sin autenticación.
-    """
-    if not authorization or not authorization.startswith("Bearer "):
+    """Verifica el token si existe, pero no falla si no hay token."""
+    if not credentials:
         return None
 
     try:
-        token = authorization.split(" ")[1]
-        decoded_token = firebase_auth.verify_id_token(token)
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id: int = payload.get("sub")
+        if user_id is None:
+            return None
+
+        user = db.query(models.User).filter(models.User.id == user_id).first()
+        if not user or not user.is_active:
+            return None
+
         return {
-            "uid": decoded_token.get("uid"),
-            "email": decoded_token.get("email"),
-            "name": decoded_token.get("name"),
-            "role": decoded_token.get("role", "user")
+            "id": user.id,
+            "uid": str(user.id),
+            "email": user.email,
+            "name": user.name,
+            "role": user.role
         }
-    except Exception:
+    except JWTError:
         return None
 
 
@@ -210,6 +209,95 @@ try:
         print("⚠️ ANTHROPIC_API_KEY no encontrada")
 except ImportError:
     print("⚠️ anthropic module not installed")
+
+
+# ============================================
+# AUTH ENDPOINTS
+# ============================================
+
+@app.post("/auth/register", response_model=schemas.Token)
+async def register(user_data: schemas.UserCreate, db: Session = Depends(get_db)):
+    """Registra un nuevo usuario"""
+    # Verificar si el email ya existe
+    existing = db.query(models.User).filter(models.User.email == user_data.email).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="El email ya está registrado")
+
+    # Crear usuario
+    user = models.User(
+        email=user_data.email,
+        hashed_password=get_password_hash(user_data.password),
+        name=user_data.name,
+        role="user"
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+
+    # Generar token
+    token = create_access_token(data={"sub": user.id})
+
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "user": user
+    }
+
+
+@app.post("/auth/login", response_model=schemas.Token)
+async def login(user_data: schemas.UserLogin, db: Session = Depends(get_db)):
+    """Inicia sesión y retorna token JWT"""
+    user = db.query(models.User).filter(models.User.email == user_data.email).first()
+
+    if not user or not verify_password(user_data.password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Email o contraseña incorrectos"
+        )
+
+    if not user.is_active:
+        raise HTTPException(status_code=400, detail="Usuario desactivado")
+
+    token = create_access_token(data={"sub": user.id})
+
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "user": user
+    }
+
+
+@app.get("/auth/me", response_model=schemas.UserResponse)
+async def get_me(current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Retorna el usuario actual"""
+    user = db.query(models.User).filter(models.User.id == current_user["id"]).first()
+    return user
+
+
+@app.post("/auth/setup-admin", response_model=schemas.Token)
+async def setup_admin(user_data: schemas.UserCreate, db: Session = Depends(get_db)):
+    """
+    Crea el primer usuario admin. Solo funciona si no hay usuarios.
+    Usar una vez para setup inicial.
+    """
+    # Solo permitir si no hay usuarios
+    user_count = db.query(models.User).count()
+    if user_count > 0:
+        raise HTTPException(status_code=400, detail="Ya existen usuarios. Use /auth/register")
+
+    # Crear admin
+    user = models.User(
+        email=user_data.email,
+        hashed_password=get_password_hash(user_data.password),
+        name=user_data.name or "Admin",
+        role="admin"
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+
+    token = create_access_token(data={"sub": user.id})
+    return {"access_token": token, "token_type": "bearer", "user": user}
 
 
 # ============================================

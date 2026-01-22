@@ -357,53 +357,35 @@
         </div>
     </div>
 
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-
     <script>
-        const API = 'https://lc.calidevs.com';
+        const API = '';
         let currentDocData = null;
         let currentFileCard = null;
 
-        // Firebase config
-        const firebaseConfig = {
-            apiKey: "AIzaSyBL8-hBMJR6NlnXN6rWwS8WVcrdMm7m4rY",
-            authDomain: "ciclops-8a2de.firebaseapp.com",
-            projectId: "ciclops-8a2de",
-            storageBucket: "ciclops-8a2de.firebasestorage.app",
-            messagingSenderId: "475876958824",
-            appId: "1:475876958824:web:5ecc315220c66fdd56d1dd"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-        const auth = firebase.auth();
-
-        let currentUserProfile = null;
-
-        // Auth check - redirect to login if not authenticated
-        auth.onAuthStateChanged(async function(user) {
-            if (!user) {
+        // Auth check
+        (async function checkAuth() {
+            const token = localStorage.getItem('authToken');
+            if (!token) {
                 window.location.href = '/login';
                 return;
             }
             try {
-                const userDoc = await db.collection('usuarios').doc(user.uid).get();
-                if (userDoc.exists) {
-                    currentUserProfile = userDoc.data();
-                    localStorage.setItem('userRole', currentUserProfile.rol || 'user');
-                    localStorage.setItem('userZonaId', currentUserProfile.zonaId || '');
-                    localStorage.setItem('userSucursalId', currentUserProfile.sucursalId || '');
+                const res = await fetch('/auth/me', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!res.ok) {
+                    localStorage.clear();
+                    window.location.href = '/login';
                 }
-            } catch (e) {}
-        });
-
-        function logout() {
-            auth.signOut().then(() => {
+            } catch (e) {
                 localStorage.clear();
                 window.location.href = '/login';
-            });
+            }
+        })();
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = '/login';
         }
 
         function toggleTheme() {

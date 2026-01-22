@@ -765,7 +765,7 @@
     </main>
 
     <script>
-        const API = 'https://lc.calidevs.com';
+        const API = '';
 
         // Theme Toggle
         function toggleTheme() {
@@ -1012,62 +1012,50 @@
         });
     </script>
 
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <!-- Auth Check -->
     <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyBL8-hBMJR6NlnXN6rWwS8WVcrdMm7m4rY",
-            authDomain: "ciclops-8a2de.firebaseapp.com",
-            projectId: "ciclops-8a2de",
-            storageBucket: "ciclops-8a2de.firebasestorage.app",
-            messagingSenderId: "475876958824",
-            appId: "1:475876958824:web:5ecc315220c66fdd56d1dd"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore();
-
-        // Current user profile from Firestore
-        let currentUserProfile = null;
-
         // Auth check - redirect to login if not authenticated
-        auth.onAuthStateChanged(async function(user) {
-            if (!user) {
+        (async function checkAuth() {
+            const token = localStorage.getItem('authToken');
+            if (!token) {
                 window.location.href = '/login';
                 return;
             }
 
-            // Load user profile from Firestore
             try {
-                const userDoc = await db.collection('usuarios').doc(user.uid).get();
-                if (userDoc.exists) {
-                    currentUserProfile = userDoc.data();
-                    // Store in localStorage for API calls
-                    localStorage.setItem('userRole', currentUserProfile.rol || 'user');
-                    localStorage.setItem('userZonaId', currentUserProfile.zonaId || '');
-                    localStorage.setItem('userSucursalId', currentUserProfile.sucursalId || '');
+                const res = await fetch('/auth/me', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!res.ok) {
+                    localStorage.clear();
+                    window.location.href = '/login';
+                    return;
                 }
+
+                const user = await res.json();
+
+                // Update user info in nav if elements exist
+                const userEmail = document.getElementById('userEmail');
+                const userName = document.getElementById('userName');
+                const userInitials = document.getElementById('userInitials');
+                const displayName = user.name || user.email?.split('@')[0] || 'Usuario';
+
+                if (userEmail) userEmail.textContent = user.email || '';
+                if (userName) userName.textContent = displayName;
+                if (userInitials) userInitials.textContent = displayName.substring(0, 2).toUpperCase();
+
+                // Store role
+                localStorage.setItem('userRole', user.role);
             } catch (e) {
-                // User not in Firestore yet - allow access but with no filters
-            }
-
-            // Update user info in nav if elements exist
-            const userEmail = document.getElementById('userEmail');
-            const userName = document.getElementById('userName');
-            const userInitials = document.getElementById('userInitials');
-            const displayName = currentUserProfile?.nombre || user.displayName || user.email?.split('@')[0] || 'Usuario';
-            if (userEmail) userEmail.textContent = user.email || '';
-            if (userName) userName.textContent = displayName;
-            if (userInitials) userInitials.textContent = displayName.substring(0, 2).toUpperCase();
-        });
-
-        function logout() {
-            auth.signOut().then(() => {
                 localStorage.clear();
                 window.location.href = '/login';
-            });
+            }
+        })();
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = '/login';
         }
     </script>
 </body>
