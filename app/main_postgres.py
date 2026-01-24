@@ -60,6 +60,7 @@ app.add_middleware(ForceHTTPSMiddleware)
 
 # CORS - Restringido a orígenes permitidos
 ALLOWED_ORIGINS = [
+    "https://lc.calidevs.com",
     "https://lciclops-production.up.railway.app",
     "https://lciclops.up.railway.app",
     "http://localhost:3000",
@@ -83,6 +84,7 @@ app.add_middleware(
 # ============================================
 
 # Configuración JWT
+# TODO: Configurar JWT_SECRET_KEY en variables de entorno de Railway
 SECRET_KEY = os.getenv("JWT_SECRET_KEY", "tu-secret-key-cambiar-en-produccion-123")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 días
@@ -209,6 +211,81 @@ try:
         print("⚠️ ANTHROPIC_API_KEY no encontrada")
 except ImportError:
     print("⚠️ anthropic module not installed")
+
+
+# ============================================
+# HELPER DE IA CON FALLBACK
+# ============================================
+
+def call_ai_with_fallback(messages: list, max_tokens: int = 1500, temperature: float = 0.7) -> dict:
+    """
+    Llama a la IA con fallback automático entre proveedores.
+    Intenta primero con el proveedor configurado, luego con el otro.
+    Retorna: {"response": str, "tokens_used": int, "provider": str}
+    """
+    errors = []
+
+    # Determinar orden de proveedores
+    if AI_PROVIDER == "anthropic" and anthropic_client:
+        providers = [("anthropic", anthropic_client), ("openai", openai_client)]
+    else:
+        providers = [("openai", openai_client), ("anthropic", anthropic_client)]
+
+    for provider_name, client in providers:
+        if not client:
+            continue
+
+        try:
+            if provider_name == "openai":
+                response = client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=messages,
+                    max_tokens=max_tokens,
+                    temperature=temperature
+                )
+                return {
+                    "response": response.choices[0].message.content,
+                    "tokens_used": response.usage.total_tokens,
+                    "provider": "openai"
+                }
+            else:  # anthropic
+                # Convertir mensajes de OpenAI format a Anthropic format
+                system_msg = ""
+                anthropic_messages = []
+                for msg in messages:
+                    if msg["role"] == "system":
+                        system_msg = msg["content"]
+                    else:
+                        anthropic_messages.append({
+                            "role": msg["role"],
+                            "content": msg["content"]
+                        })
+
+                response = client.messages.create(
+                    model="claude-sonnet-4-20250514",
+                    max_tokens=max_tokens,
+                    system=system_msg,
+                    messages=anthropic_messages
+                )
+                return {
+                    "response": response.content[0].text,
+                    "tokens_used": response.usage.input_tokens + response.usage.output_tokens,
+                    "provider": "anthropic"
+                }
+
+        except Exception as e:
+            error_msg = f"[IA ERROR] {provider_name} falló: {str(e)}"
+            print(f"⚠️ {error_msg}")
+            errors.append(error_msg)
+            continue
+
+    # Si llegamos aquí, ambos fallaron
+    error_detail = " | ".join(errors) if errors else "No hay proveedores de IA configurados"
+    print(f"❌ [IA CRÍTICO] Todos los proveedores fallaron: {error_detail}")
+    raise HTTPException(
+        status_code=503,
+        detail=f"Servicio de IA no disponible. Por favor intenta más tarde. ({error_detail})"
+    )
 
 
 # ============================================
@@ -973,9 +1050,11 @@ async def chat_with_julia(
     """
     Chat con Julia - consultas en lenguaje natural
     PROTEGIDO: Requiere autenticación
+    Usa fallback automático entre OpenAI y Anthropic
     """
-    if not openai_client:
-        raise HTTPException(status_code=503, detail="OpenAI API no configurada")
+    # Verificar que hay al menos un proveedor de IA
+    if not openai_client and not anthropic_client:
+        raise HTTPException(status_code=503, detail="No hay proveedores de IA configurados")
 
     try:
         # Construir contexto con datos del vault
@@ -1045,30 +1124,29 @@ Si no tienes datos suficientes, sugiere amablemente que suban los documentos nec
 
         messages.append({"role": "user", "content": request.message})
 
-        response = openai_client.chat.completions.create(
-            model="gpt-4o-mini",
-            max_tokens=1500,
-            temperature=0.7,
-            messages=messages
-        )
+        # Usar helper con fallback automático
+        ai_response = call_ai_with_fallback(messages, max_tokens=1500, temperature=0.7)
 
         # Guardar en análisis
         analysis = models.Analysis(
             store_id=request.store_id,
             analysis_type="chat",
             query=request.message,
-            result=response.choices[0].message.content,
-            tokens_used=response.usage.total_tokens
+            result=ai_response["response"],
+            tokens_used=ai_response["tokens_used"]
         )
         db.add(analysis)
         db.commit()
 
         return {
             "success": True,
-            "response": response.choices[0].message.content,
-            "tokens_used": response.usage.total_tokens
+            "response": ai_response["response"],
+            "tokens_used": ai_response["tokens_used"],
+            "provider": ai_response["provider"]
         }
 
+    except HTTPException:
+        raise
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
