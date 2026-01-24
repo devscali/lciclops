@@ -110,7 +110,9 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     to_encode = data.copy()
     expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
     to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    token = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    print(f"🎫 Token creado con SECRET_KEY: {SECRET_KEY[:10]}...")
+    return token
 
 
 async def get_current_user(
@@ -127,11 +129,15 @@ async def get_current_user(
 
     token = credentials.credentials
     try:
+        print(f"🔍 Verificando token: {token[:20]}...")
+        print(f"🔐 Usando SECRET_KEY: {SECRET_KEY[:10]}...")
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        print(f"✅ Token válido, payload: {payload}")
         user_id: int = payload.get("sub")
         if user_id is None:
             raise HTTPException(status_code=401, detail="Token inválido")
-    except JWTError:
+    except JWTError as e:
+        print(f"❌ Error JWT: {e}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token inválido o expirado",
