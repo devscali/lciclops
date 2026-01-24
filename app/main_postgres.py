@@ -394,9 +394,15 @@ async def api_root():
 @app.get("/health")
 async def health_check(db: Session = Depends(get_db)):
     doc_count = db.query(models.Document).count()
+    # Verificar usuarios
+    try:
+        user_count = db.query(models.User).count()
+    except Exception as e:
+        user_count = f"ERROR: {str(e)}"
     return {
         "status": "healthy",
         "database": "connected",
+        "users_count": user_count,
         "openai": "connected" if openai_client else "disabled",
         "anthropic": "connected" if anthropic_client else "disabled",
         "ai_provider": AI_PROVIDER,
