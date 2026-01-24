@@ -351,7 +351,7 @@ async def get_me(current_user: dict = Depends(get_current_user), db: Session = D
     return user
 
 
-@app.post("/auth/setup-admin", response_model=schemas.Token)
+@app.post("/auth/setup-admin")
 async def setup_admin(user_data: schemas.UserCreate, db: Session = Depends(get_db)):
     """
     Crea el primer usuario admin. Solo funciona si no hay usuarios.
@@ -360,27 +360,39 @@ async def setup_admin(user_data: schemas.UserCreate, db: Session = Depends(get_d
     try:
         # Forzar creación de tabla si no existe
         models.User.__table__.create(bind=engine, checkfirst=True)
+
+        # Solo permitir si no hay usuarios
+        user_count = db.query(models.User).count()
+        if user_count > 0:
+            raise HTTPException(status_code=400, detail="Ya existen usuarios. Use /auth/register")
+
+        # Crear admin
+        user = models.User(
+            email=user_data.email,
+            hashed_password=get_password_hash(user_data.password),
+            name=user_data.name or "Admin",
+            role="admin"
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+        token = create_access_token(data={"sub": user.id})
+        return {
+            "access_token": token,
+            "token_type": "bearer",
+            "user": {
+                "id": user.id,
+                "email": user.email,
+                "name": user.name,
+                "role": user.role
+            }
+        }
+    except HTTPException:
+        raise
     except Exception as e:
-        print(f"Tabla users: {e}")
-
-    # Solo permitir si no hay usuarios
-    user_count = db.query(models.User).count()
-    if user_count > 0:
-        raise HTTPException(status_code=400, detail="Ya existen usuarios. Use /auth/register")
-
-    # Crear admin
-    user = models.User(
-        email=user_data.email,
-        hashed_password=get_password_hash(user_data.password),
-        name=user_data.name or "Admin",
-        role="admin"
-    )
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-
-    token = create_access_token(data={"sub": user.id})
-    return {"access_token": token, "token_type": "bearer", "user": user}
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error creando admin: {str(e)}")
 
 
 # ============================================
