@@ -323,6 +323,94 @@
                 </div>
             </div>
 
+            <!-- Modulo de Analisis e Interpretacion con Julia AI -->
+            <div class="chart-card p-6 mb-6 border border-pizza/20 bg-gradient-to-br from-pizza/5 to-transparent">
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-pizza to-pizza-dark flex items-center justify-center shadow-lg shadow-pizza/30">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="font-display text-xl font-bold text-ink">Analisis de Julia AI</h3>
+                            <p class="text-sm text-ink-3">Interpretacion inteligente de tus datos financieros</p>
+                        </div>
+                    </div>
+                    <button onclick="generateAnalysis()" id="btn-analyze" class="flex items-center gap-2 px-4 py-2 bg-pizza hover:bg-pizza-dark text-white rounded-xl font-medium transition-all shadow-lg shadow-pizza/25 hover:shadow-pizza/40">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                        Generar Analisis
+                    </button>
+                </div>
+
+                <!-- Insights Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6" id="insights-grid">
+                    <!-- Insight cards will be populated here -->
+                    <div class="p-4 rounded-xl bg-surface-3/30 border border-white/5">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="w-2 h-2 rounded-full bg-success animate-pulse"></span>
+                            <span class="text-xs text-success font-semibold uppercase tracking-wider">Mejor Rendimiento</span>
+                        </div>
+                        <p class="text-ink font-medium" id="insight-best">Cargando analisis...</p>
+                    </div>
+                    <div class="p-4 rounded-xl bg-surface-3/30 border border-white/5">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="w-2 h-2 rounded-full bg-warning animate-pulse"></span>
+                            <span class="text-xs text-warning font-semibold uppercase tracking-wider">Area de Oportunidad</span>
+                        </div>
+                        <p class="text-ink font-medium" id="insight-opportunity">Cargando analisis...</p>
+                    </div>
+                    <div class="p-4 rounded-xl bg-surface-3/30 border border-white/5">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                            <span class="text-xs text-blue-400 font-semibold uppercase tracking-wider">Tendencia General</span>
+                        </div>
+                        <p class="text-ink font-medium" id="insight-trend">Cargando analisis...</p>
+                    </div>
+                </div>
+
+                <!-- Recomendaciones detalladas -->
+                <div class="bg-surface-2/50 rounded-xl p-5 border border-white/5">
+                    <div class="flex items-center gap-2 mb-4">
+                        <svg class="w-5 h-5 text-pizza" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                        </svg>
+                        <h4 class="font-display font-bold text-ink">Recomendaciones Estrategicas</h4>
+                    </div>
+                    <div class="space-y-3" id="recommendations-list">
+                        <div class="flex items-start gap-3 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
+                            <span class="flex-shrink-0 w-6 h-6 rounded-full bg-pizza/20 text-pizza flex items-center justify-center text-xs font-bold">1</span>
+                            <p class="text-ink-2 text-sm" id="rec-1">Analizando datos financieros...</p>
+                        </div>
+                        <div class="flex items-start gap-3 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
+                            <span class="flex-shrink-0 w-6 h-6 rounded-full bg-pizza/20 text-pizza flex items-center justify-center text-xs font-bold">2</span>
+                            <p class="text-ink-2 text-sm" id="rec-2">Procesando metricas de rendimiento...</p>
+                        </div>
+                        <div class="flex items-start gap-3 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
+                            <span class="flex-shrink-0 w-6 h-6 rounded-full bg-pizza/20 text-pizza flex items-center justify-center text-xs font-bold">3</span>
+                            <p class="text-ink-2 text-sm" id="rec-3">Generando recomendaciones...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analisis detallado con AI (expandible) -->
+                <details class="mt-4 group">
+                    <summary class="flex items-center gap-2 cursor-pointer text-pizza hover:text-pizza-light transition-colors">
+                        <svg class="w-4 h-4 transition-transform group-open:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path d="M9 5l7 7-7 7"/>
+                        </svg>
+                        <span class="font-medium">Ver analisis completo de Julia AI</span>
+                    </summary>
+                    <div class="mt-4 p-4 rounded-xl bg-midnight/50 border border-white/10">
+                        <div class="prose prose-invert prose-sm max-w-none" id="full-analysis">
+                            <p class="text-ink-3 italic">Haz clic en "Generar Analisis" para obtener un analisis detallado con inteligencia artificial de tus datos financieros.</p>
+                        </div>
+                    </div>
+                </details>
+            </div>
+
             <!-- Tabla de Detalle por Tienda -->
             <div class="chart-card p-6">
                 <div class="flex items-center justify-between mb-4">
@@ -684,13 +772,158 @@
                         `;
                     });
                     tableBody.innerHTML = tableHTML;
+                    // Store data globally for AI analysis
+                    window.financialData = {
+                        summary,
+                        storeRanking: sortedStores,
+                        categories
+                    };
+
+                    // Generate initial insights based on data
+                    generateQuickInsights(sortedStores, summary, categories);
                 } else {
                     tableBody.innerHTML = '<tr><td colspan="4" class="py-8 text-center text-ink-3">No hay datos de sucursales</td></tr>';
                 }
 
             } catch (error) {
-                // Financial data error - show fallback UI
+                console.error('Financial data error:', error);
                 document.getElementById('storesTableBody').innerHTML = '<tr><td colspan="4" class="py-8 text-center text-danger">Error cargando datos</td></tr>';
+            }
+        }
+
+        // Generate quick insights from data (no AI call)
+        function generateQuickInsights(stores, summary, categories) {
+            if (!stores || stores.length === 0) return;
+
+            // Best performer
+            const best = stores[0];
+            document.getElementById('insight-best').textContent =
+                `${best.name} lidera con ${formatMoney(best.ingresos)} en ingresos`;
+
+            // Opportunity - lowest performer
+            const worst = stores[stores.length - 1];
+            document.getElementById('insight-opportunity').textContent =
+                `${worst.name} tiene potencial de mejora con ${formatMoney(worst.ingresos)}`;
+
+            // Trend
+            const avgIngresos = stores.reduce((a, b) => a + (b.ingresos || 0), 0) / stores.length;
+            document.getElementById('insight-trend').textContent =
+                `Promedio por tienda: ${formatMoney(avgIngresos)} con margen de ${summary.margen.toFixed(1)}%`;
+
+            // Quick recommendations
+            const topCategory = Object.entries(categories).sort((a, b) => b[1] - a[1])[0];
+            document.getElementById('rec-1').textContent =
+                `${topCategory ? topCategory[0] : 'Gastos'} representa el mayor egreso. Evaluar optimizacion.`;
+            document.getElementById('rec-2').textContent =
+                `Replicar estrategias de ${best.name} en tiendas con menor rendimiento.`;
+            document.getElementById('rec-3').textContent =
+                `Analizar por que ${worst.name} tiene los menores ingresos del periodo.`;
+        }
+
+        // Generate full AI analysis
+        async function generateAnalysis() {
+            const btn = document.getElementById('btn-analyze');
+            const fullAnalysis = document.getElementById('full-analysis');
+
+            if (!window.financialData) {
+                fullAnalysis.innerHTML = '<p class="text-warning">Primero espera a que carguen los datos financieros.</p>';
+                return;
+            }
+
+            // Show loading state
+            btn.disabled = true;
+            btn.innerHTML = `
+                <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10" stroke-width="4" class="opacity-25"/>
+                    <path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor" class="opacity-75"/>
+                </svg>
+                Julia analizando...
+            `;
+            fullAnalysis.innerHTML = '<p class="text-ink-3 animate-pulse">Julia esta analizando tus datos financieros...</p>';
+
+            try {
+                const { summary, storeRanking, categories } = window.financialData;
+
+                // Build context for AI
+                const prompt = `Analiza estos datos financieros de Little Caesars y dame recomendaciones estrategicas:
+
+RESUMEN GENERAL:
+- Ingresos totales: $${(summary.total_ingresos/1000000).toFixed(2)}M
+- Egresos totales: $${(summary.total_egresos/1000000).toFixed(2)}M
+- Utilidad bruta: $${(summary.utilidad_bruta/1000000).toFixed(2)}M
+- Margen: ${summary.margen.toFixed(1)}%
+- Numero de tiendas: ${summary.num_tiendas}
+
+TOP 5 TIENDAS POR INGRESOS:
+${storeRanking.slice(0, 5).map((s, i) => `${i+1}. ${s.name}: Ingresos $${(s.ingresos/1000000).toFixed(2)}M`).join('\n')}
+
+ULTIMAS 3 TIENDAS:
+${storeRanking.slice(-3).map((s, i) => `- ${s.name}: Ingresos $${(s.ingresos/1000000).toFixed(2)}M`).join('\n')}
+
+CATEGORIAS DE GASTOS:
+${Object.entries(categories).map(([cat, val]) => `- ${cat}: $${(val/1000000).toFixed(2)}M`).join('\n')}
+
+Dame un analisis ejecutivo con:
+1. Evaluacion general del rendimiento
+2. Fortalezas identificadas
+3. Areas de oportunidad
+4. 3-5 recomendaciones especificas y accionables
+5. Alertas o riesgos a considerar
+
+Responde en espanol, de forma concisa y profesional.`;
+
+                const response = await fetch(`${API}/chat`, {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({
+                        message: prompt,
+                        context: 'Analisis financiero de graficas'
+                    })
+                });
+
+                if (!response.ok) throw new Error('Error en analisis AI');
+
+                const result = await response.json();
+                const analysis = result.response || result.analysis || 'No se pudo generar el analisis.';
+
+                // Format and display the analysis
+                fullAnalysis.innerHTML = `
+                    <div class="space-y-4">
+                        ${analysis.split('\n').filter(l => l.trim()).map(line => {
+                            if (line.match(/^\d+\.|^-|^\*/)) {
+                                return `<p class="text-ink-2 pl-4 border-l-2 border-pizza/30">${line}</p>`;
+                            } else if (line.match(/^#+\s|^[A-Z]{2,}/)) {
+                                return `<h5 class="font-bold text-ink mt-4">${line.replace(/^#+\s*/, '')}</h5>`;
+                            }
+                            return `<p class="text-ink-2">${line}</p>`;
+                        }).join('')}
+                    </div>
+                    <p class="text-xs text-ink-3 mt-4 pt-4 border-t border-white/10">
+                        Analisis generado por Julia AI - ${new Date().toLocaleString('es-MX')}
+                    </p>
+                `;
+
+                // Update insights with AI-generated content if available
+                if (result.insights) {
+                    if (result.insights.best) document.getElementById('insight-best').textContent = result.insights.best;
+                    if (result.insights.opportunity) document.getElementById('insight-opportunity').textContent = result.insights.opportunity;
+                    if (result.insights.trend) document.getElementById('insight-trend').textContent = result.insights.trend;
+                }
+
+            } catch (error) {
+                console.error('AI Analysis error:', error);
+                fullAnalysis.innerHTML = `
+                    <p class="text-danger">Error al generar analisis: ${error.message}</p>
+                    <p class="text-ink-3 text-sm mt-2">Los insights basicos ya estan disponibles arriba basados en los datos.</p>
+                `;
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                        <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                    </svg>
+                    Regenerar Analisis
+                `;
             }
         }
 
