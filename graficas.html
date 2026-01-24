@@ -224,11 +224,15 @@
                 <div class="chart-card p-6">
                     <div class="flex items-center justify-between mb-4">
                         <div>
-                            <h3 class="font-display text-lg font-bold text-ink">Ingresos por Sucursal</h3>
-                            <p class="text-sm text-ink-3">Datos del Estado de Resultados</p>
+                            <h3 class="font-display text-lg font-bold text-ink">Ranking de Ingresos</h3>
+                            <p class="text-sm text-ink-3">Todas las tiendas - Noviembre 2024</p>
+                        </div>
+                        <div class="flex items-center gap-2 px-3 py-1 bg-pizza/10 rounded-full">
+                            <svg class="w-4 h-4 text-pizza" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+                            <span class="text-sm font-medium text-pizza">Top ventas</span>
                         </div>
                     </div>
-                    <div class="h-72">
+                    <div class="h-80">
                         <canvas id="salesLineChart"></canvas>
                     </div>
                 </div>
@@ -237,41 +241,85 @@
                 <div class="chart-card p-6">
                     <div class="flex items-center justify-between mb-4">
                         <div>
-                            <h3 class="font-display text-lg font-bold text-ink">Comparativo por Tienda</h3>
-                            <p class="text-sm text-ink-3">Ingresos vs Utilidad</p>
+                            <h3 class="font-display text-lg font-bold text-ink">Ingresos vs Utilidad</h3>
+                            <p class="text-sm text-ink-3">Top 7 tiendas con mejor rendimiento</p>
+                        </div>
+                        <div class="flex gap-3 text-xs">
+                            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-pizza"></span> Ingresos</span>
+                            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-success"></span> Utilidad</span>
                         </div>
                     </div>
-                    <div class="h-72">
+                    <div class="h-80">
                         <canvas id="channelBarChart"></canvas>
                     </div>
                 </div>
 
-                <!-- Distribucion de Gastos -->
+                <!-- Distribucion de Gastos - Polar Area -->
                 <div class="chart-card p-6">
                     <div class="flex items-center justify-between mb-4">
                         <div>
-                            <h3 class="font-display text-lg font-bold text-ink">Categorias de Gastos</h3>
-                            <p class="text-sm text-ink-3">Nomina, Renta, Servicios</p>
+                            <h3 class="font-display text-lg font-bold text-ink">Distribucion de Gastos</h3>
+                            <p class="text-sm text-ink-3">Desglose por categoria de egreso</p>
                         </div>
                     </div>
-                    <div class="h-72 flex items-center justify-center">
-                        <div class="w-full max-w-xs">
+                    <div class="h-80 flex items-center justify-center">
+                        <div class="w-full max-w-sm">
                             <canvas id="expensesPieChart"></canvas>
                         </div>
                     </div>
                 </div>
 
-                <!-- Total Ingresos vs Egresos -->
+                <!-- Total Ingresos vs Egresos - Gauge style -->
                 <div class="chart-card p-6">
                     <div class="flex items-center justify-between mb-4">
                         <div>
-                            <h3 class="font-display text-lg font-bold text-ink">Ingresos vs Egresos</h3>
-                            <p class="text-sm text-ink-3">Periodo actual - Total todas las tiendas</p>
+                            <h3 class="font-display text-lg font-bold text-ink">Balance Financiero</h3>
+                            <p class="text-sm text-ink-3">Ingresos vs Egresos totales del periodo</p>
                         </div>
                     </div>
-                    <div class="h-72">
+                    <div class="h-80">
                         <canvas id="comparisonChart"></canvas>
                     </div>
+                </div>
+            </div>
+
+            <!-- Top 3 Tiendas Ranking -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div class="chart-card p-5 border-l-4 border-yellow-500" id="rank-1">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-10 h-10 rounded-full bg-yellow-500/20 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-yellow-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z"/></svg>
+                        </div>
+                        <div>
+                            <p class="text-xs text-yellow-500 font-bold uppercase tracking-wider">1er Lugar</p>
+                            <p class="font-display font-bold text-ink" id="rank1-name">Cargando...</p>
+                        </div>
+                    </div>
+                    <p class="font-display text-2xl font-bold text-ink" id="rank1-value">$--</p>
+                </div>
+                <div class="chart-card p-5 border-l-4 border-gray-400" id="rank-2">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-10 h-10 rounded-full bg-gray-400/20 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z"/></svg>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-400 font-bold uppercase tracking-wider">2do Lugar</p>
+                            <p class="font-display font-bold text-ink" id="rank2-name">Cargando...</p>
+                        </div>
+                    </div>
+                    <p class="font-display text-2xl font-bold text-ink" id="rank2-value">$--</p>
+                </div>
+                <div class="chart-card p-5 border-l-4 border-amber-700" id="rank-3">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-10 h-10 rounded-full bg-amber-700/20 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-amber-700" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z"/></svg>
+                        </div>
+                        <div>
+                            <p class="text-xs text-amber-700 font-bold uppercase tracking-wider">3er Lugar</p>
+                            <p class="font-display font-bold text-ink" id="rank3-name">Cargando...</p>
+                        </div>
+                    </div>
+                    <p class="font-display text-2xl font-bold text-ink" id="rank3-value">$--</p>
                 </div>
             </div>
 
@@ -393,24 +441,48 @@
             }
         });
 
-        // 3. Expenses Pie Chart
+        // 3. Expenses Polar Area Chart - más impresionante
         expensesChart = new Chart(document.getElementById('expensesPieChart'), {
-            type: 'doughnut',
+            type: 'polarArea',
             data: {
                 labels: ['Cargando...'],
                 datasets: [{
                     data: [1],
-                    backgroundColor: [pizzaColors.primary],
-                    borderWidth: 0,
-                    spacing: 2
+                    backgroundColor: [pizzaColors.primary + '80'],
+                    borderColor: [pizzaColors.primary],
+                    borderWidth: 2
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: true,
-                cutout: '60%',
                 plugins: {
-                    legend: { position: 'right', labels: { padding: 12, usePointStyle: true, pointStyle: 'circle', font: { size: 11 } } }
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            padding: 12,
+                            usePointStyle: true,
+                            pointStyle: 'rectRounded',
+                            font: { size: 10 }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.label + ': ' + formatMoney(context.raw);
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    r: {
+                        ticks: {
+                            display: false
+                        },
+                        grid: {
+                            color: 'rgba(255,255,255,0.05)'
+                        }
+                    }
                 }
             }
         });
@@ -442,6 +514,15 @@
         // ==========================================
         const API = '';
 
+        // Helper para auth headers
+        function getAuthHeaders() {
+            const token = localStorage.getItem('authToken');
+            return {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            };
+        }
+
         // Format currency
         function formatMoney(amount) {
             return new Intl.NumberFormat('es-MX', {
@@ -454,8 +535,13 @@
 
         // Load financial chart data from API
         async function loadFinancialData() {
+            const token = localStorage.getItem('authToken');
+            if (!token) return;
+
             try {
-                const response = await fetch(`${API}/charts/financial`);
+                const response = await fetch(`${API}/charts/financial`, {
+                    headers: getAuthHeaders()
+                });
                 if (!response.ok) throw new Error('Financial API not available');
 
                 const data = await response.json();
@@ -480,60 +566,123 @@
                 document.getElementById('kpi-docs').textContent = summary.num_documentos;
                 document.getElementById('kpi-docs-trend').textContent = 'docs procesados';
 
-                // Update Sales Chart (Ventas por tienda - horizontal bar)
-                if (stores.names.length > 0) {
-                    salesChart.data.labels = stores.names;
-                    salesChart.data.datasets[0].data = stores.ventas;
+                // Sort stores by ventas descending for ranking
+                const storeRanking = stores.names.map((name, i) => ({
+                    name,
+                    ventas: stores.ventas[i],
+                    utilidad: stores.utilidad[i]
+                })).sort((a, b) => b.ventas - a.ventas);
+
+                // Update Top 3 Ranking Cards
+                if (storeRanking.length >= 1) {
+                    document.getElementById('rank1-name').textContent = storeRanking[0].name;
+                    document.getElementById('rank1-value').textContent = formatMoney(storeRanking[0].ventas);
+                }
+                if (storeRanking.length >= 2) {
+                    document.getElementById('rank2-name').textContent = storeRanking[1].name;
+                    document.getElementById('rank2-value').textContent = formatMoney(storeRanking[1].ventas);
+                }
+                if (storeRanking.length >= 3) {
+                    document.getElementById('rank3-name').textContent = storeRanking[2].name;
+                    document.getElementById('rank3-value').textContent = formatMoney(storeRanking[2].ventas);
+                }
+
+                // Update Sales Chart (Ventas por tienda - horizontal bar) - sorted
+                if (storeRanking.length > 0) {
+                    const sortedNames = storeRanking.map(s => s.name);
+                    const sortedVentas = storeRanking.map(s => s.ventas);
+
+                    // Gradient colors from best to worst
+                    const gradientColors = sortedVentas.map((_, i) => {
+                        const ratio = i / (sortedVentas.length - 1);
+                        const r = Math.round(255 - (ratio * 100));
+                        const g = Math.round(87 + (ratio * 100));
+                        const b = Math.round(34 + (ratio * 100));
+                        return `rgb(${r}, ${g}, ${b})`;
+                    });
+
+                    salesChart.data.labels = sortedNames;
+                    salesChart.data.datasets[0].data = sortedVentas;
+                    salesChart.data.datasets[0].backgroundColor = gradientColors;
                     salesChart.update();
                 }
 
-                // Update Stores Comparison Chart (Ingresos vs Utilidad)
-                if (stores.names.length > 0) {
-                    storesChart.data.labels = stores.names.slice(0, 7);
-                    storesChart.data.datasets[0].data = stores.ventas.slice(0, 7);
-                    storesChart.data.datasets[1].data = stores.utilidad.slice(0, 7);
+                // Update Stores Comparison Chart (Ingresos vs Utilidad) - top 7
+                if (storeRanking.length > 0) {
+                    const top7 = storeRanking.slice(0, 7);
+                    storesChart.data.labels = top7.map(s => s.name.length > 10 ? s.name.substring(0, 10) : s.name);
+                    storesChart.data.datasets[0].data = top7.map(s => s.ventas);
+                    storesChart.data.datasets[1].data = top7.map(s => s.utilidad);
                     storesChart.update();
                 }
 
-                // Update Expenses Pie Chart
+                // Update Expenses Polar Chart
                 if (Object.keys(categories).length > 0) {
                     const catLabels = Object.keys(categories);
                     const catValues = Object.values(categories);
-                    const catColors = [pizzaColors.primary, pizzaColors.light, pizzaColors.lighter, pizzaColors.blue, pizzaColors.purple, pizzaColors.success, pizzaColors.gray];
+                    const catColors = [
+                        pizzaColors.primary,
+                        pizzaColors.light,
+                        pizzaColors.lighter,
+                        pizzaColors.blue,
+                        pizzaColors.purple,
+                        pizzaColors.success,
+                        '#F59E0B',
+                        pizzaColors.gray
+                    ];
 
-                    expensesChart.data.labels = catLabels;
+                    expensesChart.data.labels = catLabels.map(l => l.length > 12 ? l.substring(0, 12) + '...' : l);
                     expensesChart.data.datasets[0].data = catValues;
-                    expensesChart.data.datasets[0].backgroundColor = catColors.slice(0, catLabels.length);
+                    expensesChart.data.datasets[0].backgroundColor = catColors.slice(0, catLabels.length).map(c => c + 'CC');
+                    expensesChart.data.datasets[0].borderColor = catColors.slice(0, catLabels.length);
+                    expensesChart.data.datasets[0].borderWidth = 2;
                     expensesChart.update();
                 }
 
-                // Update Comparison Chart (Total Ingresos vs Egresos)
-                comparisonChart.data.labels = ['Periodo Actual'];
-                comparisonChart.data.datasets[0].data = [summary.total_ingresos];
-                comparisonChart.data.datasets[1].data = [summary.total_egresos];
+                // Update Comparison Chart (Total Ingresos vs Egresos) - stacked style
+                const utilidad = summary.total_ingresos - summary.total_egresos;
+                comparisonChart.data.labels = ['Ingresos', 'Egresos', 'Utilidad'];
+                comparisonChart.data.datasets = [{
+                    label: 'Monto',
+                    data: [summary.total_ingresos, summary.total_egresos, utilidad],
+                    backgroundColor: [pizzaColors.primary, pizzaColors.gray, pizzaColors.success],
+                    borderRadius: 8,
+                    borderSkipped: false
+                }];
                 comparisonChart.update();
 
-                // Populate stores table with real data
+                // Populate stores table with real data - sorted by ingresos
                 const rawStores = data.raw_stores || {};
                 const tableBody = document.getElementById('storesTableBody');
 
                 if (Object.keys(rawStores).length > 0) {
+                    // Sort stores by ingresos descending
+                    const sortedStores = Object.entries(rawStores)
+                        .map(([name, data]) => ({ name, ...data }))
+                        .sort((a, b) => (b.ingresos || 0) - (a.ingresos || 0));
+
                     let tableHTML = '';
-                    for (const [storeName, storeData] of Object.entries(rawStores)) {
-                        const ingresos = storeData.ingresos || 0;
-                        const egresos = storeData.egresos || 0;
-                        const utilidad = ingresos - egresos;
+                    sortedStores.forEach((store, index) => {
+                        const ingresos = store.ingresos || 0;
+                        const egresos = store.egresos || 0;
+                        const utilidad = store.utilidad || (ingresos - egresos);
                         const utilidadClass = utilidad >= 0 ? 'text-success' : 'text-danger';
+                        const rankBadge = index < 3 ? `<span class="inline-flex items-center justify-center w-5 h-5 rounded-full ${index === 0 ? 'bg-yellow-500/20 text-yellow-500' : index === 1 ? 'bg-gray-400/20 text-gray-400' : 'bg-amber-700/20 text-amber-700'} text-xs font-bold mr-2">${index + 1}</span>` : '';
 
                         tableHTML += `
-                            <tr class="border-b border-white/5 hover:bg-white/5">
-                                <td class="py-3 px-4 font-medium text-ink">${storeName}</td>
+                            <tr class="border-b border-white/5 hover:bg-white/5 transition-colors">
+                                <td class="py-3 px-4 font-medium text-ink">
+                                    <div class="flex items-center">
+                                        ${rankBadge}
+                                        ${store.name}
+                                    </div>
+                                </td>
                                 <td class="py-3 px-4 text-right text-ink-2">${formatMoney(ingresos)}</td>
                                 <td class="py-3 px-4 text-right text-ink-2">${formatMoney(egresos)}</td>
                                 <td class="py-3 px-4 text-right font-medium ${utilidadClass}">${formatMoney(utilidad)}</td>
                             </tr>
                         `;
-                    }
+                    });
                     tableBody.innerHTML = tableHTML;
                 } else {
                     tableBody.innerHTML = '<tr><td colspan="4" class="py-8 text-center text-ink-3">No hay datos de sucursales</td></tr>';
@@ -547,12 +696,16 @@
 
         // Load dashboard stats
         async function loadDashboardData() {
+            const token = localStorage.getItem('authToken');
+            if (!token) return;
+
             try {
-                const response = await fetch(`${API}/dashboard/stats`);
+                const response = await fetch(`${API}/dashboard/stats`, {
+                    headers: getAuthHeaders()
+                });
                 if (!response.ok) throw new Error('API not available');
 
                 const data = await response.json();
-                // Dashboard stats loaded
 
                 // Financial data takes priority, this is fallback
                 if (data.total_documents === 0) {
@@ -561,7 +714,7 @@
                 }
 
             } catch (error) {
-                // Dashboard API error
+                console.error('Dashboard API error:', error);
             }
         }
 
