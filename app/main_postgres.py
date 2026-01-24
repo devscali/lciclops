@@ -84,9 +84,9 @@ app.add_middleware(
 # ============================================
 
 # Configuración JWT
-# TODO: Configurar JWT_SECRET_KEY en variables de entorno de Railway
 SECRET_KEY = os.getenv("JWT_SECRET_KEY", "tu-secret-key-cambiar-en-produccion-123")
 ALGORITHM = "HS256"
+print(f"🔐 JWT Secret Key configurada: {SECRET_KEY[:10]}...{SECRET_KEY[-5:]}")
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 días
 
 # Password hashing
