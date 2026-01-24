@@ -133,9 +133,10 @@ async def get_current_user(
         print(f"🔐 Usando SECRET_KEY: {SECRET_KEY[:10]}...")
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         print(f"✅ Token válido, payload: {payload}")
-        user_id: int = payload.get("sub")
-        if user_id is None:
+        user_id_str = payload.get("sub")
+        if user_id_str is None:
             raise HTTPException(status_code=401, detail="Token inválido")
+        user_id = int(user_id_str)
     except JWTError as e:
         print(f"❌ Error JWT: {e}")
         raise HTTPException(
@@ -167,9 +168,10 @@ async def get_optional_user(
 
     try:
         payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id: int = payload.get("sub")
-        if user_id is None:
+        user_id_str = payload.get("sub")
+        if user_id_str is None:
             return None
+        user_id = int(user_id_str)
 
         user = db.query(models.User).filter(models.User.id == user_id).first()
         if not user or not user.is_active:
@@ -320,7 +322,7 @@ async def register(user_data: schemas.UserCreate, db: Session = Depends(get_db))
     db.refresh(user)
 
     # Generar token
-    token = create_access_token(data={"sub": user.id})
+    token = create_access_token(data={"sub": str(user.id)})
 
     return {
         "access_token": token,
@@ -343,7 +345,7 @@ async def login(user_data: schemas.UserLogin, db: Session = Depends(get_db)):
     if not user.is_active:
         raise HTTPException(status_code=400, detail="Usuario desactivado")
 
-    token = create_access_token(data={"sub": user.id})
+    token = create_access_token(data={"sub": str(user.id)})
 
     return {
         "access_token": token,
@@ -385,7 +387,7 @@ async def setup_admin(user_data: schemas.UserCreate, db: Session = Depends(get_d
         db.commit()
         db.refresh(user)
 
-        token = create_access_token(data={"sub": user.id})
+        token = create_access_token(data={"sub": str(user.id)})
         return {
             "access_token": token,
             "token_type": "bearer",
