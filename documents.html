@@ -315,6 +315,15 @@
     <script>
         const API = '';
 
+        // Helper para auth headers
+        function getAuthHeaders() {
+            const token = localStorage.getItem('authToken');
+            return {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            };
+        }
+
         let allDocs = [];
         let currentFilter = 'all';
 
@@ -328,8 +337,13 @@
 
         // Load documents from vault via API
         async function loadVault() {
+            const token = localStorage.getItem('authToken');
+            if (!token) return;
+
             try {
-                const response = await fetch(API + '/documents?status=confirmed');
+                const response = await fetch(API + '/documents?status=confirmed', {
+                    headers: getAuthHeaders()
+                });
                 if (!response.ok) throw new Error('Error al cargar documentos');
 
                 const data = await response.json();
@@ -457,7 +471,8 @@
 
             try {
                 const response = await fetch(API + '/documents/' + docId, {
-                    method: 'DELETE'
+                    method: 'DELETE',
+                    headers: getAuthHeaders()
                 });
 
                 if (!response.ok) throw new Error('Error al eliminar');
