@@ -917,7 +917,7 @@ async def delete_document(
 
 
 # ============================================
-# ANÁLISIS CON OPENAI
+# ANÁLISIS CON IA (FALLBACK AUTOMÁTICO)
 # ============================================
 
 @app.post("/analyze/{doc_id}")
@@ -928,11 +928,11 @@ async def analyze_document(
     current_user: dict = Depends(get_current_user)
 ):
     """
-    Analiza un documento con OpenAI GPT-4
+    Analiza un documento con IA (OpenAI/Anthropic con fallback)
     PROTEGIDO: Requiere autenticación
     """
-    if not openai_client:
-        raise HTTPException(status_code=503, detail="OpenAI API no configurada")
+    if not openai_client and not anthropic_client:
+        raise HTTPException(status_code=503, detail="No hay proveedores de IA configurados")
 
     doc = db.query(models.Document).filter(models.Document.id == doc_id).first()
     if not doc:
@@ -1000,14 +1000,12 @@ async def analyze_document(
 
         prompt = prompts.get(analysis_type, prompts["general"])
 
-        response = openai_client.chat.completions.create(
-            model="gpt-4o-mini",
-            max_tokens=2000,
-            messages=[
-                {"role": "system", "content": "Eres Julia, experta en análisis financiero para restaurantes Little Caesars. Respondes en español de manera profesional."},
-                {"role": "user", "content": prompt}
-            ]
-        )
+        # Usar helper con fallback automático
+        messages = [
+            {"role": "system", "content": "Eres Julia, experta en análisis financiero para restaurantes Little Caesars. Respondes en español de manera profesional."},
+            {"role": "user", "content": prompt}
+        ]
+        ai_response = call_ai_with_fallback(messages, max_tokens=2000, temperature=0.7)
 
         # Guardar análisis en DB
         analysis = models.Analysis(
@@ -1015,8 +1013,8 @@ async def analyze_document(
             store_id=doc.store_id,
             analysis_type=analysis_type,
             query=f"Análisis {analysis_type}",
-            result=response.choices[0].message.content,
-            tokens_used=response.usage.total_tokens
+            result=ai_response["response"],
+            tokens_used=ai_response["tokens_used"]
         )
         db.add(analysis)
         db.commit()
@@ -1027,8 +1025,9 @@ async def analyze_document(
                 "doc_id": doc_id,
                 "filename": doc.filename,
                 "type": analysis_type,
-                "result": response.choices[0].message.content,
-                "tokens_used": response.usage.total_tokens
+                "result": ai_response["response"],
+                "tokens_used": ai_response["tokens_used"],
+                "provider": ai_response["provider"]
             }
         }
 
