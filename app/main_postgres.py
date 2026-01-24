@@ -357,6 +357,12 @@ async def setup_admin(user_data: schemas.UserCreate, db: Session = Depends(get_d
     Crea el primer usuario admin. Solo funciona si no hay usuarios.
     Usar una vez para setup inicial.
     """
+    try:
+        # Forzar creación de tabla si no existe
+        models.User.__table__.create(bind=engine, checkfirst=True)
+    except Exception as e:
+        print(f"Tabla users: {e}")
+
     # Solo permitir si no hay usuarios
     user_count = db.query(models.User).count()
     if user_count > 0:
