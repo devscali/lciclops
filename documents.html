@@ -115,6 +115,118 @@
         .theme-light .nav-pill:not(.active):hover { color: #1a1a1a; background: rgba(0,0,0,0.06); }
         .theme-light .blob { background: radial-gradient(circle, rgba(255,87,34,0.06) 0%, transparent 70%); filter: blur(80px); }
         .theme-light .mobile-nav { background: rgba(255,255,255,0.95); border-top-color: rgba(0,0,0,0.08); }
+
+        /* Modal de confirmación */
+        .confirm-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s ease;
+        }
+        .confirm-modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .confirm-modal-backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+        }
+        .confirm-modal-content {
+            position: relative;
+            background: linear-gradient(145deg, #1c1c1f 0%, #141416 100%);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 1.25rem;
+            padding: 1.5rem;
+            max-width: 400px;
+            width: 100%;
+            transform: scale(0.95) translateY(10px);
+            transition: transform 0.2s ease;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+        }
+        .confirm-modal.active .confirm-modal-content {
+            transform: scale(1) translateY(0);
+        }
+        .theme-light .confirm-modal-content {
+            background: linear-gradient(145deg, #ffffff 0%, #f8f8fa 100%);
+            border-color: rgba(0,0,0,0.08);
+        }
+
+        /* Drop Zone */
+        .drop-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(10,10,11,0.85);
+            backdrop-filter: blur(8px);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s ease;
+        }
+        .drop-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .drop-zone {
+            border: 3px dashed rgba(255,87,34,0.5);
+            border-radius: 2rem;
+            padding: 4rem;
+            text-align: center;
+            background: rgba(255,87,34,0.05);
+            transform: scale(0.95);
+            transition: all 0.2s ease;
+        }
+        .drop-overlay.active .drop-zone {
+            transform: scale(1);
+        }
+        .drop-zone.dragover {
+            border-color: #FF5722;
+            background: rgba(255,87,34,0.1);
+            transform: scale(1.02);
+        }
+        .theme-light .drop-overlay {
+            background: rgba(255,255,255,0.9);
+        }
+
+        /* Upload toast */
+        .upload-toast {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: linear-gradient(145deg, #1c1c1f 0%, #141416 100%);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 1rem;
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+            z-index: 300;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        .upload-toast.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(0);
+        }
+        .theme-light .upload-toast {
+            background: #ffffff;
+            border-color: rgba(0,0,0,0.08);
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.15);
+        }
     </style>
 </head>
 <body class="text-ink" id="app">
@@ -139,7 +251,7 @@
                 <a href="/" class="nav-pill"><span class="flex items-center gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="2"/></svg>Dashboard</span></a>
                 <a href="/subir" class="nav-pill"><span class="flex items-center gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><polyline points="17 8 12 3 7 8"/></svg>Subir</span></a>
                 <a href="/graficas" class="nav-pill"><span class="flex items-center gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Graficas</span></a>
-                <a href="/julia" class="nav-pill"><span class="flex items-center gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Julia</span></a>
+                <!-- Julia oculto temporalmente <a href="/julia" class="nav-pill"><span class="flex items-center gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Julia</span></a> -->
                 <a href="/vault" class="nav-pill active"><span class="flex items-center gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>Vault</span></a>
             </nav>
 
@@ -181,7 +293,7 @@
         <a href="/" class="flex flex-col items-center gap-1 text-ink-3"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="2"/></svg><span class="text-[10px]">Dashboard</span></a>
         <a href="/subir" class="flex flex-col items-center gap-1 text-ink-3"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><polyline points="17 8 12 3 7 8"/></svg><span class="text-[10px]">Subir</span></a>
         <a href="/graficas" class="flex flex-col items-center gap-1 text-ink-3"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg><span class="text-[10px]">Graficas</span></a>
-        <a href="/julia" class="flex flex-col items-center gap-1 text-ink-3"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="text-[10px]">Julia</span></a>
+        <!-- Julia oculto temporalmente <a href="/julia" class="flex flex-col items-center gap-1 text-ink-3"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="text-[10px]">Julia</span></a> -->
         <a href="/vault" class="flex flex-col items-center gap-1 text-pizza"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg><span class="text-[10px]">Vault</span></a>
     </nav>
 
@@ -466,8 +578,25 @@
             renderDocs(filtered);
         }
 
-        async function deleteDoc(docId) {
-            if (!confirm('Eliminar este documento del vault?')) return;
+        let pendingDeleteId = null;
+
+        function deleteDoc(docId) {
+            pendingDeleteId = docId;
+            const doc = allDocs.find(d => d.id === docId);
+            document.getElementById('confirmModalText').textContent =
+                doc ? `"${doc.filename}" sera eliminado permanentemente.` : 'Este documento sera eliminado permanentemente.';
+            document.getElementById('confirmModal').classList.add('active');
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirmModal').classList.remove('active');
+            pendingDeleteId = null;
+        }
+
+        async function confirmDelete() {
+            if (!pendingDeleteId) return;
+            const docId = pendingDeleteId;
+            closeConfirmModal();
 
             try {
                 const response = await fetch(API + '/documents/' + docId, {
@@ -505,6 +634,14 @@
             }
         }
 
+        // Initialize confirm button and ESC key
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('confirmDeleteBtn').addEventListener('click', confirmDelete);
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeConfirmModal();
+        });
+
         function askJulia(filename) {
             window.location.href = `julia.html?ask=Analiza el documento ${filename}`;
         }
@@ -523,6 +660,61 @@
         });
     </script>
 
+    <!-- Modal de Confirmación -->
+    <div id="confirmModal" class="confirm-modal">
+        <div class="confirm-modal-backdrop" onclick="closeConfirmModal()"></div>
+        <div class="confirm-modal-content">
+            <div class="flex items-start gap-4 mb-6">
+                <div class="w-12 h-12 rounded-xl bg-danger/10 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-6 h-6 text-danger" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                        <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-ink mb-1">Eliminar documento</h3>
+                    <p class="text-ink-3 text-sm" id="confirmModalText">Este documento sera eliminado permanentemente del vault.</p>
+                </div>
+            </div>
+            <div class="flex gap-3 justify-end">
+                <button onclick="closeConfirmModal()" class="px-4 py-2.5 rounded-xl text-sm font-medium text-ink-2 hover:text-ink hover:bg-surface-3/50 transition-all">
+                    Cancelar
+                </button>
+                <button id="confirmDeleteBtn" class="px-5 py-2.5 rounded-xl text-sm font-semibold bg-danger text-white hover:bg-danger/90 transition-all shadow-lg shadow-danger/20">
+                    Eliminar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Drop Zone Overlay -->
+    <div id="dropOverlay" class="drop-overlay">
+        <div class="drop-zone" id="dropZone">
+            <div class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-pizza/10 flex items-center justify-center">
+                <svg class="w-10 h-10 text-pizza" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="17 8 12 3 7 8"/>
+                    <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+            </div>
+            <h3 class="font-display text-2xl font-bold text-ink mb-2">Suelta tus archivos</h3>
+            <p class="text-ink-3">PDF, Excel o CSV</p>
+        </div>
+    </div>
+
+    <!-- Upload Toast -->
+    <div id="uploadToast" class="upload-toast">
+        <div class="w-10 h-10 rounded-xl bg-pizza/10 flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5 text-pizza animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                <circle cx="12" cy="12" r="10" stroke-opacity="0.25"/>
+                <path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/>
+            </svg>
+        </div>
+        <div>
+            <p class="text-sm font-medium text-ink" id="uploadToastTitle">Subiendo archivo...</p>
+            <p class="text-xs text-ink-3" id="uploadToastSubtitle">Espera un momento</p>
+        </div>
+    </div>
+
     <!-- Auth Check -->
     <script>
         (async function checkAuth() {
@@ -534,6 +726,151 @@
             } catch (e) { localStorage.clear(); window.location.href = '/login'; }
         })();
         function logout() { localStorage.clear(); window.location.href = '/login'; }
+    </script>
+
+    <!-- Drag & Drop -->
+    <script>
+        const dropOverlay = document.getElementById('dropOverlay');
+        const dropZone = document.getElementById('dropZone');
+        const uploadToast = document.getElementById('uploadToast');
+        let dragCounter = 0;
+
+        // Prevent default drag behaviors
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            document.body.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            });
+        });
+
+        // Show overlay when dragging files over the page
+        document.body.addEventListener('dragenter', (e) => {
+            dragCounter++;
+            if (e.dataTransfer.types.includes('Files')) {
+                dropOverlay.classList.add('active');
+            }
+        });
+
+        document.body.addEventListener('dragleave', () => {
+            dragCounter--;
+            if (dragCounter === 0) {
+                dropOverlay.classList.remove('active');
+                dropZone.classList.remove('dragover');
+            }
+        });
+
+        // Highlight drop zone when hovering
+        dropZone.addEventListener('dragover', () => {
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+
+        // Handle drop
+        dropOverlay.addEventListener('drop', async (e) => {
+            dragCounter = 0;
+            dropOverlay.classList.remove('active');
+            dropZone.classList.remove('dragover');
+
+            const files = Array.from(e.dataTransfer.files);
+            const validFiles = files.filter(f => {
+                const ext = f.name.split('.').pop().toLowerCase();
+                return ['pdf', 'xlsx', 'xls', 'csv'].includes(ext);
+            });
+
+            if (validFiles.length === 0) {
+                showUploadToast('Archivo no soportado', 'Solo PDF, Excel o CSV', true);
+                return;
+            }
+
+            for (const file of validFiles) {
+                await uploadFileDrop(file);
+            }
+        });
+
+        function showUploadToast(title, subtitle, isError = false) {
+            const toast = document.getElementById('uploadToast');
+            const iconDiv = toast.querySelector('div:first-child');
+            document.getElementById('uploadToastTitle').textContent = title;
+            document.getElementById('uploadToastSubtitle').textContent = subtitle;
+
+            if (isError) {
+                iconDiv.innerHTML = `<svg class="w-5 h-5 text-danger" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`;
+            } else {
+                iconDiv.innerHTML = `<svg class="w-5 h-5 text-pizza animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="10" stroke-opacity="0.25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/></svg>`;
+            }
+
+            toast.classList.add('active');
+            if (isError) {
+                setTimeout(() => toast.classList.remove('active'), 3000);
+            }
+        }
+
+        function hideUploadToast() {
+            document.getElementById('uploadToast').classList.remove('active');
+        }
+
+        async function uploadFileDrop(file) {
+            showUploadToast(`Subiendo ${file.name}...`, 'Procesando archivo');
+
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+
+                const token = localStorage.getItem('authToken');
+                const response = await fetch(API + '/upload?skip_ai=true', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.detail || 'Error al subir');
+                }
+
+                const data = await response.json();
+                const documents = data.documents || [data.document];
+
+                showUploadToast('Guardando en vault...', `${documents.length} hoja(s)`);
+
+                // Auto-confirm all documents
+                const defaultPeriod = new Date().toLocaleDateString('es-MX', { month: 'long', year: 'numeric' });
+                for (const doc of documents) {
+                    await fetch(API + '/upload/confirm', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                            doc_id: doc.id,
+                            store_id: 'ALL',
+                            store_name: 'Todas las tiendas',
+                            period: defaultPeriod,
+                            confirm: true
+                        })
+                    });
+                }
+
+                // Success
+                const iconDiv = uploadToast.querySelector('div:first-child');
+                iconDiv.innerHTML = `<svg class="w-5 h-5 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`;
+                document.getElementById('uploadToastTitle').textContent = 'Archivo guardado';
+                document.getElementById('uploadToastSubtitle').textContent = file.name;
+
+                setTimeout(() => {
+                    hideUploadToast();
+                    loadVault(); // Reload vault to show new files
+                }, 2000);
+
+            } catch (err) {
+                console.error('Upload error:', err);
+                showUploadToast('Error al subir', err.message, true);
+            }
+        }
     </script>
 </body>
 </html>
