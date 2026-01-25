@@ -363,7 +363,13 @@ async def code_login(code: str = Body(..., embed=True), db: Session = Depends(ge
     return {
         "access_token": token,
         "token_type": "bearer",
-        "user": user
+        "user": {
+            "id": user.id,
+            "email": user.email,
+            "name": user.name,
+            "role": user.role,
+            "is_active": user.is_active
+        }
     }
 
 

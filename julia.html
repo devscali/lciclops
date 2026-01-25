@@ -413,7 +413,10 @@
         // Load vault document count via API
         async function loadVaultCount() {
             try {
-                const response = await fetch(API + '/vault/summary');
+                const token = localStorage.getItem('authToken');
+                const response = await fetch(API + '/vault/summary', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
                 if (response.ok) {
                     const data = await response.json();
                     document.getElementById('docCount').textContent = data.total_documents || 0;
@@ -488,9 +491,13 @@
 
         async function askJulia(question) {
             // The backend now handles vault context from PostgreSQL
+            const token = localStorage.getItem('authToken');
             const response = await fetch(API + '/chat', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify({
                     message: question,
                     context: '',
@@ -522,8 +529,10 @@
             formData.append('file', file);
 
             try {
+                const token = localStorage.getItem('authToken');
                 const response = await fetch(API + '/upload', {
                     method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
                     body: formData
                 });
 
@@ -604,9 +613,13 @@
 
             try {
                 // Save to PostgreSQL via API
+                const token = localStorage.getItem('authToken');
                 const response = await fetch(API + '/upload/confirm', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
                     body: JSON.stringify({
                         doc_id: currentDocData.id,
                         store_id: 'ALL',
