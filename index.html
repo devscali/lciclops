@@ -176,6 +176,47 @@
         ::-webkit-scrollbar-thumb { background: #242428; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #363639; }
 
+        /* Chart Modal */
+        .chart-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        .chart-modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .chart-modal-backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(8px);
+        }
+        .chart-modal-content {
+            position: relative;
+            background: linear-gradient(145deg, #1c1c1f 0%, #141416 100%);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 1.5rem;
+            padding: 1.5rem;
+            max-width: 700px;
+            width: 100%;
+            transform: scale(0.9) translateY(20px);
+            transition: transform 0.3s ease;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+        }
+        .chart-modal.active .chart-modal-content {
+            transform: scale(1) translateY(0);
+        }
+        .bento-item { cursor: pointer; }
+        .bento-item:active { transform: scale(0.98); }
+
         /* Alert badge */
         .alert-badge {
             position: relative;
@@ -400,7 +441,9 @@
                 <a href="/vault" class="nav-pill">
                     <span class="flex items-center gap-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                            <line x1="3" y1="9" x2="21" y2="9"/>
+                            <line x1="9" y1="21" x2="9" y2="9"/>
                         </svg>
                         Vault
                     </span>
@@ -853,6 +896,25 @@
             </div>
         </div>
     </main>
+
+    <!-- Modal para Gráficas Expandidas -->
+    <div id="chartModal" class="chart-modal">
+        <div class="chart-modal-backdrop" onclick="closeChartModal()"></div>
+        <div class="chart-modal-content">
+            <div class="flex items-center justify-between mb-4">
+                <h3 id="chartModalTitle" class="font-display text-xl font-bold text-ink">Detalle de Gráfica</h3>
+                <button onclick="closeChartModal()" class="w-10 h-10 rounded-xl bg-surface-3/50 flex items-center justify-center text-ink-3 hover:text-ink hover:bg-surface-3 transition-all">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <div class="h-80 mb-4">
+                <canvas id="modalChart"></canvas>
+            </div>
+            <div id="chartModalInsight" class="p-4 rounded-xl bg-surface-3/30 border border-white/5">
+                <p class="text-ink-2 text-sm"></p>
+            </div>
+        </div>
+    </div>
 
     <script>
         const API = '';
@@ -1414,6 +1476,105 @@
             localStorage.clear();
             window.location.href = '/login';
         }
+
+        // ==========================================
+        // CHART MODAL FUNCTIONALITY
+        // ==========================================
+        let modalChartInstance = null;
+        const chartData = {
+            'expenseDistChart': {
+                title: 'Distribución de Gastos - Detalle',
+                type: 'pie',
+                data: { labels: ['Nómina', 'Queso', 'Harina', 'Luz', 'Gas', 'Otros'], datasets: [{ data: [45, 20, 15, 8, 7, 5], backgroundColor: ['#FF5722', '#FF8A65', '#FFAB91', '#FFCCBC', '#FBE9E7', '#636366'] }] },
+                insight: '<strong class="text-pizza">Nómina representa el 45%</strong> del gasto total. Considera optimizar turnos en horas de baja demanda. El queso (20%) es el segundo mayor costo - evalúa negociar contratos por volumen con proveedores.'
+            },
+            'efficiencyChart': {
+                title: 'Eficiencia Operativa - Detalle',
+                type: 'doughnut',
+                data: { datasets: [{ data: [78, 22], backgroundColor: ['#34C759', 'rgba(255,255,255,0.1)'] }] },
+                insight: '<strong class="text-success">78% de eficiencia operativa</strong> está por encima del promedio de la industria (72%). Para alcanzar el objetivo de 85%, enfócate en reducir tiempos muertos y optimizar el proceso de preparación.'
+            },
+            'compareChart': {
+                title: 'Comparativo vs Mes Anterior',
+                type: 'bar',
+                data: { labels: ['Ventas', 'Gastos', 'Utilidad'], datasets: [{ label: 'Actual', data: [100, 75, 25], backgroundColor: '#FF5722' }, { label: 'Anterior', data: [88, 70, 18], backgroundColor: '#636366' }] },
+                insight: '<strong class="text-success">Ventas +12%</strong> vs mes anterior, mientras que gastos solo +7%. La utilidad neta mejoró 38% - excelente control de costos. Mantén esta tendencia de crecimiento eficiente.'
+            },
+            'topCategoriesChart': {
+                title: 'Top Categorías de Gasto',
+                type: 'bar',
+                data: { labels: ['Nómina', 'Queso', 'Harina', 'Luz', 'Gas'], datasets: [{ data: [180000, 80000, 60000, 32000, 28000], backgroundColor: ['#FF5722', '#FF8A65', '#FFAB91', '#FFCCBC', '#FBE9E7'] }] },
+                insight: '<strong class="text-warning">Nómina + Queso = 60%</strong> del costo total. Acciones recomendadas: (1) Revisar plantilla vs demanda real, (2) Negociar precio de queso por volumen trimestral, (3) Evaluar proveedores alternativos de harina.'
+            },
+            'rankingChart': {
+                title: 'Ranking de Tiendas por Rentabilidad',
+                type: 'bar',
+                data: { labels: ['T-001', 'T-003', 'T-007', 'T-012', 'T-005', 'T-009', 'T-015'], datasets: [{ data: [25, 22, 20, 17, 16, 14, 12], backgroundColor: ['#34C759', '#34C759', '#34C759', '#FF9500', '#FF9500', '#FF9500', '#FF3B30'] }] },
+                insight: '<strong class="text-success">T-001 lidera con 25% de margen</strong>. Analiza sus mejores prácticas para replicar. <strong class="text-danger">T-015 requiere atención urgente</strong> con solo 12% - revisa costos operativos y posible fuga de inventario.'
+            },
+            'radarChart': {
+                title: 'Métricas de Salud del Negocio',
+                type: 'radar',
+                data: { labels: ['Ventas', 'Margen', 'Eficiencia', 'Crecimiento', 'Calidad'], datasets: [{ data: [85, 78, 76, 55, 82], backgroundColor: 'rgba(255,87,34,0.2)', borderColor: '#FF5722' }] },
+                insight: '<strong class="text-success">Ventas (85) y Calidad (82) son fortalezas</strong>. <strong class="text-warning">Crecimiento (55) es el área de oportunidad</strong> - considera estrategias de expansión, nuevos productos o promociones para impulsar el crecimiento.'
+            }
+        };
+
+        function openChartModal(chartId) {
+            const data = chartData[chartId];
+            if (!data) return;
+
+            document.getElementById('chartModalTitle').textContent = data.title;
+            document.getElementById('chartModalInsight').innerHTML = '<p class="text-ink-2 text-sm leading-relaxed">' + data.insight + '</p>';
+
+            // Destroy previous chart if exists
+            if (modalChartInstance) {
+                modalChartInstance.destroy();
+            }
+
+            // Create new chart in modal
+            const ctx = document.getElementById('modalChart').getContext('2d');
+            modalChartInstance = new Chart(ctx, {
+                type: data.type,
+                data: data.data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: data.type === 'bar' && chartId === 'topCategoriesChart' ? 'y' : 'x',
+                    plugins: { legend: { display: data.type !== 'doughnut', position: 'bottom' } }
+                }
+            });
+
+            document.getElementById('chartModal').classList.add('active');
+        }
+
+        function closeChartModal() {
+            document.getElementById('chartModal').classList.remove('active');
+        }
+
+        // Add click handlers to chart containers
+        document.addEventListener('DOMContentLoaded', function() {
+            const chartContainers = {
+                'expenseDistChart': document.getElementById('expenseDistChart')?.closest('.bento-item'),
+                'efficiencyChart': document.getElementById('efficiencyChart')?.closest('.bento-item'),
+                'compareChart': document.getElementById('compareChart')?.closest('.bento-item'),
+                'topCategoriesChart': document.getElementById('topCategoriesChart')?.closest('.bento-item'),
+                'rankingChart': document.getElementById('rankingChart')?.closest('.bento-item'),
+                'radarChart': document.getElementById('radarChart')?.closest('.bento-item')
+            };
+
+            Object.entries(chartContainers).forEach(([id, container]) => {
+                if (container) {
+                    container.addEventListener('click', () => openChartModal(id));
+                    container.title = 'Click para ver detalle';
+                }
+            });
+        });
+
+        // Close modal with ESC key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeChartModal();
+        });
     </script>
 </body>
 </html>
