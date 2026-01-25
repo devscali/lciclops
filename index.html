@@ -779,55 +779,75 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
                     <!-- Distribución de Gastos -->
                     <div class="bento-item p-6">
-                        <h3 class="text-sm font-semibold text-ink-3 uppercase tracking-wider mb-4">Distribución Gastos</h3>
-                        <div class="h-48">
+                        <h3 class="text-sm font-semibold text-ink-3 uppercase tracking-wider mb-3">Distribución Gastos</h3>
+                        <div class="h-40">
                             <canvas id="expenseDistChart"></canvas>
                         </div>
+                        <p id="expenseInsight" class="text-xs text-ink-2 mt-3 leading-relaxed">
+                            <span class="text-pizza font-semibold">Nómina 45%</span> es el gasto principal. Considera optimizar turnos en horas valle.
+                        </p>
                     </div>
 
                     <!-- Eficiencia Operativa -->
                     <div class="bento-item p-6">
-                        <h3 class="text-sm font-semibold text-ink-3 uppercase tracking-wider mb-4">Eficiencia Operativa</h3>
-                        <div class="h-48">
+                        <h3 class="text-sm font-semibold text-ink-3 uppercase tracking-wider mb-3">Eficiencia Operativa</h3>
+                        <div class="h-40">
                             <canvas id="efficiencyChart"></canvas>
                         </div>
+                        <p id="efficiencyInsight" class="text-xs text-ink-2 mt-3 leading-relaxed">
+                            <span class="text-success font-semibold">78% eficiencia</span> - Buen nivel. Objetivo: superar 80% para maximizar margen.
+                        </p>
                     </div>
 
                     <!-- Comparativo Períodos -->
                     <div class="bento-item p-6">
-                        <h3 class="text-sm font-semibold text-ink-3 uppercase tracking-wider mb-4">vs Mes Anterior</h3>
-                        <div class="h-48">
+                        <h3 class="text-sm font-semibold text-ink-3 uppercase tracking-wider mb-3">vs Mes Anterior</h3>
+                        <div class="h-40">
                             <canvas id="compareChart"></canvas>
                         </div>
+                        <p id="compareInsight" class="text-xs text-ink-2 mt-3 leading-relaxed">
+                            <span class="text-success font-semibold">Ventas +12%</span>, pero gastos +8%. Utilidad mejora en términos netos.
+                        </p>
                     </div>
 
                     <!-- Top Categorías -->
                     <div class="bento-item p-6">
-                        <h3 class="text-sm font-semibold text-ink-3 uppercase tracking-wider mb-4">Top Gastos</h3>
-                        <div class="h-48">
+                        <h3 class="text-sm font-semibold text-ink-3 uppercase tracking-wider mb-3">Top Gastos</h3>
+                        <div class="h-40">
                             <canvas id="topCategoriesChart"></canvas>
                         </div>
+                        <p id="topGastosInsight" class="text-xs text-ink-2 mt-3 leading-relaxed">
+                            <span class="text-warning font-semibold">Nómina y Queso</span> representan 60% del costo. Negociar volumen con proveedores.
+                        </p>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <!-- Ranking de Tiendas -->
                     <div class="bento-item col-span-1 lg:col-span-2 p-6">
-                        <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center justify-between mb-3">
                             <h3 class="font-display text-lg font-bold text-ink">Ranking de Tiendas por Rentabilidad</h3>
                             <span class="text-xs text-ink-3">Margen de utilidad %</span>
                         </div>
-                        <div class="h-64">
+                        <div class="h-52">
                             <canvas id="rankingChart"></canvas>
                         </div>
+                        <p id="rankingInsight" class="text-xs text-ink-2 mt-3 leading-relaxed">
+                            <span class="text-success font-semibold">T-001 lidera con 25%</span> de margen.
+                            <span class="text-danger font-semibold">T-015 necesita atención</span> con solo 12% - revisar costos operativos.
+                        </p>
                     </div>
 
                     <!-- Radar de Métricas -->
                     <div class="bento-item p-6">
-                        <h3 class="text-sm font-semibold text-ink-3 uppercase tracking-wider mb-4">Métricas de Salud</h3>
-                        <div class="h-64">
+                        <h3 class="text-sm font-semibold text-ink-3 uppercase tracking-wider mb-3">Métricas de Salud</h3>
+                        <div class="h-52">
                             <canvas id="radarChart"></canvas>
                         </div>
+                        <p id="radarInsight" class="text-xs text-ink-2 mt-3 leading-relaxed">
+                            <span class="text-success font-semibold">Ventas y Margen fuertes.</span>
+                            <span class="text-warning font-semibold">Crecimiento bajo</span> - oportunidad de expansión o promociones.
+                        </p>
                     </div>
                 </div>
             </div>
