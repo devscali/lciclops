@@ -331,6 +331,42 @@ async def register(user_data: schemas.UserCreate, db: Session = Depends(get_db))
     }
 
 
+# Código de acceso único (temporal)
+ACCESS_CODE = "LC-2026-X7K9M"
+
+@app.post("/auth/code-login")
+async def code_login(code: str = Body(..., embed=True), db: Session = Depends(get_db)):
+    """Login con código de acceso único"""
+    if code != ACCESS_CODE:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Código de acceso incorrecto"
+        )
+
+    # Buscar o crear usuario genérico
+    user = db.query(models.User).filter(models.User.email == "admin@ciclops.mx").first()
+    if not user:
+        # Crear usuario admin si no existe
+        user = models.User(
+            email="admin@ciclops.mx",
+            name="Admin CICLOPS",
+            hashed_password=get_password_hash("temp-not-used"),
+            role="admin",
+            is_active=True
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+    token = create_access_token(data={"sub": str(user.id)})
+
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "user": user
+    }
+
+
 @app.post("/auth/login", response_model=schemas.Token)
 async def login(user_data: schemas.UserLogin, db: Session = Depends(get_db)):
     """Inicia sesión y retorna token JWT"""
