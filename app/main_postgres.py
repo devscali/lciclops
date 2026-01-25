@@ -30,9 +30,73 @@ from passlib.context import CryptContext
 from .database import engine, get_db, Base
 from . import db_models as models
 from . import schemas
+from collections import defaultdict
+import time
+import logging
 
 # Cargar variables de entorno
 load_dotenv()
+
+
+# ============================================
+# LOGGING DE AUDITORÍA
+# ============================================
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+audit_logger = logging.getLogger("audit")
+
+
+def log_audit(action: str, user_id: str = None, ip: str = None, details: str = None):
+    """Registra eventos de auditoría para seguridad"""
+    msg = f"[AUDIT] {action}"
+    if user_id:
+        msg += f" | user={user_id}"
+    if ip:
+        msg += f" | ip={ip}"
+    if details:
+        msg += f" | {details}"
+    audit_logger.info(msg)
+
+
+# ============================================
+# RATE LIMITER SIMPLE (en memoria)
+# ============================================
+class RateLimiter:
+    """Limitador de tasa para prevenir ataques de fuerza bruta"""
+    def __init__(self, max_requests: int = 5, window_seconds: int = 60):
+        self.max_requests = max_requests
+        self.window_seconds = window_seconds
+        self.requests = defaultdict(list)
+
+    def is_allowed(self, identifier: str) -> bool:
+        """Verifica si el identificador puede hacer otra request"""
+        now = time.time()
+        # Limpiar requests viejas
+        self.requests[identifier] = [
+            req_time for req_time in self.requests[identifier]
+            if now - req_time < self.window_seconds
+        ]
+        # Verificar límite
+        if len(self.requests[identifier]) >= self.max_requests:
+            return False
+        self.requests[identifier].append(now)
+        return True
+
+    def get_retry_after(self, identifier: str) -> int:
+        """Retorna segundos hasta que pueda intentar de nuevo"""
+        if not self.requests[identifier]:
+            return 0
+        oldest = min(self.requests[identifier])
+        return max(0, int(self.window_seconds - (time.time() - oldest)))
+
+
+# Rate limiters para diferentes endpoints
+login_limiter = RateLimiter(max_requests=5, window_seconds=60)      # 5 intentos por minuto
+upload_limiter = RateLimiter(max_requests=10, window_seconds=60)    # 10 uploads por minuto
+chat_limiter = RateLimiter(max_requests=20, window_seconds=60)      # 20 chats por minuto
 
 # Crear tablas
 Base.metadata.create_all(bind=engine)
@@ -55,8 +119,28 @@ class ForceHTTPSMiddleware(BaseHTTPMiddleware):
         return await call_next(request)
 
 
-# Agregar middleware (orden importa: HTTPS primero)
+# Middleware de seguridad - Headers de protección
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        # Prevenir clickjacking
+        response.headers["X-Frame-Options"] = "DENY"
+        # Prevenir MIME sniffing
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        # Habilitar XSS filter del navegador
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        # Forzar HTTPS por 1 año
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        # Política de referrer
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        # Permisos de funciones del navegador
+        response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+        return response
+
+
+# Agregar middleware (orden importa: HTTPS primero, luego seguridad)
 app.add_middleware(ForceHTTPSMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
 
 # CORS - Restringido a orígenes permitidos
 ALLOWED_ORIGINS = [
@@ -335,9 +419,21 @@ async def register(user_data: schemas.UserCreate, db: Session = Depends(get_db))
 ACCESS_CODE = "LC-2026-X7K9M"
 
 @app.post("/auth/code-login")
-async def code_login(code: str = Body(..., embed=True), db: Session = Depends(get_db)):
-    """Login con código de acceso único"""
+async def code_login(request: Request, code: str = Body(..., embed=True), db: Session = Depends(get_db)):
+    """Login con código de acceso único - Rate limited"""
+    # Rate limiting por IP
+    client_ip = request.headers.get("x-forwarded-for", request.client.host).split(",")[0].strip()
+    if not login_limiter.is_allowed(client_ip):
+        retry_after = login_limiter.get_retry_after(client_ip)
+        log_audit("LOGIN_RATE_LIMITED", ip=client_ip, details="Demasiados intentos")
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Demasiados intentos. Intenta en {retry_after} segundos.",
+            headers={"Retry-After": str(retry_after)}
+        )
+
     if code != ACCESS_CODE:
+        log_audit("LOGIN_FAILED", ip=client_ip, details="Código incorrecto")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Código de acceso incorrecto"
@@ -359,6 +455,7 @@ async def code_login(code: str = Body(..., embed=True), db: Session = Depends(ge
         db.refresh(user)
 
     token = create_access_token(data={"sub": str(user.id)})
+    log_audit("LOGIN_SUCCESS", user_id=str(user.id), ip=client_ip)
 
     return {
         "access_token": token,
