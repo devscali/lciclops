@@ -3,7 +3,7 @@ CICLOPS Backend - Producción con PostgreSQL
 API para análisis financiero de Little Caesars
 """
 
-from fastapi import FastAPI, File, UploadFile, HTTPException, Depends, Query, Request, Header, status
+from fastapi import FastAPI, File, UploadFile, HTTPException, Depends, Query, Request, Header, status, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
 from fastapi.staticfiles import StaticFiles
