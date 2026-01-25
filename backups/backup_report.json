@@ -1,0 +1,13 @@
+{
+    "last_backup": {
+        "timestamp": "2026-01-25_01-05-02",
+        "database_file": "backups/db_2026-01-25_01-05-02.sql.gz",
+        "database_size_bytes": 145,
+        "env_file": "backups/env_2026-01-25_01-05-02.enc",
+        "env_size_bytes": 464
+    },
+    "retention_days": 14,
+    "total_backups": 1,
+    "generated_at": "2026-01-25T01:05:03Z",
+    "workflow_run_id": "21324509715"
+}
