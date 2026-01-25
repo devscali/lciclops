@@ -283,6 +283,111 @@
                 </div>
             </div>
 
+            <!-- Segunda fila de gráficas -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <!-- Tendencia Mensual -->
+                <div class="chart-card p-5">
+                    <h3 class="text-sm font-semibold text-ink-3 uppercase tracking-wider mb-3">Tendencia 6 Meses</h3>
+                    <div class="h-36">
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                    <p class="text-xs text-ink-2 mt-2"><span class="text-success font-semibold">+18% crecimiento</span> respecto al semestre anterior.</p>
+                </div>
+
+                <!-- Eficiencia por Tienda -->
+                <div class="chart-card p-5">
+                    <h3 class="text-sm font-semibold text-ink-3 uppercase tracking-wider mb-3">Eficiencia General</h3>
+                    <div class="h-36">
+                        <canvas id="efficiencyGaugeChart"></canvas>
+                    </div>
+                    <p class="text-xs text-ink-2 mt-2"><span class="text-success font-semibold">76% promedio</span> de eficiencia operativa.</p>
+                </div>
+
+                <!-- Ventas por Día de la Semana -->
+                <div class="chart-card p-5">
+                    <h3 class="text-sm font-semibold text-ink-3 uppercase tracking-wider mb-3">Ventas por Día</h3>
+                    <div class="h-36">
+                        <canvas id="weekdayChart"></canvas>
+                    </div>
+                    <p class="text-xs text-ink-2 mt-2"><span class="text-pizza font-semibold">Viernes y Sábado</span> son los días más fuertes.</p>
+                </div>
+
+                <!-- Costo vs Beneficio -->
+                <div class="chart-card p-5">
+                    <h3 class="text-sm font-semibold text-ink-3 uppercase tracking-wider mb-3">Costo / Beneficio</h3>
+                    <div class="h-36">
+                        <canvas id="costBenefitChart"></canvas>
+                    </div>
+                    <p class="text-xs text-ink-2 mt-2">Por cada <span class="text-pizza font-semibold">$1 invertido</span>, retorno de $1.45.</p>
+                </div>
+            </div>
+
+            <!-- Tercera fila de gráficas -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+                <!-- Mapa de Calor por Hora -->
+                <div class="chart-card p-5">
+                    <h3 class="text-sm font-semibold text-ink-3 uppercase tracking-wider mb-3">Horarios Pico</h3>
+                    <div class="h-48">
+                        <canvas id="heatmapChart"></canvas>
+                    </div>
+                    <p class="text-xs text-ink-2 mt-2"><span class="text-warning font-semibold">12-2pm y 7-9pm</span> son las horas con más ventas.</p>
+                </div>
+
+                <!-- Productos Más Vendidos -->
+                <div class="chart-card p-5">
+                    <h3 class="text-sm font-semibold text-ink-3 uppercase tracking-wider mb-3">Mix de Productos</h3>
+                    <div class="h-48">
+                        <canvas id="productMixChart"></canvas>
+                    </div>
+                    <p class="text-xs text-ink-2 mt-2"><span class="text-pizza font-semibold">Pizza Pepperoni</span> representa 35% de ventas.</p>
+                </div>
+
+                <!-- Radar de Métricas de Salud -->
+                <div class="chart-card p-5">
+                    <h3 class="text-sm font-semibold text-ink-3 uppercase tracking-wider mb-3">Salud del Negocio</h3>
+                    <div class="h-48">
+                        <canvas id="healthRadarChart"></canvas>
+                    </div>
+                    <p class="text-xs text-ink-2 mt-2"><span class="text-success font-semibold">Ventas y Margen</span> sólidos. Oportunidad en crecimiento.</p>
+                </div>
+            </div>
+
+            <!-- Cuarta fila - Análisis Comparativo -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <!-- Comparativo Año Anterior -->
+                <div class="chart-card p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h3 class="font-display text-lg font-bold text-ink">vs Año Anterior</h3>
+                            <p class="text-sm text-ink-3">Comparativo mensual año actual vs anterior</p>
+                        </div>
+                        <div class="flex gap-3 text-xs">
+                            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-pizza"></span> 2026</span>
+                            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-ink-3"></span> 2025</span>
+                        </div>
+                    </div>
+                    <div class="h-64">
+                        <canvas id="yearCompareChart"></canvas>
+                    </div>
+                    <p class="text-xs text-ink-2 mt-3"><span class="text-success font-semibold">+22% YoY</span> en promedio. Todos los meses superan año anterior.</p>
+                </div>
+
+                <!-- Proyección -->
+                <div class="chart-card p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h3 class="font-display text-lg font-bold text-ink">Proyección Q1</h3>
+                            <p class="text-sm text-ink-3">Estimación basada en tendencia actual</p>
+                        </div>
+                        <span class="px-3 py-1 bg-success/10 text-success text-xs font-semibold rounded-full">Optimista</span>
+                    </div>
+                    <div class="h-64">
+                        <canvas id="projectionChart"></canvas>
+                    </div>
+                    <p class="text-xs text-ink-2 mt-3">Proyección de <span class="text-success font-semibold">$2.8M</span> para fin de trimestre si se mantiene tendencia.</p>
+                </div>
+            </div>
+
             <!-- Top 3 Tiendas Ranking -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <div class="chart-card p-5 border-l-4 border-yellow-500" id="rank-1">
@@ -594,6 +699,140 @@
                     y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { callback: v => '$' + (v/1000000).toFixed(1) + 'M' } }
                 }
             }
+        });
+
+        // ==========================================
+        // NUEVAS GRÁFICAS ADICIONALES
+        // ==========================================
+
+        // 5. Tendencia 6 Meses
+        new Chart(document.getElementById('trendChart'), {
+            type: 'line',
+            data: {
+                labels: ['Ago', 'Sep', 'Oct', 'Nov', 'Dic', 'Ene'],
+                datasets: [{
+                    data: [420000, 480000, 510000, 545000, 620000, 680000],
+                    borderColor: pizzaColors.primary,
+                    backgroundColor: 'rgba(255,87,34,0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { display: false } } }
+        });
+
+        // 6. Eficiencia Gauge
+        new Chart(document.getElementById('efficiencyGaugeChart'), {
+            type: 'doughnut',
+            data: {
+                datasets: [{
+                    data: [76, 24],
+                    backgroundColor: [pizzaColors.success, 'rgba(255,255,255,0.1)'],
+                    borderWidth: 0
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { display: false } } }
+        });
+
+        // 7. Ventas por Día de la Semana
+        new Chart(document.getElementById('weekdayChart'), {
+            type: 'bar',
+            data: {
+                labels: ['L', 'M', 'Mi', 'J', 'V', 'S', 'D'],
+                datasets: [{
+                    data: [45, 52, 48, 55, 78, 85, 62],
+                    backgroundColor: ['#636366', '#636366', '#636366', '#636366', pizzaColors.primary, pizzaColors.primary, '#636366'],
+                    borderRadius: 4
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { display: false } } }
+        });
+
+        // 8. Costo/Beneficio
+        new Chart(document.getElementById('costBenefitChart'), {
+            type: 'bar',
+            data: {
+                labels: ['Inversión', 'Retorno'],
+                datasets: [{
+                    data: [100, 145],
+                    backgroundColor: [pizzaColors.gray, pizzaColors.success],
+                    borderRadius: 6
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { grid: { display: false } } } }
+        });
+
+        // 9. Horarios Pico (simulado como barras)
+        new Chart(document.getElementById('heatmapChart'), {
+            type: 'bar',
+            data: {
+                labels: ['8am', '10am', '12pm', '2pm', '4pm', '6pm', '8pm', '10pm'],
+                datasets: [{
+                    data: [15, 25, 85, 70, 35, 55, 90, 45],
+                    backgroundColor: function(context) {
+                        const value = context.raw;
+                        if (value >= 80) return pizzaColors.primary;
+                        if (value >= 50) return pizzaColors.warning;
+                        return '#636366';
+                    },
+                    borderRadius: 4
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { display: false } } }
+        });
+
+        // 10. Mix de Productos
+        new Chart(document.getElementById('productMixChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Pepperoni', 'Hawaiana', '3 Carnes', 'Queso', 'Otros'],
+                datasets: [{
+                    data: [35, 25, 18, 12, 10],
+                    backgroundColor: [pizzaColors.primary, pizzaColors.warning, pizzaColors.success, '#8B5CF6', '#636366']
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { usePointStyle: true, pointStyle: 'circle', padding: 10, font: { size: 10 } } } } }
+        });
+
+        // 11. Health Radar
+        new Chart(document.getElementById('healthRadarChart'), {
+            type: 'radar',
+            data: {
+                labels: ['Ventas', 'Margen', 'Eficiencia', 'Crecimiento', 'Calidad'],
+                datasets: [{
+                    data: [85, 78, 76, 55, 82],
+                    backgroundColor: 'rgba(255,87,34,0.2)',
+                    borderColor: pizzaColors.primary,
+                    pointBackgroundColor: pizzaColors.primary
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { r: { beginAtZero: true, max: 100, ticks: { display: false }, grid: { color: 'rgba(255,255,255,0.1)' } } } }
+        });
+
+        // 12. Comparativo Año Anterior
+        new Chart(document.getElementById('yearCompareChart'), {
+            type: 'bar',
+            data: {
+                labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'],
+                datasets: [
+                    { label: '2026', data: [520, 580, 610, 590, 640, 680], backgroundColor: pizzaColors.primary, borderRadius: 4 },
+                    { label: '2025', data: [420, 460, 490, 480, 520, 540], backgroundColor: '#636366', borderRadius: 4 }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, pointStyle: 'circle' } } }, scales: { x: { grid: { display: false } }, y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { callback: v => '$' + v + 'K' } } } }
+        });
+
+        // 13. Proyección Q1
+        new Chart(document.getElementById('projectionChart'), {
+            type: 'line',
+            data: {
+                labels: ['Ene', 'Feb', 'Mar'],
+                datasets: [
+                    { label: 'Real', data: [680, 720, null], borderColor: pizzaColors.primary, backgroundColor: pizzaColors.primary, pointRadius: 6, tension: 0.3 },
+                    { label: 'Proyección', data: [null, 720, 850], borderColor: pizzaColors.success, borderDash: [5, 5], pointRadius: 6, tension: 0.3 }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, pointStyle: 'circle' } } }, scales: { x: { grid: { display: false } }, y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { callback: v => '$' + v + 'K' } } } }
         });
 
         // ==========================================
