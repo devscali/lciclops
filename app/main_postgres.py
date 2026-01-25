@@ -757,96 +757,96 @@ async def upload_file(
             }
 
         else:
-            # Excel o CSV
+            # Excel o CSV - Combinar todas las hojas en UN solo documento
+            all_dfs = []
+            sheets_info = []
+
             if filename.endswith('.csv'):
-                # CSV solo tiene una "hoja"
                 df = pd.read_csv(BytesIO(content))
-                sheets_data = {"Datos": df}
-            else:
-                # Excel: leer TODAS las hojas
-                excel_file = pd.ExcelFile(BytesIO(content))
-                sheet_names = excel_file.sheet_names
-                sheets_data = {}
-                for sheet_name in sheet_names:
-                    df = pd.read_excel(excel_file, sheet_name=sheet_name)
-                    # Solo incluir hojas con datos
-                    if not df.empty and len(df.columns) > 0:
-                        sheets_data[sheet_name] = df
-
-            # Procesar cada hoja
-            documents_created = []
-            for sheet_name, df in sheets_data.items():
-                # Limpiar nombres de columnas
                 df.columns = [str(col).strip() for col in df.columns]
-                # Eliminar filas completamente vacías
                 df = df.dropna(how='all')
+                if not df.empty:
+                    all_dfs.append(df)
+                    sheets_info.append({"name": "Datos", "rows": len(df)})
+            else:
+                # Excel: leer TODAS las hojas y combinarlas
+                excel_file = pd.ExcelFile(BytesIO(content))
+                for sheet_name in excel_file.sheet_names:
+                    df = pd.read_excel(excel_file, sheet_name=sheet_name)
+                    df.columns = [str(col).strip() for col in df.columns]
+                    df = df.dropna(how='all')
+                    if not df.empty and len(df.columns) > 0:
+                        # Agregar columna para identificar la hoja de origen
+                        df['_hoja_origen'] = sheet_name
+                        all_dfs.append(df)
+                        sheets_info.append({"name": sheet_name, "rows": len(df)})
 
-                if df.empty:
-                    continue
-
-                # Convertir a dict y limpiar NaN para JSON válido
-                data = df.to_dict(orient='records')
-                data = clean_nan_values(data)
-                columns = list(df.columns)
-
-                # Analizar campos con AI (opcional para uploads rápidos)
-                if skip_ai:
-                    ai_analysis = {
-                        "data_type": "imported",
-                        "detected_fields": {col: {"mapped_to": col, "type": "text"} for col in columns},
-                        "summary": f"Importado directamente - {len(df)} filas",
-                        "recommended_category": "general"
-                    }
-                else:
-                    ai_analysis = await analyze_fields_with_ai(data, columns, f"{file.filename} - {sheet_name}")
-                    ai_analysis = clean_nan_values(ai_analysis)
-
-                # Crear documento en DB
-                doc = models.Document(
-                    filename=f"{file.filename}" if len(sheets_data) == 1 else f"{file.filename} [{sheet_name}]",
-                    file_type="excel" if not filename.endswith('.csv') else "csv",
-                    rows_count=len(df),
-                    columns=columns,
-                    period=detected_period,
-                    status="pending_confirmation"
-                )
-                db.add(doc)
-                db.commit()
-                db.refresh(doc)
-
-                # Guardar datos raw con análisis AI
-                raw_data = models.RawDocumentData(
-                    document_id=doc.id,
-                    raw_json={
-                        "data": data,
-                        "ai_analysis": ai_analysis,
-                        "sheet_name": sheet_name
-                    },
-                    preview_data=data[:20]
-                )
-                db.add(raw_data)
-                db.commit()
-
-                documents_created.append({
-                    "id": doc.id,
-                    "filename": doc.filename,
-                    "sheet_name": sheet_name,
-                    "type": doc.file_type,
-                    "rows": len(df),
-                    "columns": columns,
-                    "preview": data[:5],
-                    "ai_analysis": ai_analysis,
-                    "status": "pending_confirmation"
-                })
-
-            if not documents_created:
+            if not all_dfs:
                 raise HTTPException(status_code=400, detail="No se encontraron datos válidos en el archivo")
+
+            # Combinar todos los DataFrames
+            combined_df = pd.concat(all_dfs, ignore_index=True, sort=False)
+
+            # Convertir a dict y limpiar NaN
+            data = combined_df.to_dict(orient='records')
+            data = clean_nan_values(data)
+            columns = list(combined_df.columns)
+
+            # Analizar con AI
+            if skip_ai:
+                ai_analysis = {
+                    "data_type": "imported",
+                    "detected_fields": {col: {"mapped_to": col, "type": "text"} for col in columns},
+                    "summary": f"Importado - {len(combined_df)} filas de {len(sheets_info)} hoja(s)",
+                    "recommended_category": "general",
+                    "sheets_combined": sheets_info
+                }
+            else:
+                ai_analysis = await analyze_fields_with_ai(data, columns, file.filename)
+                ai_analysis = clean_nan_values(ai_analysis)
+                ai_analysis["sheets_combined"] = sheets_info
+
+            # Crear UN solo documento
+            doc = models.Document(
+                filename=file.filename,
+                file_type="excel" if not filename.endswith('.csv') else "csv",
+                rows_count=len(combined_df),
+                columns=columns,
+                period=detected_period,
+                status="pending_confirmation"
+            )
+            db.add(doc)
+            db.commit()
+            db.refresh(doc)
+
+            # Guardar datos raw
+            raw_data = models.RawDocumentData(
+                document_id=doc.id,
+                raw_json={
+                    "data": data,
+                    "ai_analysis": ai_analysis,
+                    "sheets_combined": sheets_info
+                },
+                preview_data=data[:20]
+            )
+            db.add(raw_data)
+            db.commit()
 
             return {
                 "success": True,
-                "message": f"Archivo '{file.filename}' procesado - {len(documents_created)} hoja(s) detectada(s)",
-                "sheets_count": len(documents_created),
-                "documents": documents_created
+                "message": f"Archivo '{file.filename}' procesado - {len(sheets_info)} hoja(s) combinadas, {len(combined_df)} filas totales",
+                "sheets_count": 1,
+                "documents": [{
+                    "id": doc.id,
+                    "filename": doc.filename,
+                    "type": doc.file_type,
+                    "rows": len(combined_df),
+                    "columns": columns,
+                    "preview": data[:5],
+                    "ai_analysis": ai_analysis,
+                    "sheets_combined": sheets_info,
+                    "status": "pending_confirmation"
+                }]
             }
 
     except Exception as e:

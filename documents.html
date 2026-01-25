@@ -483,6 +483,7 @@
                 if (allDocs.length === 0) {
                     document.getElementById('emptyState').classList.remove('hidden');
                 } else {
+                    document.getElementById('emptyState').classList.add('hidden');
                     renderDocs(allDocs);
                 }
 
