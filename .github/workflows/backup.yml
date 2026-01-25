@@ -1,0 +1,242 @@
+name: Railway Database Backup
+
+on:
+  # Ejecutar diariamente a las 3:00 AM UTC (9:00 PM hora México)
+  schedule:
+    - cron: '0 3 * * *'
+
+  # Permitir ejecución manual desde GitHub Actions
+  workflow_dispatch:
+    inputs:
+      force_backup:
+        description: 'Forzar backup incluso si hay uno reciente'
+        required: false
+        default: 'false'
+        type: boolean
+
+env:
+  BACKUP_RETENTION_DAYS: 14
+
+jobs:
+  backup:
+    name: PostgreSQL Backup
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Setup PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Create backup directory
+        run: mkdir -p backups
+
+      - name: Generate timestamp
+        id: timestamp
+        run: |
+          TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
+          echo "timestamp=$TIMESTAMP" >> $GITHUB_OUTPUT
+          echo "date=$(date +"%Y-%m-%d")" >> $GITHUB_OUTPUT
+
+      - name: Backup PostgreSQL Database
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          echo "::group::Parsing DATABASE_URL"
+
+          # Extraer componentes de la URL
+          # Formato: postgresql://user:password@host:port/database
+          DB_URL="$DATABASE_URL"
+
+          # Remover el prefijo postgresql:// o postgres://
+          DB_URL="${DB_URL#postgresql://}"
+          DB_URL="${DB_URL#postgres://}"
+
+          # Extraer usuario
+          DB_USER="${DB_URL%%:*}"
+          DB_URL="${DB_URL#*:}"
+
+          # Extraer password (hasta @)
+          DB_PASS="${DB_URL%%@*}"
+          DB_URL="${DB_URL#*@}"
+
+          # Extraer host
+          DB_HOST="${DB_URL%%:*}"
+          DB_URL="${DB_URL#*:}"
+
+          # Extraer puerto (hasta /)
+          DB_PORT="${DB_URL%%/*}"
+
+          # Extraer nombre de BD (remover query params si existen)
+          DB_NAME="${DB_URL#*/}"
+          DB_NAME="${DB_NAME%%\?*}"
+
+          echo "Host: $DB_HOST"
+          echo "Port: $DB_PORT"
+          echo "Database: $DB_NAME"
+          echo "User: $DB_USER"
+          echo "::endgroup::"
+
+          echo "::group::Creating PostgreSQL dump"
+          BACKUP_FILE="backups/db_${{ steps.timestamp.outputs.timestamp }}.sql.gz"
+
+          PGPASSWORD="$DB_PASS" pg_dump \
+            -h "$DB_HOST" \
+            -p "$DB_PORT" \
+            -U "$DB_USER" \
+            -d "$DB_NAME" \
+            --no-owner \
+            --no-acl \
+            --clean \
+            --if-exists \
+            --verbose \
+            2>&1 | gzip -9 > "$BACKUP_FILE"
+
+          # Verificar backup
+          if [ -s "$BACKUP_FILE" ]; then
+            SIZE=$(du -h "$BACKUP_FILE" | cut -f1)
+            echo "Backup creado exitosamente: $BACKUP_FILE ($SIZE)"
+          else
+            echo "::error::Error al crear backup de base de datos"
+            exit 1
+          fi
+          echo "::endgroup::"
+
+      - name: Backup Environment Variables
+        env:
+          BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          echo "::group::Encrypting environment variables"
+
+          TIMESTAMP="${{ steps.timestamp.outputs.timestamp }}"
+          ENV_FILE="backups/env_${TIMESTAMP}.enc"
+          TEMP_ENV="/tmp/env_backup.txt"
+
+          # Crear archivo con variables
+          cat > "$TEMP_ENV" << 'ENVEOF'
+          # Railway Environment Backup
+          # Timestamp: ${{ steps.timestamp.outputs.timestamp }}
+          # ==========================
+          ENVEOF
+
+          # Añadir variables (solo si existen)
+          [ -n "$DATABASE_URL" ] && echo "DATABASE_URL=$DATABASE_URL" >> "$TEMP_ENV"
+          [ -n "$JWT_SECRET_KEY" ] && echo "JWT_SECRET_KEY=$JWT_SECRET_KEY" >> "$TEMP_ENV"
+          [ -n "$OPENAI_API_KEY" ] && echo "OPENAI_API_KEY=$OPENAI_API_KEY" >> "$TEMP_ENV"
+          [ -n "$ANTHROPIC_API_KEY" ] && echo "ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY" >> "$TEMP_ENV"
+
+          # Encriptar con AES-256
+          openssl enc -aes-256-cbc -salt -pbkdf2 -iter 100000 \
+            -in "$TEMP_ENV" \
+            -out "$ENV_FILE" \
+            -pass pass:"$BACKUP_ENCRYPTION_KEY"
+
+          # Limpiar
+          rm -f "$TEMP_ENV"
+
+          if [ -f "$ENV_FILE" ]; then
+            echo "Variables de entorno encriptadas: $ENV_FILE"
+          else
+            echo "::error::Error al encriptar variables"
+            exit 1
+          fi
+          echo "::endgroup::"
+
+      - name: Rotate old backups
+        run: |
+          echo "::group::Rotating backups older than $BACKUP_RETENTION_DAYS days"
+
+          DELETED=0
+
+          # Buscar y eliminar backups antiguos
+          for file in $(find backups -type f \( -name "db_*.sql.gz" -o -name "env_*.enc" \) -mtime +$BACKUP_RETENTION_DAYS 2>/dev/null); do
+            echo "Eliminando: $file"
+            rm -f "$file"
+            DELETED=$((DELETED + 1))
+          done
+
+          echo "Backups eliminados: $DELETED"
+          echo "::endgroup::"
+
+      - name: Generate backup report
+        run: |
+          TIMESTAMP="${{ steps.timestamp.outputs.timestamp }}"
+          DB_FILE="backups/db_${TIMESTAMP}.sql.gz"
+          ENV_FILE="backups/env_${TIMESTAMP}.enc"
+
+          DB_SIZE=$(stat -c%s "$DB_FILE" 2>/dev/null || echo "0")
+          ENV_SIZE=$(stat -c%s "$ENV_FILE" 2>/dev/null || echo "0")
+          TOTAL_BACKUPS=$(find backups -name "db_*.sql.gz" | wc -l)
+
+          cat > backups/backup_report.json << EOF
+          {
+              "last_backup": {
+                  "timestamp": "$TIMESTAMP",
+                  "database_file": "$DB_FILE",
+                  "database_size_bytes": $DB_SIZE,
+                  "env_file": "$ENV_FILE",
+                  "env_size_bytes": $ENV_SIZE
+              },
+              "retention_days": $BACKUP_RETENTION_DAYS,
+              "total_backups": $TOTAL_BACKUPS,
+              "generated_at": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+              "workflow_run_id": "${{ github.run_id }}"
+          }
+          EOF
+
+          echo "Reporte generado:"
+          cat backups/backup_report.json
+
+      - name: Commit and push backups
+        run: |
+          git config user.name "Railway Backup Bot"
+          git config user.email "backup-bot@railway.app"
+
+          git add backups/
+
+          # Verificar si hay cambios
+          if git diff --staged --quiet; then
+            echo "No hay cambios para commit"
+            exit 0
+          fi
+
+          TIMESTAMP="${{ steps.timestamp.outputs.timestamp }}"
+
+          git commit -m "backup: PostgreSQL dump ${TIMESTAMP}
+
+          - Database backup: db_${TIMESTAMP}.sql.gz
+          - Environment backup: env_${TIMESTAMP}.enc
+          - Retention: ${BACKUP_RETENTION_DAYS} days
+          - Workflow run: ${{ github.run_id }}
+
+          [automated backup]"
+
+          git push
+
+      - name: Summary
+        run: |
+          TIMESTAMP="${{ steps.timestamp.outputs.timestamp }}"
+          DB_FILE="backups/db_${TIMESTAMP}.sql.gz"
+          DB_SIZE=$(du -h "$DB_FILE" | cut -f1)
+          TOTAL=$(find backups -name "db_*.sql.gz" | wc -l)
+
+          echo "## Backup Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Item | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Timestamp | \`$TIMESTAMP\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Database Size | $DB_SIZE |" >> $GITHUB_STEP_SUMMARY
+          echo "| Total Backups | $TOTAL |" >> $GITHUB_STEP_SUMMARY
+          echo "| Retention | $BACKUP_RETENTION_DAYS days |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Backup completado exitosamente" >> $GITHUB_STEP_SUMMARY

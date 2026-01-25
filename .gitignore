@@ -61,3 +61,14 @@ logs/
 temp/
 uploads/
 .cache/
+
+# ========================================
+# BACKUPS
+# ========================================
+
+# Include backup files (encrypted)
+!backups/
+!backups/**
+
+# Exclude unencrypted env files that may be created during restore
+.env.restored
