@@ -735,6 +735,102 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Sección de Gráficas Adicionales -->
+            <div class="mt-8">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="font-display text-2xl font-bold text-ink">Análisis Detallado</h2>
+                    <a href="/graficas" class="text-pizza text-sm font-medium hover:underline">Ver más gráficas</a>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                    <!-- Tendencia Mensual -->
+                    <div class="bento-item p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h3 class="font-display text-lg font-bold text-ink">Tendencia de Ventas</h3>
+                                <p class="text-sm text-ink-3">Últimos 6 meses</p>
+                            </div>
+                            <div class="flex gap-3 text-xs">
+                                <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-pizza"></span> Ventas</span>
+                                <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-success"></span> Utilidad</span>
+                            </div>
+                        </div>
+                        <div class="h-64">
+                            <canvas id="trendChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Correlación Ingresos vs Gastos -->
+                    <div class="bento-item p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h3 class="font-display text-lg font-bold text-ink">Correlación Ingresos vs Gastos</h3>
+                                <p class="text-sm text-ink-3">Por tienda</p>
+                            </div>
+                            <span class="px-2 py-1 rounded-full bg-blue-500/10 text-blue-400 text-xs font-medium" id="correlation-value">r = 0.85</span>
+                        </div>
+                        <div class="h-64">
+                            <canvas id="correlationChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                    <!-- Distribución de Gastos -->
+                    <div class="bento-item p-6">
+                        <h3 class="text-sm font-semibold text-ink-3 uppercase tracking-wider mb-4">Distribución Gastos</h3>
+                        <div class="h-48">
+                            <canvas id="expenseDistChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Eficiencia Operativa -->
+                    <div class="bento-item p-6">
+                        <h3 class="text-sm font-semibold text-ink-3 uppercase tracking-wider mb-4">Eficiencia Operativa</h3>
+                        <div class="h-48">
+                            <canvas id="efficiencyChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Comparativo Períodos -->
+                    <div class="bento-item p-6">
+                        <h3 class="text-sm font-semibold text-ink-3 uppercase tracking-wider mb-4">vs Mes Anterior</h3>
+                        <div class="h-48">
+                            <canvas id="compareChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Top Categorías -->
+                    <div class="bento-item p-6">
+                        <h3 class="text-sm font-semibold text-ink-3 uppercase tracking-wider mb-4">Top Gastos</h3>
+                        <div class="h-48">
+                            <canvas id="topCategoriesChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Ranking de Tiendas -->
+                    <div class="bento-item col-span-1 lg:col-span-2 p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-display text-lg font-bold text-ink">Ranking de Tiendas por Rentabilidad</h3>
+                            <span class="text-xs text-ink-3">Margen de utilidad %</span>
+                        </div>
+                        <div class="h-64">
+                            <canvas id="rankingChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Radar de Métricas -->
+                    <div class="bento-item p-6">
+                        <h3 class="text-sm font-semibold text-ink-3 uppercase tracking-wider mb-4">Métricas de Salud</h3>
+                        <div class="h-64">
+                            <canvas id="radarChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </main>
 
@@ -1039,6 +1135,214 @@
                                 return context.label + ': $' + context.raw.toFixed(1) + 'M';
                             }
                         }
+                    }
+                }
+            }
+        });
+
+        // === GRÁFICAS ADICIONALES ===
+
+        // Tendencia Mensual
+        new Chart(document.getElementById('trendChart'), {
+            type: 'line',
+            data: {
+                labels: ['Ago', 'Sep', 'Oct', 'Nov', 'Dic', 'Ene'],
+                datasets: [{
+                    label: 'Ventas',
+                    data: [4.2, 4.5, 4.8, 5.1, 5.4, 5.2],
+                    borderColor: '#FF5722',
+                    backgroundColor: 'rgba(255,87,34,0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }, {
+                    label: 'Utilidad',
+                    data: [0.8, 0.9, 1.0, 1.1, 1.2, 1.1],
+                    borderColor: '#34C759',
+                    backgroundColor: 'rgba(52,199,89,0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { display: false } },
+                    y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { callback: v => '$' + v + 'M' } }
+                }
+            }
+        });
+
+        // Correlación Scatter
+        new Chart(document.getElementById('correlationChart'), {
+            type: 'scatter',
+            data: {
+                datasets: [{
+                    label: 'Tiendas',
+                    data: [
+                        {x: 2.1, y: 1.8}, {x: 2.5, y: 2.2}, {x: 3.0, y: 2.6},
+                        {x: 3.2, y: 2.9}, {x: 3.8, y: 3.3}, {x: 4.1, y: 3.6},
+                        {x: 4.5, y: 4.0}, {x: 5.0, y: 4.4}, {x: 5.2, y: 4.7}
+                    ],
+                    backgroundColor: '#FF5722',
+                    pointRadius: 8,
+                    pointHoverRadius: 10
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { title: { display: true, text: 'Ingresos (M)', color: '#636366' }, grid: { color: 'rgba(255,255,255,0.03)' } },
+                    y: { title: { display: true, text: 'Gastos (M)', color: '#636366' }, grid: { color: 'rgba(255,255,255,0.03)' } }
+                }
+            }
+        });
+
+        // Distribución de Gastos (Pie)
+        new Chart(document.getElementById('expenseDistChart'), {
+            type: 'pie',
+            data: {
+                labels: ['Nómina', 'Insumos', 'Renta', 'Servicios', 'Otros'],
+                datasets: [{
+                    data: [35, 28, 15, 12, 10],
+                    backgroundColor: ['#FF5722', '#FF8A65', '#FFAB91', '#34C759', '#636366'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        // Eficiencia Operativa (Gauge-like doughnut)
+        new Chart(document.getElementById('efficiencyChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Eficiencia', 'Margen'],
+                datasets: [{
+                    data: [78, 22],
+                    backgroundColor: ['#34C759', 'rgba(255,255,255,0.05)'],
+                    borderWidth: 0,
+                    circumference: 180,
+                    rotation: 270
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '75%',
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        // Comparativo vs Mes Anterior
+        new Chart(document.getElementById('compareChart'), {
+            type: 'bar',
+            data: {
+                labels: ['Ventas', 'Gastos', 'Utilidad'],
+                datasets: [{
+                    label: 'Actual',
+                    data: [5.2, 4.1, 1.1],
+                    backgroundColor: '#FF5722',
+                    borderRadius: 4
+                }, {
+                    label: 'Anterior',
+                    data: [4.8, 3.9, 0.9],
+                    backgroundColor: 'rgba(255,255,255,0.1)',
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { x: { grid: { display: false } }, y: { display: false } }
+            }
+        });
+
+        // Top Categorías (Barras Horizontales)
+        new Chart(document.getElementById('topCategoriesChart'), {
+            type: 'bar',
+            data: {
+                labels: ['Nómina', 'Queso', 'Harina', 'Luz', 'Gas'],
+                datasets: [{
+                    data: [1.8, 0.9, 0.7, 0.4, 0.3],
+                    backgroundColor: ['#FF5722', '#FF8A65', '#FFAB91', '#FFE0B2', '#FFF3E0'],
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { x: { display: false }, y: { grid: { display: false } } }
+            }
+        });
+
+        // Ranking de Tiendas
+        new Chart(document.getElementById('rankingChart'), {
+            type: 'bar',
+            data: {
+                labels: ['T-001', 'T-003', 'T-007', 'T-012', 'T-005', 'T-009', 'T-015'],
+                datasets: [{
+                    label: 'Margen %',
+                    data: [24, 22, 21, 19, 18, 16, 14],
+                    backgroundColor: ctx => {
+                        const value = ctx.raw;
+                        if (value >= 20) return '#34C759';
+                        if (value >= 15) return '#FF9500';
+                        return '#FF3B30';
+                    },
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { callback: v => v + '%' } },
+                    y: { grid: { display: false } }
+                }
+            }
+        });
+
+        // Radar de Métricas
+        new Chart(document.getElementById('radarChart'), {
+            type: 'radar',
+            data: {
+                labels: ['Ventas', 'Margen', 'Eficiencia', 'Crecimiento', 'Calidad'],
+                datasets: [{
+                    data: [85, 72, 78, 65, 88],
+                    backgroundColor: 'rgba(255,87,34,0.2)',
+                    borderColor: '#FF5722',
+                    borderWidth: 2,
+                    pointBackgroundColor: '#FF5722',
+                    pointRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    r: {
+                        beginAtZero: true,
+                        max: 100,
+                        grid: { color: 'rgba(255,255,255,0.05)' },
+                        pointLabels: { color: '#a1a1a6', font: { size: 11 } },
+                        ticks: { display: false }
                     }
                 }
             }
