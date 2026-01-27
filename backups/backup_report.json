@@ -1,13 +1,13 @@
 {
     "last_backup": {
-        "timestamp": "2026-01-25_22-18-46",
-        "database_file": "backups/db_2026-01-25_22-18-46.sql.gz",
+        "timestamp": "2026-01-27_04-03-36",
+        "database_file": "backups/db_2026-01-27_04-03-36.sql.gz",
         "database_size_bytes": 145,
-        "env_file": "backups/env_2026-01-25_22-18-46.enc",
+        "env_file": "backups/env_2026-01-27_04-03-36.enc",
         "env_size_bytes": 464
     },
     "retention_days": 14,
-    "total_backups": 2,
-    "generated_at": "2026-01-25T22:18:46Z",
-    "workflow_run_id": "21340545554"
+    "total_backups": 3,
+    "generated_at": "2026-01-27T04:03:37Z",
+    "workflow_run_id": "21384055984"
 }
