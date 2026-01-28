@@ -1919,7 +1919,156 @@ async def get_dashboard_charts_data(
             "benchmarks": [75, 70, 72, 70, 80]
         }
 
-        # 14. === Summary general ===
+        # ==========================================
+        # GRÁFICAS ADICIONALES CON DATOS REALES
+        # ==========================================
+
+        # 14. === marginCompareChart: Margen Bruto vs Neto por Tienda ===
+        margin_compare_data = db.query(
+            models.MonthlySummary.store_name,
+            models.MonthlySummary.gross_margin,
+            models.MonthlySummary.net_margin
+        ).filter(
+            models.MonthlySummary.period == current_period
+        ).order_by(
+            desc(models.MonthlySummary.gross_margin)
+        ).limit(7).all()
+
+        margin_compare_chart = {
+            "labels": [m.store_name or "Tienda" for m in margin_compare_data],
+            "gross_margin": [round(float(m.gross_margin or 0), 1) for m in margin_compare_data],
+            "net_margin": [round(float(m.net_margin or 0), 1) for m in margin_compare_data]
+        }
+
+        # 15. === laborRatioChart: % Nómina sobre Ventas por Tienda ===
+        labor_ratio_data = db.query(
+            models.MonthlySummary.store_name,
+            models.MonthlySummary.labor_cost,
+            models.MonthlySummary.total_sales
+        ).filter(
+            models.MonthlySummary.period == current_period,
+            models.MonthlySummary.total_sales > 0
+        ).all()
+
+        labor_ratios = []
+        for lr in labor_ratio_data:
+            ratio = (float(lr.labor_cost or 0) / float(lr.total_sales)) * 100 if lr.total_sales else 0
+            labor_ratios.append({"name": lr.store_name or "Tienda", "ratio": round(ratio, 1)})
+
+        labor_ratios.sort(key=lambda x: x["ratio"], reverse=True)
+        labor_ratio_chart = {
+            "labels": [l["name"] for l in labor_ratios[:7]],
+            "values": [l["ratio"] for l in labor_ratios[:7]]
+        }
+
+        # 16. === fixedCostsChart: Desglose Costos Fijos ===
+        fixed_costs_chart = {
+            "labels": ["Nómina", "Renta", "Servicios"],
+            "values": [total_labor, total_rent, total_utilities],
+            "percentages": [
+                round(total_labor / total_expenses * 100, 1) if total_expenses > 0 else 0,
+                round(total_rent / total_expenses * 100, 1) if total_expenses > 0 else 0,
+                round(total_utilities / total_expenses * 100, 1) if total_expenses > 0 else 0
+            ]
+        }
+
+        # 17. === momVariationChart: Variación Mes a Mes por Tienda ===
+        mom_data = db.query(
+            models.MonthlySummary.store_name,
+            models.MonthlySummary.sales_vs_previous,
+            models.MonthlySummary.profit_vs_previous
+        ).filter(
+            models.MonthlySummary.period == current_period
+        ).all()
+
+        mom_variation_chart = {
+            "labels": [m.store_name or "Tienda" for m in mom_data if m.sales_vs_previous is not None][:7],
+            "sales_change": [round(float(m.sales_vs_previous or 0), 1) for m in mom_data if m.sales_vs_previous is not None][:7],
+            "profit_change": [round(float(m.profit_vs_previous or 0), 1) for m in mom_data if m.profit_vs_previous is not None][:7]
+        }
+
+        # 18. === costStructureChart: Costo de Venta vs Gastos Operativos ===
+        cost_structure_chart = {
+            "labels": ["Costo de Venta", "Gastos Operativos"],
+            "values": [total_cost_of_sales, total_expenses - total_cost_of_sales],
+            "percentages": [
+                round(total_cost_of_sales / total_sales * 100, 1) if total_sales > 0 else 0,
+                round((total_expenses - total_cost_of_sales) / total_sales * 100, 1) if total_sales > 0 else 0
+            ]
+        }
+
+        # 19. === marginEvolutionChart: Evolución de Márgenes por periodo ===
+        margin_evolution = []
+        for p in trend_periods:
+            margins = db.query(
+                func.avg(models.MonthlySummary.gross_margin).label('gross'),
+                func.avg(models.MonthlySummary.net_margin).label('net')
+            ).filter(
+                models.MonthlySummary.period == p
+            ).first()
+            margin_evolution.append({
+                "period": p,
+                "gross": round(float(margins.gross or 0), 1),
+                "net": round(float(margins.net or 0), 1)
+            })
+
+        margin_evolution_chart = {
+            "labels": [m["period"] for m in margin_evolution],
+            "gross_margin": [m["gross"] for m in margin_evolution],
+            "net_margin": [m["net"] for m in margin_evolution]
+        }
+
+        # 20. === waterfallChart: Waterfall de P&L ===
+        waterfall_chart = {
+            "labels": ["Ventas", "Costo Venta", "Utilidad Bruta", "Gastos Op.", "Utilidad Neta"],
+            "values": [
+                total_sales,
+                -total_cost_of_sales,
+                total_sales - total_cost_of_sales,
+                -(total_expenses - total_cost_of_sales),
+                total_profit
+            ],
+            "colors": ["#34C759", "#FF3B30", "#34C759", "#FF3B30", total_profit >= 0 and "#34C759" or "#FF3B30"]
+        }
+
+        # 21. === scatterMarginChart: Ventas vs Margen (scatter) ===
+        scatter_margin_data = db.query(
+            models.MonthlySummary.store_name,
+            models.MonthlySummary.total_sales,
+            models.MonthlySummary.net_margin
+        ).filter(
+            models.MonthlySummary.period == current_period
+        ).all()
+
+        scatter_margin_chart = {
+            "points": [
+                {"x": float(s.total_sales or 0), "y": float(s.net_margin or 0), "label": s.store_name or ""}
+                for s in scatter_margin_data
+            ]
+        }
+
+        # 22. === rentRatioChart: % Renta sobre Ventas por Tienda ===
+        rent_ratio_data = db.query(
+            models.MonthlySummary.store_name,
+            models.MonthlySummary.rent,
+            models.MonthlySummary.total_sales
+        ).filter(
+            models.MonthlySummary.period == current_period,
+            models.MonthlySummary.total_sales > 0
+        ).all()
+
+        rent_ratios = []
+        for rr in rent_ratio_data:
+            ratio = (float(rr.rent or 0) / float(rr.total_sales)) * 100 if rr.total_sales else 0
+            rent_ratios.append({"name": rr.store_name or "Tienda", "ratio": round(ratio, 1)})
+
+        rent_ratios.sort(key=lambda x: x["ratio"], reverse=True)
+        rent_ratio_chart = {
+            "labels": [r["name"] for r in rent_ratios[:7]],
+            "values": [r["ratio"] for r in rent_ratios[:7]]
+        }
+
+        # 23. === Summary general ===
         summary = {
             "total_sales": total_sales,
             "total_expenses": total_expenses,
@@ -1928,7 +2077,10 @@ async def get_dashboard_charts_data(
             "net_profit": total_profit,
             "net_margin": round(avg_margin, 1),
             "total_stores": len(store_data),
-            "efficiency": round(efficiency_chart["value"], 1)
+            "efficiency": round(efficiency_chart["value"], 1),
+            "labor_ratio": round(total_labor / total_sales * 100, 1) if total_sales > 0 else 0,
+            "rent_ratio": round(total_rent / total_sales * 100, 1) if total_sales > 0 else 0,
+            "cost_of_sales_ratio": round(total_cost_of_sales / total_sales * 100, 1) if total_sales > 0 else 0
         }
 
         # 15. === Insights dinámicos ===
@@ -1961,7 +2113,17 @@ async def get_dashboard_charts_data(
                 "compareChart": compare_chart,
                 "topCategoriesChart": top_categories_chart,
                 "rankingChart": ranking_chart,
-                "radarChart": radar_chart
+                "radarChart": radar_chart,
+                # Nuevas gráficas
+                "marginCompareChart": margin_compare_chart,
+                "laborRatioChart": labor_ratio_chart,
+                "fixedCostsChart": fixed_costs_chart,
+                "momVariationChart": mom_variation_chart,
+                "costStructureChart": cost_structure_chart,
+                "marginEvolutionChart": margin_evolution_chart,
+                "waterfallChart": waterfall_chart,
+                "scatterMarginChart": scatter_margin_chart,
+                "rentRatioChart": rent_ratio_chart
             },
             "insights": insights
         }

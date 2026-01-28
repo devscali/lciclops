@@ -283,7 +283,7 @@
                 </div>
             </div>
 
-            <!-- Segunda fila de gráficas -->
+            <!-- Segunda fila de gráficas - DATOS REALES -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 <!-- Tendencia Mensual -->
                 <div class="chart-card p-5">
@@ -291,7 +291,7 @@
                     <div class="h-36">
                         <canvas id="trendChart"></canvas>
                     </div>
-                    <p class="text-xs text-ink-2 mt-2"><span class="text-success font-semibold">+18% crecimiento</span> respecto al semestre anterior.</p>
+                    <p class="text-xs text-ink-2 mt-2" id="trendChartText"><span class="text-success font-semibold">Cargando...</span></p>
                 </div>
 
                 <!-- Eficiencia por Tienda -->
@@ -300,46 +300,46 @@
                     <div class="h-36">
                         <canvas id="efficiencyGaugeChart"></canvas>
                     </div>
-                    <p class="text-xs text-ink-2 mt-2"><span class="text-success font-semibold">76% promedio</span> de eficiencia operativa.</p>
+                    <p class="text-xs text-ink-2 mt-2" id="efficiencyText"><span class="text-success font-semibold">Cargando...</span> de eficiencia operativa.</p>
                 </div>
 
-                <!-- Ventas por Día de la Semana -->
+                <!-- % Nómina sobre Ventas -->
                 <div class="chart-card p-5">
-                    <h3 class="text-sm font-semibold text-ink-3 uppercase tracking-wider mb-3">Ventas por Día</h3>
+                    <h3 class="text-sm font-semibold text-ink-3 uppercase tracking-wider mb-3">% Nómina / Ventas</h3>
                     <div class="h-36">
-                        <canvas id="weekdayChart"></canvas>
+                        <canvas id="laborRatioChart"></canvas>
                     </div>
-                    <p class="text-xs text-ink-2 mt-2"><span class="text-pizza font-semibold">Viernes y Sábado</span> son los días más fuertes.</p>
+                    <p class="text-xs text-ink-2 mt-2" id="laborRatioText"><span class="text-pizza font-semibold">Cargando...</span> promedio en nómina.</p>
                 </div>
 
-                <!-- Costo vs Beneficio -->
+                <!-- Estructura de Costos -->
                 <div class="chart-card p-5">
-                    <h3 class="text-sm font-semibold text-ink-3 uppercase tracking-wider mb-3">Costo / Beneficio</h3>
+                    <h3 class="text-sm font-semibold text-ink-3 uppercase tracking-wider mb-3">Estructura Costos</h3>
                     <div class="h-36">
-                        <canvas id="costBenefitChart"></canvas>
+                        <canvas id="costStructureChart"></canvas>
                     </div>
-                    <p class="text-xs text-ink-2 mt-2">Por cada <span class="text-pizza font-semibold">$1 invertido</span>, retorno de $1.45.</p>
+                    <p class="text-xs text-ink-2 mt-2" id="costStructureText"><span class="text-pizza font-semibold">Cargando...</span> costo de venta.</p>
                 </div>
             </div>
 
-            <!-- Tercera fila de gráficas -->
+            <!-- Tercera fila de gráficas - DATOS REALES -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-                <!-- Mapa de Calor por Hora -->
+                <!-- % Renta sobre Ventas -->
                 <div class="chart-card p-5">
-                    <h3 class="text-sm font-semibold text-ink-3 uppercase tracking-wider mb-3">Horarios Pico</h3>
+                    <h3 class="text-sm font-semibold text-ink-3 uppercase tracking-wider mb-3">% Renta / Ventas</h3>
                     <div class="h-48">
-                        <canvas id="heatmapChart"></canvas>
+                        <canvas id="rentRatioChart"></canvas>
                     </div>
-                    <p class="text-xs text-ink-2 mt-2"><span class="text-warning font-semibold">12-2pm y 7-9pm</span> son las horas con más ventas.</p>
+                    <p class="text-xs text-ink-2 mt-2" id="rentRatioText"><span class="text-warning font-semibold">Cargando...</span> promedio en renta.</p>
                 </div>
 
-                <!-- Productos Más Vendidos -->
+                <!-- Costos Fijos Desglosados -->
                 <div class="chart-card p-5">
-                    <h3 class="text-sm font-semibold text-ink-3 uppercase tracking-wider mb-3">Mix de Productos</h3>
+                    <h3 class="text-sm font-semibold text-ink-3 uppercase tracking-wider mb-3">Costos Fijos</h3>
                     <div class="h-48">
-                        <canvas id="productMixChart"></canvas>
+                        <canvas id="fixedCostsChart"></canvas>
                     </div>
-                    <p class="text-xs text-ink-2 mt-2"><span class="text-pizza font-semibold">Pizza Pepperoni</span> representa 35% de ventas.</p>
+                    <p class="text-xs text-ink-2 mt-2" id="fixedCostsText"><span class="text-pizza font-semibold">Nómina</span> es el costo fijo principal.</p>
                 </div>
 
                 <!-- Radar de Métricas de Salud -->
@@ -348,43 +348,77 @@
                     <div class="h-48">
                         <canvas id="healthRadarChart"></canvas>
                     </div>
-                    <p class="text-xs text-ink-2 mt-2"><span class="text-success font-semibold">Ventas y Margen</span> sólidos. Oportunidad en crecimiento.</p>
+                    <p class="text-xs text-ink-2 mt-2" id="healthRadarText"><span class="text-success font-semibold">Cargando...</span></p>
                 </div>
             </div>
 
-            <!-- Cuarta fila - Análisis Comparativo -->
+            <!-- Cuarta fila - Análisis de Márgenes - DATOS REALES -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                <!-- Comparativo Año Anterior -->
+                <!-- Margen Bruto vs Neto por Tienda -->
                 <div class="chart-card p-6">
                     <div class="flex items-center justify-between mb-4">
                         <div>
-                            <h3 class="font-display text-lg font-bold text-ink">vs Año Anterior</h3>
-                            <p class="text-sm text-ink-3">Comparativo mensual año actual vs anterior</p>
+                            <h3 class="font-display text-lg font-bold text-ink">Margen Bruto vs Neto</h3>
+                            <p class="text-sm text-ink-3">Comparativa de márgenes por tienda</p>
                         </div>
                         <div class="flex gap-3 text-xs">
-                            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-pizza"></span> 2026</span>
-                            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-ink-3"></span> 2025</span>
+                            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-pizza"></span> Bruto</span>
+                            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-success"></span> Neto</span>
                         </div>
                     </div>
                     <div class="h-64">
-                        <canvas id="yearCompareChart"></canvas>
+                        <canvas id="marginCompareChart"></canvas>
                     </div>
-                    <p class="text-xs text-ink-2 mt-3"><span class="text-success font-semibold">+22% YoY</span> en promedio. Todos los meses superan año anterior.</p>
+                    <p class="text-xs text-ink-2 mt-3" id="marginCompareText"><span class="text-success font-semibold">Cargando...</span></p>
                 </div>
 
-                <!-- Proyección -->
+                <!-- Evolución de Márgenes -->
                 <div class="chart-card p-6">
                     <div class="flex items-center justify-between mb-4">
                         <div>
-                            <h3 class="font-display text-lg font-bold text-ink">Proyección Q1</h3>
-                            <p class="text-sm text-ink-3">Estimación basada en tendencia actual</p>
+                            <h3 class="font-display text-lg font-bold text-ink">Evolución de Márgenes</h3>
+                            <p class="text-sm text-ink-3">Tendencia histórica de rentabilidad</p>
                         </div>
-                        <span class="px-3 py-1 bg-success/10 text-success text-xs font-semibold rounded-full">Optimista</span>
+                        <div class="flex gap-3 text-xs">
+                            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-pizza"></span> Bruto</span>
+                            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-success"></span> Neto</span>
+                        </div>
                     </div>
                     <div class="h-64">
-                        <canvas id="projectionChart"></canvas>
+                        <canvas id="marginEvolutionChart"></canvas>
                     </div>
-                    <p class="text-xs text-ink-2 mt-3">Proyección de <span class="text-success font-semibold">$2.8M</span> para fin de trimestre si se mantiene tendencia.</p>
+                    <p class="text-xs text-ink-2 mt-3" id="marginEvolutionText"><span class="text-success font-semibold">Cargando...</span></p>
+                </div>
+            </div>
+
+            <!-- Quinta fila - Waterfall y Scatter - DATOS REALES -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <!-- Waterfall P&L -->
+                <div class="chart-card p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h3 class="font-display text-lg font-bold text-ink">Cascada P&L</h3>
+                            <p class="text-sm text-ink-3">De ventas a utilidad neta</p>
+                        </div>
+                    </div>
+                    <div class="h-64">
+                        <canvas id="waterfallChart"></canvas>
+                    </div>
+                    <p class="text-xs text-ink-2 mt-3" id="waterfallText"><span class="text-success font-semibold">Cargando...</span></p>
+                </div>
+
+                <!-- Scatter Ventas vs Margen -->
+                <div class="chart-card p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h3 class="font-display text-lg font-bold text-ink">Ventas vs Margen</h3>
+                            <p class="text-sm text-ink-3">Relación volumen-rentabilidad por tienda</p>
+                        </div>
+                    </div>
+                    <div class="h-64">
+                        <canvas id="scatterMarginChart"></canvas>
+                    </div>
+                    <p class="text-xs text-ink-2 mt-3" id="scatterMarginText"><span class="text-pizza font-semibold">Cargando...</span></p>
                 </div>
             </div>
 
@@ -734,64 +768,61 @@
             options: { responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { display: false } } }
         });
 
-        // 7. Ventas por Día de la Semana - referencia global
-        window.weekdayChart = new Chart(document.getElementById('weekdayChart'), {
+        // 7. % Nómina sobre Ventas - referencia global
+        window.laborRatioChart = new Chart(document.getElementById('laborRatioChart'), {
             type: 'bar',
             data: {
-                labels: ['L', 'M', 'Mi', 'J', 'V', 'S', 'D'],
+                labels: ['Cargando...'],
                 datasets: [{
-                    data: [45, 52, 48, 55, 78, 85, 62],
-                    backgroundColor: ['#636366', '#636366', '#636366', '#636366', pizzaColors.primary, pizzaColors.primary, '#636366'],
+                    data: [0],
+                    backgroundColor: pizzaColors.primary,
                     borderRadius: 4
                 }]
             },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { display: false } } }
+            options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { callback: v => v + '%' } }, y: { grid: { display: false } } } }
         });
 
-        // 8. Costo/Beneficio - referencia global
-        window.costBenefitChart = new Chart(document.getElementById('costBenefitChart'), {
-            type: 'bar',
-            data: {
-                labels: ['Inversión', 'Retorno'],
-                datasets: [{
-                    data: [100, 145],
-                    backgroundColor: [pizzaColors.gray, pizzaColors.success],
-                    borderRadius: 6
-                }]
-            },
-            options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { grid: { display: false } } } }
-        });
-
-        // 9. Horarios Pico - referencia global
-        window.heatmapChart = new Chart(document.getElementById('heatmapChart'), {
-            type: 'bar',
-            data: {
-                labels: ['8am', '10am', '12pm', '2pm', '4pm', '6pm', '8pm', '10pm'],
-                datasets: [{
-                    data: [15, 25, 85, 70, 35, 55, 90, 45],
-                    backgroundColor: function(context) {
-                        const value = context.raw;
-                        if (value >= 80) return pizzaColors.primary;
-                        if (value >= 50) return pizzaColors.warning;
-                        return '#636366';
-                    },
-                    borderRadius: 4
-                }]
-            },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { display: false } } }
-        });
-
-        // 10. Mix de Productos - referencia global
-        window.productMixChart = new Chart(document.getElementById('productMixChart'), {
+        // 8. Estructura de Costos - referencia global
+        window.costStructureChart = new Chart(document.getElementById('costStructureChart'), {
             type: 'doughnut',
             data: {
-                labels: ['Pepperoni', 'Hawaiana', '3 Carnes', 'Queso', 'Otros'],
+                labels: ['Costo Venta', 'Gastos Op.'],
                 datasets: [{
-                    data: [35, 25, 18, 12, 10],
-                    backgroundColor: [pizzaColors.primary, pizzaColors.warning, pizzaColors.success, '#8B5CF6', '#636366']
+                    data: [60, 40],
+                    backgroundColor: [pizzaColors.primary, pizzaColors.gray],
+                    borderWidth: 0
                 }]
             },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { usePointStyle: true, pointStyle: 'circle', padding: 10, font: { size: 10 } } } } }
+            options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, pointStyle: 'circle', padding: 10, font: { size: 10 } } } } }
+        });
+
+        // 9. % Renta sobre Ventas - referencia global
+        window.rentRatioChart = new Chart(document.getElementById('rentRatioChart'), {
+            type: 'bar',
+            data: {
+                labels: ['Cargando...'],
+                datasets: [{
+                    data: [0],
+                    backgroundColor: pizzaColors.warning,
+                    borderRadius: 4
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { callback: v => v + '%' } }, y: { grid: { display: false } } } }
+        });
+
+        // 10. Costos Fijos Desglosados - referencia global
+        window.fixedCostsChart = new Chart(document.getElementById('fixedCostsChart'), {
+            type: 'polarArea',
+            data: {
+                labels: ['Nómina', 'Renta', 'Servicios'],
+                datasets: [{
+                    data: [50, 30, 20],
+                    backgroundColor: [pizzaColors.primary + 'CC', pizzaColors.warning + 'CC', pizzaColors.success + 'CC'],
+                    borderColor: [pizzaColors.primary, pizzaColors.warning, pizzaColors.success],
+                    borderWidth: 2
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { usePointStyle: true, pointStyle: 'circle', padding: 8, font: { size: 10 } } } }, scales: { r: { ticks: { display: false }, grid: { color: 'rgba(255,255,255,0.05)' } } } }
         });
 
         // 11. Health Radar - referencia global
@@ -809,30 +840,59 @@
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { r: { beginAtZero: true, max: 100, ticks: { display: false }, grid: { color: 'rgba(255,255,255,0.1)' } } } }
         });
 
-        // 12. Comparativo Año Anterior - referencia global
-        window.yearCompareChart = new Chart(document.getElementById('yearCompareChart'), {
+        // 12. Margen Bruto vs Neto por Tienda - referencia global
+        window.marginCompareChart = new Chart(document.getElementById('marginCompareChart'), {
             type: 'bar',
             data: {
-                labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'],
+                labels: ['Cargando...'],
                 datasets: [
-                    { label: '2026', data: [520, 580, 610, 590, 640, 680], backgroundColor: pizzaColors.primary, borderRadius: 4 },
-                    { label: '2025', data: [420, 460, 490, 480, 520, 540], backgroundColor: '#636366', borderRadius: 4 }
+                    { label: 'Bruto', data: [0], backgroundColor: pizzaColors.primary, borderRadius: 4 },
+                    { label: 'Neto', data: [0], backgroundColor: pizzaColors.success, borderRadius: 4 }
                 ]
             },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, pointStyle: 'circle' } } }, scales: { x: { grid: { display: false } }, y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { callback: v => '$' + v + 'K' } } } }
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, pointStyle: 'circle' } } }, scales: { x: { grid: { display: false } }, y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { callback: v => v + '%' } } } }
         });
 
-        // 13. Proyección Q1 - referencia global
-        window.projectionChart = new Chart(document.getElementById('projectionChart'), {
+        // 13. Evolución de Márgenes - referencia global
+        window.marginEvolutionChart = new Chart(document.getElementById('marginEvolutionChart'), {
             type: 'line',
             data: {
-                labels: ['Ene', 'Feb', 'Mar'],
+                labels: ['Cargando...'],
                 datasets: [
-                    { label: 'Real', data: [680, 720, null], borderColor: pizzaColors.primary, backgroundColor: pizzaColors.primary, pointRadius: 6, tension: 0.3 },
-                    { label: 'Proyección', data: [null, 720, 850], borderColor: pizzaColors.success, borderDash: [5, 5], pointRadius: 6, tension: 0.3 }
+                    { label: 'Bruto', data: [0], borderColor: pizzaColors.primary, backgroundColor: 'rgba(255,87,34,0.1)', fill: true, tension: 0.4, pointRadius: 4 },
+                    { label: 'Neto', data: [0], borderColor: pizzaColors.success, backgroundColor: 'rgba(52,199,89,0.1)', fill: true, tension: 0.4, pointRadius: 4 }
                 ]
             },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, pointStyle: 'circle' } } }, scales: { x: { grid: { display: false } }, y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { callback: v => '$' + v + 'K' } } } }
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, pointStyle: 'circle' } } }, scales: { x: { grid: { display: false } }, y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { callback: v => v + '%' } } } }
+        });
+
+        // 14. Waterfall P&L - referencia global
+        window.waterfallChart = new Chart(document.getElementById('waterfallChart'), {
+            type: 'bar',
+            data: {
+                labels: ['Ventas', 'Costo', 'Ut. Bruta', 'Gastos', 'Ut. Neta'],
+                datasets: [{
+                    data: [100, -40, 60, -35, 25],
+                    backgroundColor: [pizzaColors.success, '#FF3B30', pizzaColors.success, '#FF3B30', pizzaColors.success],
+                    borderRadius: 4
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { callback: v => '$' + Math.abs(v/1000000).toFixed(1) + 'M' } } } }
+        });
+
+        // 15. Scatter Ventas vs Margen - referencia global
+        window.scatterMarginChart = new Chart(document.getElementById('scatterMarginChart'), {
+            type: 'scatter',
+            data: {
+                datasets: [{
+                    label: 'Tiendas',
+                    data: [{x: 1, y: 10}],
+                    backgroundColor: pizzaColors.primary,
+                    pointRadius: 10,
+                    pointHoverRadius: 12
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { title: { display: true, text: 'Ventas (M)', color: '#636366' }, grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { callback: v => '$' + v.toFixed(1) + 'M' } }, y: { title: { display: true, text: 'Margen %', color: '#636366' }, grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { callback: v => v + '%' } } } }
         });
 
         // ==========================================
@@ -1217,42 +1277,123 @@ Responde en espanol, de forma concisa y profesional.`;
 
                 console.log('✅ Datos cargados del dashboard:', data.period);
                 const charts = data.charts;
+                const summary = data.summary;
 
-                // Actualizar Tendencia 6 Meses
+                // 1. Actualizar Tendencia 6 Meses
                 if (window.trendChartGraficas && charts.trendChart) {
                     const t = charts.trendChart;
                     window.trendChartGraficas.data.labels = t.labels;
-                    window.trendChartGraficas.data.datasets[0].data = t.datasets.ventas.map(v => v);
+                    window.trendChartGraficas.data.datasets[0].data = t.datasets.ventas;
                     window.trendChartGraficas.update();
-                    // Actualizar texto
-                    const trendText = document.querySelector('#trendChart')?.closest('.chart-card')?.querySelector('.text-success');
-                    if (trendText && charts.compareChart) {
+                    const el = document.getElementById('trendChartText');
+                    if (el && charts.compareChart) {
                         const growth = charts.compareChart.change_percent[0];
-                        trendText.textContent = (growth >= 0 ? '+' : '') + growth.toFixed(0) + '% crecimiento';
+                        el.innerHTML = `<span class="text-${growth >= 0 ? 'success' : 'danger'} font-semibold">${growth >= 0 ? '+' : ''}${growth.toFixed(0)}% crecimiento</span> respecto al periodo anterior.`;
                     }
                 }
 
-                // Actualizar Eficiencia Gauge
+                // 2. Actualizar Eficiencia Gauge
                 if (window.efficiencyGaugeChart && charts.efficiencyChart) {
                     const e = charts.efficiencyChart;
                     window.efficiencyGaugeChart.data.datasets[0].data = [e.value, 100 - e.value];
                     window.efficiencyGaugeChart.update();
-                    // Actualizar texto
-                    const effText = document.querySelector('#efficiencyGaugeChart')?.closest('.chart-card')?.querySelector('.text-success');
-                    if (effText) {
-                        effText.textContent = e.value.toFixed(0) + '% promedio';
-                    }
+                    const el = document.getElementById('efficiencyText');
+                    if (el) el.innerHTML = `<span class="text-success font-semibold">${e.value.toFixed(0)}% promedio</span> de eficiencia operativa.`;
                 }
 
-                // Actualizar Health Radar
+                // 3. Actualizar % Nómina sobre Ventas
+                if (window.laborRatioChart && charts.laborRatioChart) {
+                    const l = charts.laborRatioChart;
+                    window.laborRatioChart.data.labels = l.labels.map(n => n.length > 10 ? n.substring(0, 10) : n);
+                    window.laborRatioChart.data.datasets[0].data = l.values;
+                    window.laborRatioChart.update();
+                    const el = document.getElementById('laborRatioText');
+                    if (el && summary) el.innerHTML = `<span class="text-pizza font-semibold">${summary.labor_ratio.toFixed(1)}%</span> promedio en nómina.`;
+                }
+
+                // 4. Actualizar Estructura de Costos
+                if (window.costStructureChart && charts.costStructureChart) {
+                    const c = charts.costStructureChart;
+                    window.costStructureChart.data.labels = c.labels;
+                    window.costStructureChart.data.datasets[0].data = c.percentages;
+                    window.costStructureChart.update();
+                    const el = document.getElementById('costStructureText');
+                    if (el) el.innerHTML = `<span class="text-pizza font-semibold">${c.percentages[0].toFixed(0)}%</span> costo de venta.`;
+                }
+
+                // 5. Actualizar % Renta sobre Ventas
+                if (window.rentRatioChart && charts.rentRatioChart) {
+                    const r = charts.rentRatioChart;
+                    window.rentRatioChart.data.labels = r.labels.map(n => n.length > 10 ? n.substring(0, 10) : n);
+                    window.rentRatioChart.data.datasets[0].data = r.values;
+                    window.rentRatioChart.update();
+                    const el = document.getElementById('rentRatioText');
+                    if (el && summary) el.innerHTML = `<span class="text-warning font-semibold">${summary.rent_ratio.toFixed(1)}%</span> promedio en renta.`;
+                }
+
+                // 6. Actualizar Costos Fijos
+                if (window.fixedCostsChart && charts.fixedCostsChart) {
+                    const f = charts.fixedCostsChart;
+                    window.fixedCostsChart.data.labels = f.labels;
+                    window.fixedCostsChart.data.datasets[0].data = f.values.map(v => v / 1000000);
+                    window.fixedCostsChart.update();
+                    const el = document.getElementById('fixedCostsText');
+                    if (el) el.innerHTML = `<span class="text-pizza font-semibold">Nómina ${f.percentages[0].toFixed(0)}%</span> del total de gastos.`;
+                }
+
+                // 7. Actualizar Health Radar
                 if (window.healthRadarChart && charts.radarChart) {
                     const r = charts.radarChart;
                     window.healthRadarChart.data.labels = r.labels;
                     window.healthRadarChart.data.datasets[0].data = r.values;
                     window.healthRadarChart.update();
+                    const el = document.getElementById('healthRadarText');
+                    if (el) el.innerHTML = `<span class="text-success font-semibold">Score ${Math.round(r.values.reduce((a,b) => a+b, 0) / r.values.length)}/100</span> salud general.`;
                 }
 
-                // Actualizar distribución de gastos en expensesChart si tiene mejores datos
+                // 8. Actualizar Margen Bruto vs Neto
+                if (window.marginCompareChart && charts.marginCompareChart) {
+                    const m = charts.marginCompareChart;
+                    window.marginCompareChart.data.labels = m.labels.map(n => n.length > 8 ? n.substring(0, 8) : n);
+                    window.marginCompareChart.data.datasets[0].data = m.gross_margin;
+                    window.marginCompareChart.data.datasets[1].data = m.net_margin;
+                    window.marginCompareChart.update();
+                    const el = document.getElementById('marginCompareText');
+                    if (el && summary) el.innerHTML = `Margen bruto <span class="text-pizza font-semibold">${summary.gross_margin.toFixed(1)}%</span> vs neto <span class="text-success font-semibold">${summary.net_margin.toFixed(1)}%</span>.`;
+                }
+
+                // 9. Actualizar Evolución de Márgenes
+                if (window.marginEvolutionChart && charts.marginEvolutionChart) {
+                    const m = charts.marginEvolutionChart;
+                    window.marginEvolutionChart.data.labels = m.labels;
+                    window.marginEvolutionChart.data.datasets[0].data = m.gross_margin;
+                    window.marginEvolutionChart.data.datasets[1].data = m.net_margin;
+                    window.marginEvolutionChart.update();
+                    const el = document.getElementById('marginEvolutionText');
+                    if (el) el.innerHTML = `<span class="text-success font-semibold">${m.labels.length} periodos</span> de datos históricos.`;
+                }
+
+                // 10. Actualizar Waterfall P&L
+                if (window.waterfallChart && charts.waterfallChart) {
+                    const w = charts.waterfallChart;
+                    window.waterfallChart.data.labels = w.labels;
+                    window.waterfallChart.data.datasets[0].data = w.values;
+                    window.waterfallChart.data.datasets[0].backgroundColor = w.colors;
+                    window.waterfallChart.update();
+                    const el = document.getElementById('waterfallText');
+                    if (el && summary) el.innerHTML = `Utilidad neta <span class="text-${summary.net_profit >= 0 ? 'success' : 'danger'} font-semibold">${formatMoney(summary.net_profit)}</span>.`;
+                }
+
+                // 11. Actualizar Scatter Ventas vs Margen
+                if (window.scatterMarginChart && charts.scatterMarginChart) {
+                    const s = charts.scatterMarginChart;
+                    window.scatterMarginChart.data.datasets[0].data = s.points.map(p => ({ x: p.x / 1000000, y: p.y }));
+                    window.scatterMarginChart.update();
+                    const el = document.getElementById('scatterMarginText');
+                    if (el) el.innerHTML = `<span class="text-pizza font-semibold">${s.points.length} tiendas</span> analizadas.`;
+                }
+
+                // 12. Actualizar distribución de gastos
                 if (expensesChart && charts.expenseDistChart) {
                     const exp = charts.expenseDistChart;
                     expensesChart.data.labels = exp.labels.map(l => l.length > 12 ? l.substring(0, 12) + '...' : l);
@@ -1260,23 +1401,9 @@ Responde en espanol, de forma concisa y profesional.`;
                     expensesChart.update();
                 }
 
-                // Actualizar Costo/Beneficio con datos reales
-                if (window.costBenefitChart && data.summary) {
-                    const s = data.summary;
-                    const roi = s.total_sales > 0 ? ((s.net_profit / s.total_expenses) * 100).toFixed(0) : 0;
-                    window.costBenefitChart.data.datasets[0].data = [100, 100 + parseInt(roi)];
-                    window.costBenefitChart.update();
-                    // Actualizar texto
-                    const roiText = document.querySelector('#costBenefitChart')?.closest('.chart-card')?.querySelector('.text-pizza');
-                    if (roiText) {
-                        roiText.textContent = '$1 invertido';
-                    }
-                }
-
-                // Actualizar KPIs adicionales con datos más precisos
-                if (data.summary) {
-                    const s = data.summary;
-                    document.getElementById('kpi-margen').textContent = s.efficiency.toFixed(1) + '%';
+                // 13. Actualizar KPIs
+                if (summary) {
+                    document.getElementById('kpi-margen').textContent = summary.efficiency.toFixed(1) + '%';
                     document.getElementById('kpi-margen-trend').textContent = 'eficiencia operativa';
                 }
 
