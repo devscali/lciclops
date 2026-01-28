@@ -705,8 +705,8 @@
         // NUEVAS GRÁFICAS ADICIONALES
         // ==========================================
 
-        // 5. Tendencia 6 Meses
-        new Chart(document.getElementById('trendChart'), {
+        // 5. Tendencia 6 Meses - referencia global para actualizar
+        window.trendChartGraficas = new Chart(document.getElementById('trendChart'), {
             type: 'line',
             data: {
                 labels: ['Ago', 'Sep', 'Oct', 'Nov', 'Dic', 'Ene'],
@@ -721,8 +721,8 @@
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { display: false } } }
         });
 
-        // 6. Eficiencia Gauge
-        new Chart(document.getElementById('efficiencyGaugeChart'), {
+        // 6. Eficiencia Gauge - referencia global
+        window.efficiencyGaugeChart = new Chart(document.getElementById('efficiencyGaugeChart'), {
             type: 'doughnut',
             data: {
                 datasets: [{
@@ -734,8 +734,8 @@
             options: { responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { display: false } } }
         });
 
-        // 7. Ventas por Día de la Semana
-        new Chart(document.getElementById('weekdayChart'), {
+        // 7. Ventas por Día de la Semana - referencia global
+        window.weekdayChart = new Chart(document.getElementById('weekdayChart'), {
             type: 'bar',
             data: {
                 labels: ['L', 'M', 'Mi', 'J', 'V', 'S', 'D'],
@@ -748,8 +748,8 @@
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { display: false } } }
         });
 
-        // 8. Costo/Beneficio
-        new Chart(document.getElementById('costBenefitChart'), {
+        // 8. Costo/Beneficio - referencia global
+        window.costBenefitChart = new Chart(document.getElementById('costBenefitChart'), {
             type: 'bar',
             data: {
                 labels: ['Inversión', 'Retorno'],
@@ -762,8 +762,8 @@
             options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { grid: { display: false } } } }
         });
 
-        // 9. Horarios Pico (simulado como barras)
-        new Chart(document.getElementById('heatmapChart'), {
+        // 9. Horarios Pico - referencia global
+        window.heatmapChart = new Chart(document.getElementById('heatmapChart'), {
             type: 'bar',
             data: {
                 labels: ['8am', '10am', '12pm', '2pm', '4pm', '6pm', '8pm', '10pm'],
@@ -781,8 +781,8 @@
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { display: false } } }
         });
 
-        // 10. Mix de Productos
-        new Chart(document.getElementById('productMixChart'), {
+        // 10. Mix de Productos - referencia global
+        window.productMixChart = new Chart(document.getElementById('productMixChart'), {
             type: 'doughnut',
             data: {
                 labels: ['Pepperoni', 'Hawaiana', '3 Carnes', 'Queso', 'Otros'],
@@ -794,8 +794,8 @@
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { usePointStyle: true, pointStyle: 'circle', padding: 10, font: { size: 10 } } } } }
         });
 
-        // 11. Health Radar
-        new Chart(document.getElementById('healthRadarChart'), {
+        // 11. Health Radar - referencia global
+        window.healthRadarChart = new Chart(document.getElementById('healthRadarChart'), {
             type: 'radar',
             data: {
                 labels: ['Ventas', 'Margen', 'Eficiencia', 'Crecimiento', 'Calidad'],
@@ -809,8 +809,8 @@
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { r: { beginAtZero: true, max: 100, ticks: { display: false }, grid: { color: 'rgba(255,255,255,0.1)' } } } }
         });
 
-        // 12. Comparativo Año Anterior
-        new Chart(document.getElementById('yearCompareChart'), {
+        // 12. Comparativo Año Anterior - referencia global
+        window.yearCompareChart = new Chart(document.getElementById('yearCompareChart'), {
             type: 'bar',
             data: {
                 labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'],
@@ -822,8 +822,8 @@
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, pointStyle: 'circle' } } }, scales: { x: { grid: { display: false } }, y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { callback: v => '$' + v + 'K' } } } }
         });
 
-        // 13. Proyección Q1
-        new Chart(document.getElementById('projectionChart'), {
+        // 13. Proyección Q1 - referencia global
+        window.projectionChart = new Chart(document.getElementById('projectionChart'), {
             type: 'line',
             data: {
                 labels: ['Ene', 'Feb', 'Mar'],
@@ -1193,6 +1193,97 @@ Responde en espanol, de forma concisa y profesional.`;
         // Initialize - load both
         loadDashboardData();
         loadFinancialData();
+        loadDashboardCharts(); // Nuevo: cargar datos del endpoint consolidado
+
+        // ==========================================
+        // NUEVO: Cargar datos del endpoint /api/charts/dashboard
+        // ==========================================
+        async function loadDashboardCharts() {
+            const token = localStorage.getItem('authToken');
+            if (!token) return;
+
+            try {
+                const response = await fetch(`${API}/api/charts/dashboard`, {
+                    headers: getAuthHeaders()
+                });
+
+                if (!response.ok) return;
+
+                const data = await response.json();
+                if (!data.success || !data.has_data) {
+                    console.log('ℹ️ No hay datos en monthly_summaries');
+                    return;
+                }
+
+                console.log('✅ Datos cargados del dashboard:', data.period);
+                const charts = data.charts;
+
+                // Actualizar Tendencia 6 Meses
+                if (window.trendChartGraficas && charts.trendChart) {
+                    const t = charts.trendChart;
+                    window.trendChartGraficas.data.labels = t.labels;
+                    window.trendChartGraficas.data.datasets[0].data = t.datasets.ventas.map(v => v);
+                    window.trendChartGraficas.update();
+                    // Actualizar texto
+                    const trendText = document.querySelector('#trendChart')?.closest('.chart-card')?.querySelector('.text-success');
+                    if (trendText && charts.compareChart) {
+                        const growth = charts.compareChart.change_percent[0];
+                        trendText.textContent = (growth >= 0 ? '+' : '') + growth.toFixed(0) + '% crecimiento';
+                    }
+                }
+
+                // Actualizar Eficiencia Gauge
+                if (window.efficiencyGaugeChart && charts.efficiencyChart) {
+                    const e = charts.efficiencyChart;
+                    window.efficiencyGaugeChart.data.datasets[0].data = [e.value, 100 - e.value];
+                    window.efficiencyGaugeChart.update();
+                    // Actualizar texto
+                    const effText = document.querySelector('#efficiencyGaugeChart')?.closest('.chart-card')?.querySelector('.text-success');
+                    if (effText) {
+                        effText.textContent = e.value.toFixed(0) + '% promedio';
+                    }
+                }
+
+                // Actualizar Health Radar
+                if (window.healthRadarChart && charts.radarChart) {
+                    const r = charts.radarChart;
+                    window.healthRadarChart.data.labels = r.labels;
+                    window.healthRadarChart.data.datasets[0].data = r.values;
+                    window.healthRadarChart.update();
+                }
+
+                // Actualizar distribución de gastos en expensesChart si tiene mejores datos
+                if (expensesChart && charts.expenseDistChart) {
+                    const exp = charts.expenseDistChart;
+                    expensesChart.data.labels = exp.labels.map(l => l.length > 12 ? l.substring(0, 12) + '...' : l);
+                    expensesChart.data.datasets[0].data = exp.amounts;
+                    expensesChart.update();
+                }
+
+                // Actualizar Costo/Beneficio con datos reales
+                if (window.costBenefitChart && data.summary) {
+                    const s = data.summary;
+                    const roi = s.total_sales > 0 ? ((s.net_profit / s.total_expenses) * 100).toFixed(0) : 0;
+                    window.costBenefitChart.data.datasets[0].data = [100, 100 + parseInt(roi)];
+                    window.costBenefitChart.update();
+                    // Actualizar texto
+                    const roiText = document.querySelector('#costBenefitChart')?.closest('.chart-card')?.querySelector('.text-pizza');
+                    if (roiText) {
+                        roiText.textContent = '$1 invertido';
+                    }
+                }
+
+                // Actualizar KPIs adicionales con datos más precisos
+                if (data.summary) {
+                    const s = data.summary;
+                    document.getElementById('kpi-margen').textContent = s.efficiency.toFixed(1) + '%';
+                    document.getElementById('kpi-margen-trend').textContent = 'eficiencia operativa';
+                }
+
+            } catch (error) {
+                console.error('Error loading dashboard charts:', error);
+            }
+        }
     </script>
 
     <!-- Auth Check -->
