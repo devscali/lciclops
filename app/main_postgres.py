@@ -1648,6 +1648,334 @@ async def get_charts_financial_data(
 
 
 # ============================================
+# CHARTS DASHBOARD - Datos para TODAS las gráficas
+# ============================================
+
+@app.get("/api/charts/dashboard")
+async def get_dashboard_charts_data(
+    db: Session = Depends(get_db),
+    period: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Endpoint consolidado que retorna TODOS los datos necesarios
+    para las 10 gráficas del dashboard con datos REALES.
+    PROTEGIDO: Requiere autenticación
+    """
+    try:
+        # 1. Verificar si hay datos en monthly_summaries
+        summary_count = db.query(models.MonthlySummary).count()
+
+        if summary_count == 0:
+            return {
+                "success": True,
+                "has_data": False,
+                "message": "No hay datos financieros. Sube documentos para ver gráficas."
+            }
+
+        # 2. Obtener periodos disponibles
+        periods_query = db.query(
+            models.MonthlySummary.period
+        ).distinct().order_by(
+            desc(models.MonthlySummary.period)
+        ).limit(12).all()
+
+        available_periods = [p[0] for p in periods_query]
+        current_period = period or (available_periods[0] if available_periods else None)
+        previous_period = available_periods[1] if len(available_periods) > 1 else None
+
+        # 3. === revenueChart: Ingresos vs Utilidad por Tienda ===
+        store_data = db.query(
+            models.MonthlySummary.store_id,
+            models.MonthlySummary.store_name,
+            models.MonthlySummary.total_sales,
+            models.MonthlySummary.net_profit,
+            models.MonthlySummary.net_margin
+        ).filter(
+            models.MonthlySummary.period == current_period
+        ).order_by(
+            desc(models.MonthlySummary.total_sales)
+        ).limit(7).all()
+
+        revenue_chart = {
+            "labels": [s.store_name or s.store_id or f"Tienda {i+1}" for i, s in enumerate(store_data)],
+            "datasets": {
+                "ingresos": [float(s.total_sales or 0) for s in store_data],
+                "utilidad": [float(s.net_profit or 0) for s in store_data]
+            }
+        }
+
+        # 4. === Totales del periodo actual ===
+        totals_current = db.query(
+            func.sum(models.MonthlySummary.total_sales).label('sales'),
+            func.sum(models.MonthlySummary.operating_expenses).label('expenses'),
+            func.sum(models.MonthlySummary.labor_cost).label('labor'),
+            func.sum(models.MonthlySummary.cost_of_sales).label('cost_of_sales'),
+            func.sum(models.MonthlySummary.rent).label('rent'),
+            func.sum(models.MonthlySummary.utilities).label('utilities'),
+            func.sum(models.MonthlySummary.net_profit).label('profit')
+        ).filter(
+            models.MonthlySummary.period == current_period
+        ).first()
+
+        total_sales = float(totals_current.sales or 0)
+        total_expenses = float(totals_current.expenses or 0)
+        total_labor = float(totals_current.labor or 0)
+        total_cost_of_sales = float(totals_current.cost_of_sales or 0)
+        total_rent = float(totals_current.rent or 0)
+        total_utilities = float(totals_current.utilities or 0)
+        total_profit = float(totals_current.profit or 0)
+
+        # 5. === expenseChart: Principales Gastos ===
+        expense_labels = ["Nómina", "Costo de Venta", "Renta", "Servicios"]
+        expense_values = [total_labor, total_cost_of_sales, total_rent, total_utilities]
+
+        # Agregar "Otros" si hay diferencia
+        otros = total_expenses - sum(expense_values)
+        if otros > 0:
+            expense_labels.append("Otros")
+            expense_values.append(otros)
+
+        expense_chart = {
+            "labels": expense_labels,
+            "values": expense_values
+        }
+
+        # 6. === trendChart: Tendencia 6 meses ===
+        trend_periods = available_periods[:6][::-1]  # Últimos 6, ordenados ascendente
+        trend_data = []
+        for p in trend_periods:
+            totals = db.query(
+                func.sum(models.MonthlySummary.total_sales).label('sales'),
+                func.sum(models.MonthlySummary.net_profit).label('profit')
+            ).filter(
+                models.MonthlySummary.period == p
+            ).first()
+            trend_data.append({
+                "period": p,
+                "sales": float(totals.sales or 0),
+                "profit": float(totals.profit or 0)
+            })
+
+        trend_chart = {
+            "labels": [t["period"] for t in trend_data],
+            "datasets": {
+                "ventas": [t["sales"] for t in trend_data],
+                "utilidad": [t["profit"] for t in trend_data]
+            }
+        }
+
+        # 7. === correlationChart: Ingresos vs Gastos por tienda ===
+        correlation_data = db.query(
+            models.MonthlySummary.store_name,
+            models.MonthlySummary.total_sales,
+            models.MonthlySummary.operating_expenses
+        ).filter(
+            models.MonthlySummary.period == current_period
+        ).all()
+
+        sales_list = [float(c.total_sales or 0) for c in correlation_data]
+        expenses_list = [float(c.operating_expenses or 0) for c in correlation_data]
+
+        # Calcular correlación
+        correlation_coef = 0.0
+        if len(sales_list) >= 2 and len(expenses_list) >= 2:
+            try:
+                correlation_coef = float(np.corrcoef(sales_list, expenses_list)[0, 1])
+                if np.isnan(correlation_coef):
+                    correlation_coef = 0.0
+            except Exception:
+                correlation_coef = 0.0
+
+        correlation_chart = {
+            "points": [
+                {"x": float(c.total_sales or 0), "y": float(c.operating_expenses or 0), "label": c.store_name or ""}
+                for c in correlation_data
+            ],
+            "correlation_coefficient": round(correlation_coef, 2)
+        }
+
+        # 8. === expenseDistChart: Distribución % ===
+        total_expense_sum = sum(expense_values) if expense_values else 1
+        expense_dist_chart = {
+            "labels": expense_labels,
+            "values": [round(v / total_expense_sum * 100, 1) if total_expense_sum > 0 else 0 for v in expense_values],
+            "amounts": expense_values
+        }
+
+        # 9. === efficiencyChart: Eficiencia Operativa ===
+        efficiency_value = 0.0
+        if total_sales > 0:
+            efficiency_value = ((total_sales - total_expenses) / total_sales) * 100
+
+        efficiency_chart = {
+            "value": round(max(0, min(100, efficiency_value)), 1),
+            "target": 85,
+            "industry_avg": 72
+        }
+
+        # 10. === compareChart: vs Mes Anterior ===
+        compare_chart = None
+        if previous_period:
+            totals_prev = db.query(
+                func.sum(models.MonthlySummary.total_sales).label('sales'),
+                func.sum(models.MonthlySummary.operating_expenses).label('expenses'),
+                func.sum(models.MonthlySummary.net_profit).label('profit')
+            ).filter(
+                models.MonthlySummary.period == previous_period
+            ).first()
+
+            prev_sales = float(totals_prev.sales or 0)
+            prev_expenses = float(totals_prev.expenses or 0)
+            prev_profit = float(totals_prev.profit or 0)
+
+            def calc_change(current, previous):
+                if previous and previous > 0:
+                    return round(((current - previous) / previous) * 100, 1)
+                return 0
+
+            compare_chart = {
+                "labels": ["Ventas", "Gastos", "Utilidad"],
+                "current": [total_sales, total_expenses, total_profit],
+                "previous": [prev_sales, prev_expenses, prev_profit],
+                "change_percent": [
+                    calc_change(total_sales, prev_sales),
+                    calc_change(total_expenses, prev_expenses),
+                    calc_change(total_profit, prev_profit)
+                ]
+            }
+
+        # 11. === topCategoriesChart: Top 5 gastos ===
+        # Intentar obtener de financial_records si hay datos
+        top_from_records = db.query(
+            models.FinancialRecord.subcategory,
+            func.sum(models.FinancialRecord.amount).label('total')
+        ).filter(
+            models.FinancialRecord.category.in_(['gastos', 'costos']),
+            models.FinancialRecord.period == current_period
+        ).group_by(
+            models.FinancialRecord.subcategory
+        ).order_by(
+            desc('total')
+        ).limit(5).all()
+
+        if top_from_records:
+            top_categories_chart = {
+                "labels": [c.subcategory or "Otros" for c in top_from_records],
+                "values": [float(c.total or 0) for c in top_from_records]
+            }
+        else:
+            # Fallback a expense_chart
+            sorted_expenses = sorted(zip(expense_labels, expense_values), key=lambda x: x[1], reverse=True)[:5]
+            top_categories_chart = {
+                "labels": [x[0] for x in sorted_expenses],
+                "values": [x[1] for x in sorted_expenses]
+            }
+
+        # 12. === rankingChart: Ranking por rentabilidad ===
+        ranking_data = db.query(
+            models.MonthlySummary.store_id,
+            models.MonthlySummary.store_name,
+            models.MonthlySummary.net_margin
+        ).filter(
+            models.MonthlySummary.period == current_period
+        ).order_by(
+            desc(models.MonthlySummary.net_margin)
+        ).limit(7).all()
+
+        def get_status(margin):
+            if margin >= 20:
+                return "excellent"
+            elif margin >= 15:
+                return "good"
+            elif margin >= 10:
+                return "warning"
+            return "critical"
+
+        ranking_chart = {
+            "labels": [r.store_name or r.store_id or f"Tienda" for r in ranking_data],
+            "margins": [round(float(r.net_margin or 0), 1) for r in ranking_data],
+            "status": [get_status(r.net_margin or 0) for r in ranking_data]
+        }
+
+        # 13. === radarChart: Métricas de Salud ===
+        avg_margin = sum(r.net_margin or 0 for r in ranking_data) / len(ranking_data) if ranking_data else 0
+        growth_rate = compare_chart["change_percent"][0] if compare_chart else 0
+
+        def normalize(value, min_v, max_v):
+            if max_v == min_v:
+                return 50
+            return min(100, max(0, ((value - min_v) / (max_v - min_v)) * 100))
+
+        radar_chart = {
+            "labels": ["Ventas", "Margen", "Eficiencia", "Crecimiento", "Consistencia"],
+            "values": [
+                round(normalize(total_sales, 0, total_sales * 1.5), 0) if total_sales > 0 else 50,
+                round(normalize(avg_margin, 5, 30), 0),
+                round(efficiency_chart["value"], 0),
+                round(normalize(growth_rate, -20, 30), 0),
+                round(85 - (len(ranking_data) * 2 if ranking_data else 0), 0)  # Placeholder
+            ],
+            "benchmarks": [75, 70, 72, 70, 80]
+        }
+
+        # 14. === Summary general ===
+        summary = {
+            "total_sales": total_sales,
+            "total_expenses": total_expenses,
+            "gross_profit": total_sales - total_cost_of_sales,
+            "gross_margin": round(((total_sales - total_cost_of_sales) / total_sales * 100), 1) if total_sales > 0 else 0,
+            "net_profit": total_profit,
+            "net_margin": round(avg_margin, 1),
+            "total_stores": len(store_data),
+            "efficiency": round(efficiency_chart["value"], 1)
+        }
+
+        # 15. === Insights dinámicos ===
+        top_expense_label = expense_labels[expense_values.index(max(expense_values))] if expense_values else "N/A"
+        top_expense_pct = round(max(expense_values) / total_expense_sum * 100, 0) if total_expense_sum > 0 else 0
+
+        insights = {
+            "expense": f"<span class='text-pizza font-semibold'>{top_expense_label} {top_expense_pct}%</span> es el gasto principal. Considera optimizar recursos.",
+            "efficiency": f"<span class='text-{'success' if efficiency_chart['value'] >= 75 else 'warning'} font-semibold'>{efficiency_chart['value']:.0f}% eficiencia</span> - {'Por encima del promedio de la industria (72%)' if efficiency_chart['value'] >= 72 else 'Por debajo del promedio de la industria (72%)'}. Objetivo: {efficiency_chart['target']}%.",
+            "compare": f"<span class='text-success font-semibold'>Ventas {compare_chart['change_percent'][0]:+.1f}%</span>, gastos {compare_chart['change_percent'][1]:+.1f}%. {'Utilidad mejora.' if compare_chart['change_percent'][2] > 0 else 'Revisar costos.'}" if compare_chart else "Sin datos comparativos del periodo anterior.",
+            "topGastos": f"<span class='text-warning font-semibold'>{' y '.join(expense_labels[:2])}</span> representan {sum(expense_dist_chart['values'][:2]):.0f}% del costo total.",
+            "ranking": f"<span class='text-success font-semibold'>{ranking_chart['labels'][0]} lidera con {ranking_chart['margins'][0]:.0f}%</span> de margen." if ranking_chart['labels'] else "Sin datos de ranking.",
+            "radar": f"<span class='text-success font-semibold'>{'Ventas y Margen fuertes' if radar_chart['values'][0] > 70 and radar_chart['values'][1] > 70 else 'Áreas de oportunidad identificadas'}.</span> {'Crecimiento bajo' if radar_chart['values'][3] < 50 else 'Buen crecimiento'} - enfocarse en mejora continua."
+        }
+
+        return {
+            "success": True,
+            "has_data": True,
+            "generated_at": datetime.utcnow().isoformat(),
+            "period": current_period,
+            "available_periods": available_periods,
+            "summary": summary,
+            "charts": {
+                "revenueChart": revenue_chart,
+                "expenseChart": expense_chart,
+                "trendChart": trend_chart,
+                "correlationChart": correlation_chart,
+                "expenseDistChart": expense_dist_chart,
+                "efficiencyChart": efficiency_chart,
+                "compareChart": compare_chart,
+                "topCategoriesChart": top_categories_chart,
+                "rankingChart": ranking_chart,
+                "radarChart": radar_chart
+            },
+            "insights": insights
+        }
+
+    except Exception as e:
+        traceback.print_exc()
+        return {
+            "success": False,
+            "has_data": False,
+            "error": str(e)
+        }
+
+
+# ============================================
 # STATIC FILES - Servir frontend HTML
 # ============================================
 

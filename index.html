@@ -984,34 +984,164 @@
             if (!token) return;
 
             try {
-                // Load basic stats
+                // Load basic stats for recent activity
                 const response = await fetch(API + '/dashboard/stats', {
                     headers: getAuthHeaders()
                 });
-                if (!response.ok) return;
-                const stats = await response.json();
-
-                // Update recent activity with real documents
-                if (stats.recent_documents && stats.recent_documents.length > 0) {
-                    updateRecentActivity(stats.recent_documents);
+                if (response.ok) {
+                    const stats = await response.json();
+                    if (stats.recent_documents && stats.recent_documents.length > 0) {
+                        updateRecentActivity(stats.recent_documents);
+                    }
                 }
 
-                // Load financial data for KPIs and charts
-                const finResponse = await fetch(API + '/charts/financial', {
+                // Load NEW consolidated charts data
+                const chartsResponse = await fetch(API + '/api/charts/dashboard', {
                     headers: getAuthHeaders()
                 });
-                if (finResponse.ok) {
-                    const finData = await finResponse.json();
-                    if (finData.success) {
-                        updateDashboardKPIs(finData.summary, stats);
-                        updateDashboardCharts(finData);
-                        updateExpenseChart(finData.categories);
+
+                if (chartsResponse.ok) {
+                    const chartsData = await chartsResponse.json();
+                    if (chartsData.success && chartsData.has_data) {
+                        // Update KPIs with real data
+                        updateKPIsFromCharts(chartsData.summary);
+                        // Update ALL 10 charts with real data
+                        updateAllCharts(chartsData.charts);
+                        // Update insights
+                        updateInsights(chartsData.insights);
+                        console.log('✅ Dashboard actualizado con datos reales del periodo:', chartsData.period);
+                    } else {
+                        console.log('ℹ️ No hay datos financieros, mostrando datos demo');
                     }
                 }
 
             } catch (e) {
                 console.error('Error loading dashboard:', e);
             }
+        }
+
+        // Update KPIs from charts endpoint
+        function updateKPIsFromCharts(summary) {
+            const kpiVentas = document.getElementById('kpi-ventas');
+            const kpiMargen = document.getElementById('kpi-margen');
+            const kpiUtilidad = document.getElementById('kpi-utilidad');
+            const kpiTiendas = document.getElementById('kpi-tiendas');
+
+            if (kpiVentas) kpiVentas.textContent = formatMoney(summary.total_sales);
+            if (kpiMargen) {
+                kpiMargen.textContent = summary.efficiency.toFixed(1) + '%';
+                const margenBar = document.getElementById('margen-bar');
+                if (margenBar) margenBar.style.width = Math.min(summary.efficiency, 100) + '%';
+            }
+            if (kpiUtilidad) kpiUtilidad.textContent = formatMoney(summary.net_profit);
+            if (kpiTiendas) kpiTiendas.textContent = summary.total_stores + ' tiendas';
+        }
+
+        // Update ALL 10 charts with real data from API
+        function updateAllCharts(charts) {
+            // 1. Revenue Chart (bar)
+            if (window.revenueChart && charts.revenueChart) {
+                const c = charts.revenueChart;
+                window.revenueChart.data.labels = c.labels.map(l => l.length > 10 ? l.substring(0, 10) : l);
+                window.revenueChart.data.datasets = [
+                    { label: 'Ingresos', data: c.datasets.ingresos.map(v => v / 1000000), backgroundColor: '#FF5722', borderRadius: 6 },
+                    { label: 'Utilidad', data: c.datasets.utilidad.map(v => v / 1000000), backgroundColor: '#34C759', borderRadius: 6 }
+                ];
+                window.revenueChart.update();
+            }
+
+            // 2. Expense Chart (doughnut)
+            if (window.expenseChart && charts.expenseChart) {
+                const c = charts.expenseChart;
+                window.expenseChart.data.labels = c.labels;
+                window.expenseChart.data.datasets[0].data = c.values.map(v => v / 1000000);
+                window.expenseChart.update();
+            }
+
+            // 3. Trend Chart (line)
+            if (window.trendChart && charts.trendChart) {
+                const c = charts.trendChart;
+                window.trendChart.data.labels = c.labels;
+                window.trendChart.data.datasets = [
+                    { label: 'Ventas', data: c.datasets.ventas.map(v => v / 1000000), borderColor: '#FF5722', backgroundColor: 'rgba(255,87,34,0.1)', fill: true, tension: 0.4, pointRadius: 4 },
+                    { label: 'Utilidad', data: c.datasets.utilidad.map(v => v / 1000000), borderColor: '#34C759', backgroundColor: 'rgba(52,199,89,0.1)', fill: true, tension: 0.4, pointRadius: 4 }
+                ];
+                window.trendChart.update();
+            }
+
+            // 4. Correlation Chart (scatter)
+            if (window.correlationChart && charts.correlationChart) {
+                const c = charts.correlationChart;
+                window.correlationChart.data.datasets[0].data = c.points.map(p => ({ x: p.x / 1000000, y: p.y / 1000000 }));
+                window.correlationChart.update();
+            }
+
+            // 5. Expense Distribution (pie)
+            if (window.expenseDistChart && charts.expenseDistChart) {
+                const c = charts.expenseDistChart;
+                window.expenseDistChart.data.labels = c.labels;
+                window.expenseDistChart.data.datasets[0].data = c.values;
+                window.expenseDistChart.update();
+            }
+
+            // 6. Efficiency Chart (gauge doughnut)
+            if (window.efficiencyChart && charts.efficiencyChart) {
+                const c = charts.efficiencyChart;
+                window.efficiencyChart.data.datasets[0].data = [c.value, 100 - c.value];
+                window.efficiencyChart.update();
+            }
+
+            // 7. Compare Chart (bar)
+            if (window.compareChart && charts.compareChart) {
+                const c = charts.compareChart;
+                window.compareChart.data.labels = c.labels;
+                window.compareChart.data.datasets = [
+                    { label: 'Actual', data: c.current.map(v => v / 1000000), backgroundColor: '#FF5722', borderRadius: 4 },
+                    { label: 'Anterior', data: c.previous.map(v => v / 1000000), backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 4 }
+                ];
+                window.compareChart.update();
+            }
+
+            // 8. Top Categories (horizontal bar)
+            if (window.topCategoriesChart && charts.topCategoriesChart) {
+                const c = charts.topCategoriesChart;
+                window.topCategoriesChart.data.labels = c.labels;
+                window.topCategoriesChart.data.datasets[0].data = c.values.map(v => v / 1000000);
+                window.topCategoriesChart.update();
+            }
+
+            // 9. Ranking Chart (horizontal bar)
+            if (window.rankingChart && charts.rankingChart) {
+                const c = charts.rankingChart;
+                window.rankingChart.data.labels = c.labels;
+                window.rankingChart.data.datasets[0].data = c.margins;
+                window.rankingChart.update();
+            }
+
+            // 10. Radar Chart
+            if (window.radarChart && charts.radarChart) {
+                const c = charts.radarChart;
+                window.radarChart.data.labels = c.labels;
+                window.radarChart.data.datasets[0].data = c.values;
+                window.radarChart.update();
+            }
+        }
+
+        // Update insights text
+        function updateInsights(insights) {
+            if (!insights) return;
+            const updates = {
+                'expenseInsight': insights.expense,
+                'efficiencyInsight': insights.efficiency,
+                'compareInsight': insights.compare,
+                'topGastosInsight': insights.topGastos,
+                'rankingInsight': insights.ranking,
+                'radarInsight': insights.radar
+            };
+            Object.entries(updates).forEach(([id, text]) => {
+                const el = document.getElementById(id);
+                if (el && text) el.innerHTML = text;
+            });
         }
 
         function formatMoney(amount) {
@@ -1221,10 +1351,10 @@
             }
         });
 
-        // === GRÁFICAS ADICIONALES ===
+        // === GRÁFICAS ADICIONALES - Con referencias globales para actualizar ===
 
         // Tendencia Mensual
-        new Chart(document.getElementById('trendChart'), {
+        window.trendChart = new Chart(document.getElementById('trendChart'), {
             type: 'line',
             data: {
                 labels: ['Ago', 'Sep', 'Oct', 'Nov', 'Dic', 'Ene'],
@@ -1260,7 +1390,7 @@
         });
 
         // Correlación Scatter
-        new Chart(document.getElementById('correlationChart'), {
+        window.correlationChart = new Chart(document.getElementById('correlationChart'), {
             type: 'scatter',
             data: {
                 datasets: [{
@@ -1287,7 +1417,7 @@
         });
 
         // Distribución de Gastos (Pie)
-        new Chart(document.getElementById('expenseDistChart'), {
+        window.expenseDistChart = new Chart(document.getElementById('expenseDistChart'), {
             type: 'pie',
             data: {
                 labels: ['Nómina', 'Insumos', 'Renta', 'Servicios', 'Otros'],
@@ -1305,7 +1435,7 @@
         });
 
         // Eficiencia Operativa (Gauge-like doughnut)
-        new Chart(document.getElementById('efficiencyChart'), {
+        window.efficiencyChart = new Chart(document.getElementById('efficiencyChart'), {
             type: 'doughnut',
             data: {
                 labels: ['Eficiencia', 'Margen'],
@@ -1326,7 +1456,7 @@
         });
 
         // Comparativo vs Mes Anterior
-        new Chart(document.getElementById('compareChart'), {
+        window.compareChart = new Chart(document.getElementById('compareChart'), {
             type: 'bar',
             data: {
                 labels: ['Ventas', 'Gastos', 'Utilidad'],
@@ -1351,7 +1481,7 @@
         });
 
         // Top Categorías (Barras Horizontales)
-        new Chart(document.getElementById('topCategoriesChart'), {
+        window.topCategoriesChart = new Chart(document.getElementById('topCategoriesChart'), {
             type: 'bar',
             data: {
                 labels: ['Nómina', 'Queso', 'Harina', 'Luz', 'Gas'],
@@ -1371,7 +1501,7 @@
         });
 
         // Ranking de Tiendas
-        new Chart(document.getElementById('rankingChart'), {
+        window.rankingChart = new Chart(document.getElementById('rankingChart'), {
             type: 'bar',
             data: {
                 labels: ['T-001', 'T-003', 'T-007', 'T-012', 'T-005', 'T-009', 'T-015'],
@@ -1400,7 +1530,7 @@
         });
 
         // Radar de Métricas
-        new Chart(document.getElementById('radarChart'), {
+        window.radarChart = new Chart(document.getElementById('radarChart'), {
             type: 'radar',
             data: {
                 labels: ['Ventas', 'Margen', 'Eficiencia', 'Crecimiento', 'Calidad'],
