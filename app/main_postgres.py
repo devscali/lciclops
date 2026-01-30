@@ -1279,6 +1279,45 @@ async def get_document(
     }
 
 
+@app.get("/documents/{doc_id}/concepts")
+async def get_document_concepts(
+    doc_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Extrae todos los conceptos únicos de un documento para debugging.
+    PROTEGIDO: Requiere autenticación
+    """
+    raw = db.query(models.RawDocumentData).filter(
+        models.RawDocumentData.document_id == doc_id
+    ).first()
+
+    if not raw or not raw.raw_json:
+        raise HTTPException(status_code=404, detail="Datos no encontrados")
+
+    data = raw.raw_json.get("data", [])
+    concepts = []
+
+    for i, row in enumerate(data):
+        # Buscar el concepto en la primera columna
+        first_val = None
+        for key, val in row.items():
+            if val and isinstance(val, str) and "Unnamed" not in key and "_hoja" not in key:
+                first_val = str(val).strip()
+                break
+
+        if first_val and first_val not in concepts:
+            concepts.append(first_val)
+
+    return {
+        "document_id": doc_id,
+        "total_rows": len(data),
+        "unique_concepts": len(concepts),
+        "concepts": concepts
+    }
+
+
 @app.delete("/documents/{doc_id}")
 async def delete_document(
     doc_id: int,
