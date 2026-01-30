@@ -1133,14 +1133,91 @@ def extract_financial_data_to_summaries(doc_id: int, db: Session) -> dict:
 
     db.commit()
 
+    # Validar datos extraídos (sanity checks)
+    validation_warnings = []
+    for store_name, store_info in stores_data.items():
+        sales = store_info["total_sales"]
+        expenses = store_info["operating_expenses"]
+        profit = store_info["net_profit"]
+        labor = store_info["labor_cost"]
+        rent = store_info["rent"]
+
+        # Sanity checks básicos
+        if sales == 0:
+            validation_warnings.append(f"{store_name}: Sin ingresos registrados")
+        if expenses == 0 and sales > 0:
+            validation_warnings.append(f"{store_name}: Sin egresos registrados")
+        if labor > expenses and expenses > 0:
+            validation_warnings.append(f"{store_name}: Nómina ({labor:,.0f}) > Egresos ({expenses:,.0f})")
+        if rent > sales * 0.3 and sales > 0:
+            validation_warnings.append(f"{store_name}: Renta muy alta ({rent/sales*100:.0f}% de ventas)")
+        if abs(profit) > sales and sales > 0:
+            validation_warnings.append(f"{store_name}: Utilidad inusual ({profit:,.0f} vs ventas {sales:,.0f})")
+
     return {
         "success": True,
         "document_id": doc_id,
         "period": period_label,
         "stores_processed": len(stores_data),
         "records_created": records_created,
-        "records_updated": records_updated
+        "records_updated": records_updated,
+        "validation_warnings": validation_warnings if validation_warnings else None
     }
+
+
+def validate_extraction_with_julia(stores_data: dict, doc_filename: str) -> dict:
+    """
+    Usa Julia (IA) para validar que los datos extraídos tengan sentido.
+    Retorna análisis y posibles correcciones.
+    """
+    # Preparar resumen para Julia
+    summary_lines = []
+    total_sales = 0
+    total_expenses = 0
+    for store_name, data in stores_data.items():
+        total_sales += data["total_sales"]
+        total_expenses += data["operating_expenses"]
+        summary_lines.append(
+            f"- {store_name}: Ventas=${data['total_sales']:,.0f}, "
+            f"Gastos=${data['operating_expenses']:,.0f}, "
+            f"Utilidad=${data['net_profit']:,.0f}"
+        )
+
+    prompt = f"""Eres Julia, asistente financiera de Little Caesars.
+Analiza estos datos extraídos del Estado de Resultados "{doc_filename}":
+
+RESUMEN POR TIENDA:
+{chr(10).join(summary_lines[:10])}
+... ({len(stores_data)} tiendas total)
+
+TOTALES:
+- Ventas totales: ${total_sales:,.0f}
+- Gastos totales: ${total_expenses:,.0f}
+- Utilidad: ${total_sales - total_expenses:,.0f}
+
+¿Los datos parecen razonables para franquicias de pizza?
+¿Detectas alguna anomalía o error de extracción?
+Responde en máximo 3 oraciones."""
+
+    try:
+        result = call_ai_with_fallback(
+            messages=[
+                {"role": "system", "content": "Eres Julia, experta en análisis financiero de Little Caesars."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=300,
+            temperature=0.3
+        )
+        return {
+            "validated": True,
+            "julia_analysis": result.get("response", ""),
+            "tokens_used": result.get("tokens_used", 0)
+        }
+    except Exception as e:
+        return {
+            "validated": False,
+            "error": str(e)
+        }
 
 
 @app.post("/process/sync-summaries")
