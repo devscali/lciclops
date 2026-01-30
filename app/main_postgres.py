@@ -1967,7 +1967,7 @@ async def get_dashboard_charts_data(
             models.MonthlySummary.period == current_period
         ).order_by(
             desc(models.MonthlySummary.total_sales)
-        ).limit(7).all()
+        ).limit(20).all()
 
         revenue_chart = {
             "labels": [s.store_name or s.store_id or f"Tienda {i+1}" for i, s in enumerate(store_data)],
@@ -2153,7 +2153,7 @@ async def get_dashboard_charts_data(
             models.MonthlySummary.period == current_period
         ).order_by(
             desc(models.MonthlySummary.net_margin)
-        ).limit(7).all()
+        ).limit(20).all()
 
         def get_status(margin):
             if margin >= 20:
@@ -2204,7 +2204,7 @@ async def get_dashboard_charts_data(
             models.MonthlySummary.period == current_period
         ).order_by(
             desc(models.MonthlySummary.gross_margin)
-        ).limit(7).all()
+        ).limit(20).all()
 
         margin_compare_chart = {
             "labels": [m.store_name or "Tienda" for m in margin_compare_data],
@@ -2229,8 +2229,8 @@ async def get_dashboard_charts_data(
 
         labor_ratios.sort(key=lambda x: x["ratio"], reverse=True)
         labor_ratio_chart = {
-            "labels": [l["name"] for l in labor_ratios[:7]],
-            "values": [l["ratio"] for l in labor_ratios[:7]]
+            "labels": [l["name"] for l in labor_ratios[:20]],
+            "values": [l["ratio"] for l in labor_ratios[:20]]
         }
 
         # 16. === fixedCostsChart: Desglose Costos Fijos ===
@@ -2254,9 +2254,9 @@ async def get_dashboard_charts_data(
         ).all()
 
         mom_variation_chart = {
-            "labels": [m.store_name or "Tienda" for m in mom_data if m.sales_vs_previous is not None][:7],
-            "sales_change": [round(float(m.sales_vs_previous or 0), 1) for m in mom_data if m.sales_vs_previous is not None][:7],
-            "profit_change": [round(float(m.profit_vs_previous or 0), 1) for m in mom_data if m.profit_vs_previous is not None][:7]
+            "labels": [m.store_name or "Tienda" for m in mom_data if m.sales_vs_previous is not None][:20],
+            "sales_change": [round(float(m.sales_vs_previous or 0), 1) for m in mom_data if m.sales_vs_previous is not None][:20],
+            "profit_change": [round(float(m.profit_vs_previous or 0), 1) for m in mom_data if m.profit_vs_previous is not None][:20]
         }
 
         # 18. === costStructureChart: Costo de Venta vs Gastos Operativos ===
@@ -2336,8 +2336,8 @@ async def get_dashboard_charts_data(
 
         rent_ratios.sort(key=lambda x: x["ratio"], reverse=True)
         rent_ratio_chart = {
-            "labels": [r["name"] for r in rent_ratios[:7]],
-            "values": [r["ratio"] for r in rent_ratios[:7]]
+            "labels": [r["name"] for r in rent_ratios[:20]],
+            "values": [r["ratio"] for r in rent_ratios[:20]]
         }
 
         # 23. === Summary general ===
