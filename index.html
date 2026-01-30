@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CICLOPS - LC Intelligence</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Bricolage+Grotesque:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -979,6 +980,41 @@
         });
 
         // Load dashboard stats from API
+        // Show demo/fallback data when no real data available
+        function showDemoData() {
+            // KPIs
+            const kpiVentas = document.getElementById('kpi-ventas');
+            const kpiMargen = document.getElementById('kpi-margen');
+            const kpiUtilidad = document.getElementById('kpi-utilidad');
+            const kpiTiendas = document.getElementById('kpi-tiendas');
+
+            if (kpiVentas) kpiVentas.textContent = '$5.2M';
+            if (kpiMargen) {
+                kpiMargen.textContent = '23.4%';
+                const margenBar = document.getElementById('margen-bar');
+                if (margenBar) margenBar.style.width = '23.4%';
+            }
+            if (kpiUtilidad) kpiUtilidad.textContent = '$1.2M';
+            if (kpiTiendas) kpiTiendas.textContent = '12 tiendas';
+
+            // Revenue Chart
+            if (window.revenueChart) {
+                window.revenueChart.data.labels = ['Madero', 'Centro', 'Plaza', 'Norte', 'Sur', 'Oriente', 'Poniente'];
+                window.revenueChart.data.datasets = [
+                    { label: 'Ingresos', data: [0.92, 0.85, 0.78, 0.71, 0.65, 0.58, 0.52], backgroundColor: '#FF5722', borderRadius: 6 },
+                    { label: 'Utilidad', data: [0.21, 0.19, 0.18, 0.16, 0.15, 0.13, 0.12], backgroundColor: '#34C759', borderRadius: 6 }
+                ];
+                window.revenueChart.update();
+            }
+
+            // Expense Chart
+            if (window.expenseChart) {
+                window.expenseChart.data.labels = ['Nomina', 'Insumos', 'Renta', 'Servicios'];
+                window.expenseChart.data.datasets[0].data = [1.8, 1.4, 0.5, 0.3];
+                window.expenseChart.update();
+            }
+        }
+
         async function loadDashboardStats() {
             const token = localStorage.getItem('authToken');
             if (!token) return;
@@ -1012,11 +1048,15 @@
                         console.log('✅ Dashboard actualizado con datos reales del periodo:', chartsData.period);
                     } else {
                         console.log('ℹ️ No hay datos financieros, mostrando datos demo');
+                        showDemoData();
                     }
+                } else {
+                    showDemoData();
                 }
 
             } catch (e) {
                 console.error('Error loading dashboard:', e);
+                showDemoData();
             }
         }
 
