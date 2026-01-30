@@ -1773,6 +1773,65 @@
                     const bottom = real.labels[real.labels.length-1];
                     insight = `<strong class="text-success">${top} lidera</strong> con ${real.margins[0]?.toFixed(1)}% de margen. <strong class="text-warning">${bottom}</strong> está en ${real.margins[real.margins.length-1]?.toFixed(1)}%.`;
                 }
+                else if (chartId === 'correlationChart' && real.points) {
+                    chartConfig.type = 'scatter';
+                    chartConfig.data = {
+                        datasets: [{
+                            label: 'Ventas vs Gastos',
+                            data: real.points.map(p => ({ x: p.x/1000000, y: p.y/1000000, label: p.label })),
+                            backgroundColor: '#FF5722',
+                            pointRadius: 8
+                        }]
+                    };
+                    insight = `<strong class="text-pizza">Correlación: ${real.correlation_coefficient?.toFixed(2)}</strong> entre ventas y gastos. ${real.points.length} tiendas analizadas.`;
+                }
+                else if (chartId === 'expenseDistChart' && real.labels) {
+                    chartConfig.type = 'pie';
+                    chartConfig.data = {
+                        labels: real.labels.map((l, i) => `${l} (${real.values[i]}%)`),
+                        datasets: [{ data: real.values, backgroundColor: ['#FF5722', '#FF8A65', '#FFAB91', '#FFCCBC'] }]
+                    };
+                    insight = `<strong class="text-pizza">${real.labels[0]}</strong> representa ${real.values[0]}% del gasto total.`;
+                }
+                else if (chartId === 'compareChart' && real.labels) {
+                    chartConfig.type = 'bar';
+                    chartConfig.data = {
+                        labels: real.labels,
+                        datasets: [
+                            { label: 'Actual', data: real.current.map(v => v/1000000), backgroundColor: '#FF5722' },
+                            { label: 'Anterior', data: real.previous.map(v => v/1000000), backgroundColor: '#636366' }
+                        ]
+                    };
+                    const salesChange = real.change_percent[0];
+                    insight = `<strong class="${salesChange >= 0 ? 'text-success' : 'text-danger'}">Ventas ${salesChange >= 0 ? '+' : ''}${salesChange}%</strong> vs período anterior.`;
+                }
+                else if (chartId === 'topCategoriesChart' && real.labels) {
+                    chartConfig.type = 'bar';
+                    chartConfig.data = {
+                        labels: real.labels,
+                        datasets: [{ label: 'Monto', data: real.values.map(v => v/1000000), backgroundColor: ['#FF5722', '#FF8A65', '#FFAB91', '#FFCCBC'], borderRadius: 4 }]
+                    };
+                    insight = `<strong class="text-pizza">${real.labels[0]}</strong> es el gasto principal con $${(real.values[0]/1000000).toFixed(1)}M.`;
+                }
+                else if (chartId === 'radarChart' && real.labels) {
+                    chartConfig.type = 'radar';
+                    chartConfig.data = {
+                        labels: real.labels,
+                        datasets: [
+                            { label: 'Actual', data: real.values, borderColor: '#FF5722', backgroundColor: 'rgba(255,87,34,0.2)' },
+                            { label: 'Benchmark', data: real.benchmarks, borderColor: '#34C759', backgroundColor: 'rgba(52,199,89,0.1)' }
+                        ]
+                    };
+                    insight = `<strong class="text-pizza">Análisis multidimensional</strong> comparando rendimiento actual vs benchmarks del mercado.`;
+                }
+                else if (chartId === 'efficiencyChart' && real.value !== undefined) {
+                    chartConfig.type = 'doughnut';
+                    chartConfig.data = {
+                        labels: ['Eficiencia', 'Pendiente'],
+                        datasets: [{ data: [real.value, 100 - real.value], backgroundColor: [real.value >= 72 ? '#34C759' : '#FF9500', '#E5E5EA'] }]
+                    };
+                    insight = `<strong class="${real.value >= real.industry_avg ? 'text-success' : 'text-warning'}">${real.value}% eficiencia</strong>. Industria: ${real.industry_avg}%. Objetivo: ${real.target}%.`;
+                }
             }
 
             document.getElementById('chartModalTitle').textContent = chartConfig.title;
