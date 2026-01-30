@@ -756,6 +756,456 @@ Analiza y mapea estos campos."""
         }
 
 
+# ============================================
+# SMART DOCUMENT PROCESSOR - AI POWERED
+# ============================================
+
+class SmartDocumentProcessor:
+    """
+    Procesador inteligente de documentos financieros.
+    Usa AI para detectar tipo, período, tienda y extraer datos estructurados.
+    Soporta: Excel (Estado de Resultados, Nómina, Inventario) y PDF (Estados de Cuenta)
+    """
+
+    # Categorías estándar para mapeo de conceptos
+    STANDARD_CATEGORIES = {
+        "ingresos": ["ingresos", "ventas", "revenue", "sales", "income", "total ventas"],
+        "costo_ventas": ["costo de venta", "costo ventas", "cost of sales", "cogs", "axion", "pepsi",
+                        "verduras", "agua purificada", "compras", "materia prima", "insumos"],
+        "nomina": ["nomina", "nominas", "nómina", "nóminas", "salarios", "sueldos", "payroll",
+                   "aguinaldos", "imss", "bonos", "vacaciones", "prima vacacional", "infonavit"],
+        "renta": ["renta", "alquiler", "rent", "arrendamiento", "mtto alquiler"],
+        "servicios": ["servicios", "utilities", "cfe", "luz", "agua", "gas", "telmex", "telefono",
+                      "internet", "electricidad"],
+        "marketing": ["marketing", "publicidad", "promocion", "advertising"],
+        "mantenimiento": ["mantenimiento", "mtto", "maintenance", "reparaciones", "refacciones"],
+        "seguros": ["seguros", "insurance", "polizas"],
+        "otros_gastos": ["otros", "gastos varios", "miscelaneos", "other expenses"],
+        "utilidad": ["utilidad", "profit", "ganancia", "utilidad bruta", "utilidad neta",
+                     "utilidad de operacion", "resultado"]
+    }
+
+    # Patrones para detectar períodos fiscales Little Caesars
+    PERIOD_PATTERNS = [
+        r'P(\d{1,2})\s*S(\d+)\s*A\s*S(\d+)',  # P12 S45 A S48
+        r'PERIODO\s*(\d{1,2})',                 # PERIODO 12
+        r'P(\d{1,2})',                          # P12
+        r'SEMANA\s*(\d+)',                      # SEMANA 45
+        r'(\d{4})-P(\d{1,2})',                  # 2025-P12
+    ]
+
+    def __init__(self, ai_client=None):
+        self.ai_client = ai_client or openai_client
+        self.anthropic_client = anthropic_client
+
+    async def process_document(self, doc_id: int, db: Session) -> dict:
+        """
+        Procesa un documento de forma inteligente.
+        1. Detecta metadatos (tipo, período, tiendas)
+        2. Extrae datos estructurados usando AI
+        3. Mapea conceptos a categorías estándar
+        4. Guarda en monthly_summaries
+        """
+        doc = db.query(models.Document).filter(models.Document.id == doc_id).first()
+        if not doc:
+            return {"success": False, "error": "Documento no encontrado"}
+
+        # Obtener datos raw del documento
+        raw_data = db.query(models.RawDocumentData).filter(
+            models.RawDocumentData.document_id == doc_id
+        ).first()
+
+        doc_data = db.query(models.DocumentData).filter(
+            models.DocumentData.document_id == doc_id
+        ).first()
+
+        content = None
+        if doc_data and doc_data.data:
+            content = doc_data.data
+        elif raw_data:
+            content = raw_data.raw_text if raw_data.raw_text else raw_data.preview_data
+
+        if not content:
+            return {"success": False, "error": "No hay datos en el documento"}
+
+        # 1. Detectar metadatos con AI
+        metadata = await self.detect_metadata_with_ai(content, doc.filename, doc.file_type)
+
+        # 2. Extraer datos estructurados
+        extracted = await self.extract_structured_data(content, metadata, doc.file_type)
+
+        # 3. Guardar en monthly_summaries
+        result = await self.save_to_summaries(extracted, metadata, doc_id, db)
+
+        return {
+            "success": True,
+            "metadata": metadata,
+            "extracted": extracted,
+            "saved": result
+        }
+
+    async def detect_metadata_with_ai(self, content, filename: str, file_type: str) -> dict:
+        """
+        Usa AI para detectar:
+        - Tipo de documento (estado_resultados, estado_cuenta, nomina, inventario)
+        - Período fiscal (P1-P13, semanas, año)
+        - Tiendas/sucursales mencionadas
+        - Fecha del documento
+        """
+        # Preparar muestra del contenido
+        if isinstance(content, list):
+            sample = json.dumps(content[:20], ensure_ascii=False, default=str)[:4000]
+        elif isinstance(content, str):
+            sample = content[:4000]
+        else:
+            sample = str(content)[:4000]
+
+        prompt = f"""Analiza este documento financiero de Little Caesars México y extrae metadatos.
+
+ARCHIVO: {filename}
+TIPO: {file_type}
+
+CONTENIDO (muestra):
+{sample}
+
+INSTRUCCIONES:
+1. Identifica el TIPO de documento:
+   - "estado_resultados" = Estado de Resultados con ingresos/egresos por tienda
+   - "estado_cuenta" = Estado de cuenta bancario con movimientos
+   - "nomina" = Reporte de nómina/sueldos
+   - "inventario" = Reporte de inventario
+   - "ventas" = Reporte de ventas diarias
+   - "otro" = Otro tipo
+
+2. Detecta el PERÍODO fiscal:
+   - Little Caesars usa 13 períodos (P1-P13), cada uno de 4 semanas
+   - P13 = Diciembre (semanas 49-52)
+   - Busca patrones como "P12 S45 A S48", "PERIODO 13", "2025-P11"
+
+3. Identifica las TIENDAS/SUCURSALES mencionadas
+   - Nombres como: GUAYMITAS, CABOS, MI PLAZA, VISTA, CAMINO, etc.
+   - Ignora nombres de hojas Excel como "EDO RES C INV"
+
+4. Detecta el AÑO del documento
+
+Responde SOLO con JSON válido:
+{{
+    "document_type": "estado_resultados|estado_cuenta|nomina|inventario|ventas|otro",
+    "period": {{
+        "fiscal_period": "P13",
+        "weeks": "S49 A S52",
+        "year": 2025,
+        "month_equivalent": "Diciembre"
+    }},
+    "stores_detected": ["GUAYMITAS", "CABOS", ...],
+    "confidence": 0.95,
+    "notes": "Observaciones relevantes"
+}}"""
+
+        try:
+            # Intentar con Claude primero (mejor para análisis complejo)
+            if self.anthropic_client:
+                response = self.anthropic_client.messages.create(
+                    model="claude-sonnet-4-20250514",
+                    max_tokens=2000,
+                    messages=[{"role": "user", "content": prompt}]
+                )
+                result_text = response.content[0].text
+            elif self.ai_client:
+                response = self.ai_client.chat.completions.create(
+                    model="gpt-4o",
+                    messages=[
+                        {"role": "system", "content": "Eres un experto en análisis de documentos financieros de restaurantes."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    temperature=0.1,
+                    max_tokens=2000
+                )
+                result_text = response.choices[0].message.content
+            else:
+                return self._fallback_metadata_detection(content, filename)
+
+            # Parsear respuesta JSON
+            if "```" in result_text:
+                result_text = result_text.split("```")[1]
+                if result_text.startswith("json"):
+                    result_text = result_text[4:]
+            result_text = result_text.strip()
+
+            return json.loads(result_text)
+
+        except Exception as e:
+            print(f"Error en detección de metadatos: {e}")
+            return self._fallback_metadata_detection(content, filename)
+
+    def _fallback_metadata_detection(self, content, filename: str) -> dict:
+        """Detección de metadatos sin AI (fallback)"""
+        # Detectar período del filename
+        period = "unknown"
+        year = datetime.now().year
+
+        for pattern in self.PERIOD_PATTERNS:
+            match = re.search(pattern, filename.upper())
+            if match:
+                period = f"P{match.group(1)}"
+                break
+
+        # Detectar año
+        year_match = re.search(r'20\d{2}', filename)
+        if year_match:
+            year = int(year_match.group(0))
+
+        # Detectar tipo por filename
+        doc_type = "otro"
+        filename_lower = filename.lower()
+        if "estado" in filename_lower and "resultado" in filename_lower:
+            doc_type = "estado_resultados"
+        elif "nomina" in filename_lower or "nómina" in filename_lower:
+            doc_type = "nomina"
+        elif "inventario" in filename_lower:
+            doc_type = "inventario"
+        elif "venta" in filename_lower:
+            doc_type = "ventas"
+        elif "cuenta" in filename_lower or "bancario" in filename_lower:
+            doc_type = "estado_cuenta"
+
+        return {
+            "document_type": doc_type,
+            "period": {
+                "fiscal_period": period,
+                "weeks": "",
+                "year": year,
+                "month_equivalent": ""
+            },
+            "stores_detected": [],
+            "confidence": 0.3,
+            "notes": "Detección fallback sin AI"
+        }
+
+    async def extract_structured_data(self, content, metadata: dict, file_type: str) -> dict:
+        """
+        Extrae datos estructurados del documento usando AI.
+        Retorna datos mapeados a categorías estándar por tienda.
+        """
+        doc_type = metadata.get("document_type", "otro")
+
+        # Preparar contenido para AI
+        if isinstance(content, list):
+            content_str = json.dumps(content[:100], ensure_ascii=False, default=str)
+        else:
+            content_str = str(content)[:8000]
+
+        prompt = f"""Extrae los datos financieros estructurados de este documento de Little Caesars.
+
+TIPO DE DOCUMENTO: {doc_type}
+PERÍODO: {metadata.get('period', {})}
+
+CONTENIDO:
+{content_str}
+
+INSTRUCCIONES:
+1. Identifica cada TIENDA/SUCURSAL en los datos
+2. Para cada tienda, extrae los valores de:
+   - ingresos: Total de ventas/ingresos
+   - costo_ventas: Costo de mercancía vendida (AXION, PEPSI, VERDURAS, etc.)
+   - nomina: Gastos de nómina (NOMINAS, AGUINALDOS, IMSS, BONOS)
+   - renta: Alquiler/arrendamiento (ALQUILER, MTTO ALQUILER)
+   - servicios: Servicios públicos (CFE, AGUA, GAS, TELMEX)
+   - otros_gastos: Otros gastos operativos
+   - utilidad: Utilidad bruta o neta
+
+3. Los valores deben ser NUMÉRICOS (sin formato de moneda)
+4. Si un valor no existe, usa 0
+5. IMPORTANTE: Ignora filas que sean totales generales o encabezados
+
+Responde SOLO con JSON válido:
+{{
+    "stores": {{
+        "NOMBRE_TIENDA": {{
+            "ingresos": 3458909.97,
+            "costo_ventas": 2800000.00,
+            "nomina": 450000.00,
+            "renta": 85000.00,
+            "servicios": 45000.00,
+            "otros_gastos": 25000.00,
+            "utilidad": 340689.78
+        }},
+        ...
+    }},
+    "totals": {{
+        "total_ingresos": 41903048.08,
+        "total_egresos": 42281721.45,
+        "total_utilidad": -378673.36
+    }},
+    "extraction_notes": "Notas sobre la extracción"
+}}"""
+
+        try:
+            if self.anthropic_client:
+                response = self.anthropic_client.messages.create(
+                    model="claude-sonnet-4-20250514",
+                    max_tokens=4000,
+                    messages=[{"role": "user", "content": prompt}]
+                )
+                result_text = response.content[0].text
+            elif self.ai_client:
+                response = self.ai_client.chat.completions.create(
+                    model="gpt-4o",
+                    messages=[
+                        {"role": "system", "content": "Eres un experto en extracción de datos financieros. Responde solo con JSON válido."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    temperature=0.1,
+                    max_tokens=4000
+                )
+                result_text = response.choices[0].message.content
+            else:
+                return {"stores": {}, "totals": {}, "error": "No AI client available"}
+
+            # Parsear JSON
+            if "```" in result_text:
+                result_text = result_text.split("```")[1]
+                if result_text.startswith("json"):
+                    result_text = result_text[4:]
+            result_text = result_text.strip()
+
+            return json.loads(result_text)
+
+        except Exception as e:
+            print(f"Error en extracción estructurada: {e}")
+            traceback.print_exc()
+            return {"stores": {}, "totals": {}, "error": str(e)}
+
+    async def save_to_summaries(self, extracted: dict, metadata: dict, doc_id: int, db: Session) -> dict:
+        """
+        Guarda los datos extraídos en monthly_summaries.
+        """
+        stores_data = extracted.get("stores", {})
+        period_info = metadata.get("period", {})
+
+        # Construir label del período
+        fiscal_period = period_info.get("fiscal_period", "P00")
+        year = period_info.get("year", datetime.now().year)
+        period_label = f"{year}-{fiscal_period}"
+
+        # Lista de nombres a excluir (hojas de Excel, totales, etc.)
+        excluded_names = [
+            "EDO RES C INV", "EDO RESUL C INV", "TOTAL", "TOTALES",
+            "RESUMEN", "CONSOLIDADO", "_hoja_origen", "nan", "None"
+        ]
+
+        saved_count = 0
+        updated_count = 0
+        errors = []
+
+        for store_name, store_data in stores_data.items():
+            # Validar nombre de tienda
+            if not store_name or store_name.upper() in [n.upper() for n in excluded_names]:
+                continue
+            if len(store_name) < 2:
+                continue
+
+            try:
+                # Extraer valores con defaults
+                ingresos = float(store_data.get("ingresos", 0) or 0)
+                costo_ventas = float(store_data.get("costo_ventas", 0) or 0)
+                nomina = float(store_data.get("nomina", 0) or 0)
+                renta = float(store_data.get("renta", 0) or 0)
+                servicios = float(store_data.get("servicios", 0) or 0)
+                otros = float(store_data.get("otros_gastos", 0) or 0)
+                utilidad = float(store_data.get("utilidad", 0) or 0)
+
+                # Calcular totales
+                total_gastos = costo_ventas + nomina + renta + servicios + otros
+
+                # Calcular márgenes
+                gross_margin = ((ingresos - costo_ventas) / ingresos * 100) if ingresos > 0 else 0
+                net_margin = (utilidad / ingresos * 100) if ingresos > 0 else 0
+                labor_ratio = (nomina / ingresos * 100) if ingresos > 0 else 0
+                rent_ratio = (renta / ingresos * 100) if ingresos > 0 else 0
+
+                # Buscar registro existente
+                existing = db.query(models.MonthlySummary).filter(
+                    models.MonthlySummary.store_name == store_name,
+                    models.MonthlySummary.period == period_label
+                ).first()
+
+                if existing:
+                    # Actualizar existente
+                    existing.total_sales = ingresos
+                    existing.cost_of_sales = costo_ventas
+                    existing.labor_cost = nomina
+                    existing.rent = renta
+                    existing.utilities = servicios
+                    existing.operating_expenses = total_gastos
+                    existing.net_profit = utilidad
+                    existing.gross_margin = gross_margin
+                    existing.net_margin = net_margin
+                    existing.labor_ratio = labor_ratio
+                    existing.rent_ratio = rent_ratio
+                    existing.document_id = doc_id
+                    updated_count += 1
+                else:
+                    # Crear nuevo
+                    summary = models.MonthlySummary(
+                        store_name=store_name,
+                        period=period_label,
+                        total_sales=ingresos,
+                        cost_of_sales=costo_ventas,
+                        labor_cost=nomina,
+                        rent=renta,
+                        utilities=servicios,
+                        operating_expenses=total_gastos,
+                        net_profit=utilidad,
+                        gross_margin=gross_margin,
+                        net_margin=net_margin,
+                        labor_ratio=labor_ratio,
+                        rent_ratio=rent_ratio,
+                        document_id=doc_id
+                    )
+                    db.add(summary)
+                    saved_count += 1
+
+            except Exception as e:
+                errors.append(f"{store_name}: {str(e)}")
+                continue
+
+        db.commit()
+
+        return {
+            "period": period_label,
+            "saved": saved_count,
+            "updated": updated_count,
+            "total_stores": saved_count + updated_count,
+            "errors": errors if errors else None
+        }
+
+    def map_concept_to_category(self, concept: str) -> str:
+        """
+        Mapea un concepto a su categoría estándar.
+        """
+        concept_lower = concept.lower().strip()
+
+        for category, keywords in self.STANDARD_CATEGORIES.items():
+            for keyword in keywords:
+                if keyword in concept_lower or concept_lower in keyword:
+                    return category
+
+        return "otros_gastos"
+
+
+# Instancia global del procesador inteligente
+smart_processor = SmartDocumentProcessor()
+
+
+async def process_document_smart(doc_id: int, db: Session) -> dict:
+    """
+    Función wrapper para procesar documentos de forma inteligente.
+    Usa el SmartDocumentProcessor para detectar tipo, período y extraer datos.
+    """
+    return await smart_processor.process_document(doc_id, db)
+
+
 def detect_period_from_filename(filename: str) -> str:
     """Detecta el periodo/fecha del nombre del archivo"""
     import re
@@ -1265,17 +1715,19 @@ async def sync_financial_summaries(
 async def confirm_upload(
     confirm_data: schemas.UploadConfirm,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    smart_process: bool = Query(default=True, description="Usar procesamiento inteligente con AI")
 ):
     """
-    Confirma un documento y lo guarda en el vault
+    Confirma un documento y lo guarda en el vault.
+    Si smart_process=True, usa AI para detectar tipo, período y extraer datos automáticamente.
     PROTEGIDO: Requiere autenticación
     """
     doc = db.query(models.Document).filter(models.Document.id == confirm_data.doc_id).first()
     if not doc:
         raise HTTPException(status_code=404, detail="Documento no encontrado")
 
-    # Actualizar documento con metadata
+    # Actualizar documento con metadata del usuario (puede ser sobrescrito por AI)
     doc.store_id = confirm_data.store_id
     doc.store_name = confirm_data.store_name
     doc.period = confirm_data.period
@@ -1284,17 +1736,247 @@ async def confirm_upload(
 
     db.commit()
 
-    # Procesar datos financieros automáticamente si es Estado de Resultados
+    # Procesar datos financieros
     extraction_result = None
-    if "ESTADO DE RESULTADOS" in doc.filename.upper():
-        extraction_result = extract_financial_data_to_summaries(doc.id, db)
+
+    if smart_process:
+        # Usar SmartDocumentProcessor (AI-powered)
+        try:
+            extraction_result = await process_document_smart(doc.id, db)
+
+            # Si AI detectó metadatos, actualizar el documento
+            if extraction_result.get("success") and extraction_result.get("metadata"):
+                metadata = extraction_result["metadata"]
+                period_info = metadata.get("period", {})
+
+                # Actualizar período si AI lo detectó con alta confianza
+                if metadata.get("confidence", 0) > 0.7:
+                    fiscal_period = period_info.get("fiscal_period", "")
+                    year = period_info.get("year", "")
+                    if fiscal_period and year:
+                        doc.period = f"{year}-{fiscal_period}"
+                        db.commit()
+
+        except Exception as e:
+            print(f"Error en smart processing: {e}")
+            traceback.print_exc()
+            # Fallback a procesamiento legacy
+            if "ESTADO DE RESULTADOS" in doc.filename.upper():
+                extraction_result = extract_financial_data_to_summaries(doc.id, db)
+    else:
+        # Procesamiento legacy (solo Estado de Resultados por nombre de archivo)
+        if "ESTADO DE RESULTADOS" in doc.filename.upper():
+            extraction_result = extract_financial_data_to_summaries(doc.id, db)
 
     return {
         "success": True,
         "message": f"Documento guardado en vault: {doc.filename}",
         "document_id": doc.id,
+        "smart_processing": smart_process,
         "financial_extraction": extraction_result
     }
+
+
+@app.post("/process/smart/{doc_id}")
+async def smart_process_document(
+    doc_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+    force: bool = Query(default=False, description="Forzar reprocesamiento aunque ya tenga datos")
+):
+    """
+    Procesa un documento usando AI para extraer datos automáticamente.
+    Detecta tipo, período, tiendas y extrae datos financieros.
+    PROTEGIDO: Requiere autenticación
+    """
+    doc = db.query(models.Document).filter(models.Document.id == doc_id).first()
+    if not doc:
+        raise HTTPException(status_code=404, detail="Documento no encontrado")
+
+    # Verificar si ya tiene datos procesados
+    if not force:
+        existing = db.query(models.MonthlySummary).filter(
+            models.MonthlySummary.document_id == doc_id
+        ).first()
+        if existing:
+            return {
+                "success": False,
+                "message": "Documento ya procesado. Usa force=true para reprocesar.",
+                "document_id": doc_id
+            }
+
+    try:
+        result = await process_document_smart(doc_id, db)
+
+        # Actualizar período del documento si AI lo detectó
+        if result.get("success") and result.get("metadata"):
+            metadata = result["metadata"]
+            period_info = metadata.get("period", {})
+            if metadata.get("confidence", 0) > 0.5:
+                fiscal_period = period_info.get("fiscal_period", "")
+                year = period_info.get("year", "")
+                if fiscal_period and year:
+                    doc.period = f"{year}-{fiscal_period}"
+                    db.commit()
+
+        return {
+            "success": result.get("success", False),
+            "document_id": doc_id,
+            "filename": doc.filename,
+            "metadata_detected": result.get("metadata"),
+            "extraction_result": result.get("saved"),
+            "stores_extracted": list(result.get("extracted", {}).get("stores", {}).keys()) if result.get("extracted") else []
+        }
+
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error en procesamiento: {str(e)}")
+
+
+@app.post("/process/smart-batch")
+async def smart_process_batch(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+    status: str = Query(default="confirmed", description="Estado de documentos a procesar"),
+    force: bool = Query(default=False, description="Forzar reprocesamiento")
+):
+    """
+    Procesa múltiples documentos en batch usando AI.
+    Útil para reprocesar todos los documentos existentes.
+    PROTEGIDO: Requiere autenticación
+    """
+    # Obtener documentos a procesar
+    docs = db.query(models.Document).filter(
+        models.Document.status == status
+    ).all()
+
+    results = []
+    success_count = 0
+    error_count = 0
+
+    for doc in docs:
+        try:
+            # Verificar si ya tiene datos procesados
+            if not force:
+                existing = db.query(models.MonthlySummary).filter(
+                    models.MonthlySummary.document_id == doc.id
+                ).first()
+                if existing:
+                    results.append({
+                        "doc_id": doc.id,
+                        "filename": doc.filename,
+                        "status": "skipped",
+                        "reason": "Ya procesado"
+                    })
+                    continue
+
+            result = await process_document_smart(doc.id, db)
+
+            if result.get("success"):
+                success_count += 1
+                # Actualizar período del documento
+                if result.get("metadata"):
+                    metadata = result["metadata"]
+                    period_info = metadata.get("period", {})
+                    if metadata.get("confidence", 0) > 0.5:
+                        fiscal_period = period_info.get("fiscal_period", "")
+                        year = period_info.get("year", "")
+                        if fiscal_period and year:
+                            doc.period = f"{year}-{fiscal_period}"
+
+            results.append({
+                "doc_id": doc.id,
+                "filename": doc.filename,
+                "status": "success" if result.get("success") else "error",
+                "stores_processed": result.get("saved", {}).get("total_stores", 0) if result.get("saved") else 0,
+                "period_detected": result.get("metadata", {}).get("period", {}).get("fiscal_period") if result.get("metadata") else None
+            })
+
+        except Exception as e:
+            error_count += 1
+            results.append({
+                "doc_id": doc.id,
+                "filename": doc.filename,
+                "status": "error",
+                "error": str(e)
+            })
+
+    db.commit()
+
+    return {
+        "success": True,
+        "total_documents": len(docs),
+        "processed": success_count,
+        "errors": error_count,
+        "skipped": len(docs) - success_count - error_count,
+        "results": results
+    }
+
+
+@app.get("/process/smart-preview/{doc_id}")
+async def smart_preview_extraction(
+    doc_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Preview de extracción inteligente SIN guardar datos.
+    Útil para validar qué extraería la AI antes de confirmar.
+    PROTEGIDO: Requiere autenticación
+    """
+    doc = db.query(models.Document).filter(models.Document.id == doc_id).first()
+    if not doc:
+        raise HTTPException(status_code=404, detail="Documento no encontrado")
+
+    # Obtener datos del documento
+    raw_data = db.query(models.RawDocumentData).filter(
+        models.RawDocumentData.document_id == doc_id
+    ).first()
+
+    doc_data = db.query(models.DocumentData).filter(
+        models.DocumentData.document_id == doc_id
+    ).first()
+
+    content = None
+    if doc_data and doc_data.data:
+        content = doc_data.data
+    elif raw_data:
+        content = raw_data.raw_text if raw_data.raw_text else raw_data.preview_data
+
+    if not content:
+        raise HTTPException(status_code=400, detail="No hay datos en el documento")
+
+    try:
+        # Solo detectar metadatos y extraer, SIN guardar
+        metadata = await smart_processor.detect_metadata_with_ai(content, doc.filename, doc.file_type)
+        extracted = await smart_processor.extract_structured_data(content, metadata, doc.file_type)
+
+        # Calcular resumen
+        stores = extracted.get("stores", {})
+        total_ingresos = sum(s.get("ingresos", 0) for s in stores.values())
+        total_utilidad = sum(s.get("utilidad", 0) for s in stores.values())
+
+        return {
+            "success": True,
+            "document_id": doc_id,
+            "filename": doc.filename,
+            "preview_only": True,
+            "metadata_detected": metadata,
+            "stores_found": list(stores.keys()),
+            "store_count": len(stores),
+            "sample_data": {
+                store: data for store, data in list(stores.items())[:3]  # Solo mostrar 3 tiendas como muestra
+            },
+            "totals_preview": {
+                "total_ingresos": total_ingresos,
+                "total_utilidad": total_utilidad
+            },
+            "extraction_notes": extracted.get("extraction_notes", "")
+        }
+
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error en preview: {str(e)}")
 
 
 @app.get("/documents")
