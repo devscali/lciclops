@@ -23,6 +23,7 @@ from dotenv import load_dotenv
 from typing import Optional, List
 import traceback
 import pdfplumber
+import re
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -957,6 +958,196 @@ async def upload_file(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ============================================
+# EXTRACCIÓN DE DATOS FINANCIEROS A SUMMARIES
+# ============================================
+
+def extract_financial_data_to_summaries(doc_id: int, db: Session) -> dict:
+    """
+    Extrae datos financieros de un documento confirmado y los guarda en monthly_summaries.
+    Retorna estadísticas del proceso.
+    """
+    doc = db.query(models.Document).filter(models.Document.id == doc_id).first()
+    if not doc:
+        return {"success": False, "error": "Documento no encontrado"}
+
+    raw = db.query(models.RawDocumentData).filter(
+        models.RawDocumentData.document_id == doc_id
+    ).first()
+
+    if not raw or not raw.raw_json:
+        return {"success": False, "error": "Sin datos raw"}
+
+    data = raw.raw_json.get("data", [])
+    if not data:
+        return {"success": False, "error": "Datos vacíos"}
+
+    # Extraer período del nombre del archivo (P11, P12, P13, etc.)
+    period_match = re.search(r'P(\d+)', doc.filename)
+    period_num = period_match.group(1) if period_match else "00"
+    period_label = f"2025-P{period_num}"  # Formato: 2025-P11, 2025-P12, etc.
+
+    # Primera fila tiene nombres de tiendas
+    header_row = data[0] if data else {}
+
+    # Mapear columnas a tiendas
+    store_columns = {}  # {col_key: store_name}
+    for key, val in header_row.items():
+        if val and isinstance(val, str) and val != "%" and "Unnamed" not in key and "_hoja" not in key:
+            # Limpiar nombre de tienda
+            store_name = str(val).strip().upper()
+            if store_name and len(store_name) > 1 and store_name != "TOTAL":
+                store_columns[key] = store_name
+
+    # Estructura para acumular datos por tienda
+    stores_data = {}
+    for col_key, store_name in store_columns.items():
+        stores_data[store_name] = {
+            "store_id": store_name.replace(" ", "_").lower(),
+            "store_name": store_name,
+            "total_sales": 0,
+            "cost_of_sales": 0,
+            "operating_expenses": 0,
+            "labor_cost": 0,
+            "rent": 0,
+            "utilities": 0,
+            "net_profit": 0,
+            "col_key": col_key
+        }
+
+    # Recorrer filas buscando conceptos financieros
+    for row in data[1:]:  # Saltar header
+        first_col_val = None
+        for key, val in row.items():
+            if val and isinstance(val, str) and "Unnamed" not in key:
+                first_col_val = str(val).upper().strip()
+                break
+
+        if not first_col_val:
+            continue
+
+        # Extraer valores por tienda
+        for store_name, store_info in stores_data.items():
+            col_key = store_info["col_key"]
+            val = row.get(col_key)
+
+            if val is None or not isinstance(val, (int, float)):
+                continue
+
+            val = float(val)
+
+            # Clasificar según el concepto
+            if first_col_val == "INGRESOS" or first_col_val == "VENTAS" or "VENTA NETA" in first_col_val:
+                store_info["total_sales"] = val
+            elif first_col_val == "COSTO DE VENTA" or first_col_val == "COSTO DE VENTAS":
+                store_info["cost_of_sales"] = val
+            elif first_col_val == "TOTAL EGRESOS" or first_col_val == "EGRESOS TOTALES":
+                store_info["operating_expenses"] = val
+            elif "NOMINA" in first_col_val or "SALARIO" in first_col_val or "SUELDO" in first_col_val:
+                store_info["labor_cost"] += val
+            elif "RENTA" in first_col_val and "LOCAL" in first_col_val:
+                store_info["rent"] = val
+            elif first_col_val == "RENTA":
+                store_info["rent"] = val
+            elif any(x in first_col_val for x in ["CFE", "LUZ", "ELECTRICIDAD", "AGUA", "GAS"]):
+                store_info["utilities"] += val
+            elif "UTILIDAD NETA" in first_col_val or first_col_val == "UTILIDAD":
+                store_info["net_profit"] = val
+
+    # Guardar en monthly_summaries
+    records_created = 0
+    records_updated = 0
+
+    for store_name, store_info in stores_data.items():
+        # Verificar si ya existe
+        existing = db.query(models.MonthlySummary).filter(
+            models.MonthlySummary.store_id == store_info["store_id"],
+            models.MonthlySummary.period == period_label
+        ).first()
+
+        # Calcular márgenes
+        gross_profit = store_info["total_sales"] - store_info["cost_of_sales"]
+        gross_margin = (gross_profit / store_info["total_sales"] * 100) if store_info["total_sales"] > 0 else 0
+        net_margin = (store_info["net_profit"] / store_info["total_sales"] * 100) if store_info["total_sales"] > 0 else 0
+
+        if existing:
+            # Actualizar
+            existing.total_sales = store_info["total_sales"]
+            existing.cost_of_sales = store_info["cost_of_sales"]
+            existing.gross_profit = gross_profit
+            existing.gross_margin = gross_margin
+            existing.operating_expenses = store_info["operating_expenses"]
+            existing.labor_cost = store_info["labor_cost"]
+            existing.rent = store_info["rent"]
+            existing.utilities = store_info["utilities"]
+            existing.net_profit = store_info["net_profit"]
+            existing.net_margin = net_margin
+            existing.document_id = doc_id
+            records_updated += 1
+        else:
+            # Crear nuevo
+            summary = models.MonthlySummary(
+                store_id=store_info["store_id"],
+                store_name=store_info["store_name"],
+                period=period_label,
+                total_sales=store_info["total_sales"],
+                cost_of_sales=store_info["cost_of_sales"],
+                gross_profit=gross_profit,
+                gross_margin=gross_margin,
+                operating_expenses=store_info["operating_expenses"],
+                labor_cost=store_info["labor_cost"],
+                rent=store_info["rent"],
+                utilities=store_info["utilities"],
+                net_profit=store_info["net_profit"],
+                net_margin=net_margin,
+                document_id=doc_id
+            )
+            db.add(summary)
+            records_created += 1
+
+    db.commit()
+
+    return {
+        "success": True,
+        "document_id": doc_id,
+        "period": period_label,
+        "stores_processed": len(stores_data),
+        "records_created": records_created,
+        "records_updated": records_updated
+    }
+
+
+@app.post("/process/sync-summaries")
+async def sync_financial_summaries(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Procesa todos los documentos confirmados y extrae datos a monthly_summaries.
+    PROTEGIDO: Requiere autenticación
+    """
+    # Buscar documentos confirmados de Estado de Resultados
+    docs = db.query(models.Document).filter(
+        models.Document.status == "confirmed",
+        models.Document.filename.ilike("%ESTADO DE RESULTADOS%")
+    ).all()
+
+    results = []
+    for doc in docs:
+        result = extract_financial_data_to_summaries(doc.id, db)
+        results.append({
+            "document_id": doc.id,
+            "filename": doc.filename,
+            **result
+        })
+
+    return {
+        "success": True,
+        "documents_processed": len(docs),
+        "results": results
+    }
+
+
 @app.post("/upload/confirm")
 async def confirm_upload(
     confirm_data: schemas.UploadConfirm,
@@ -980,10 +1171,16 @@ async def confirm_upload(
 
     db.commit()
 
+    # Procesar datos financieros automáticamente si es Estado de Resultados
+    extraction_result = None
+    if "ESTADO DE RESULTADOS" in doc.filename.upper():
+        extraction_result = extract_financial_data_to_summaries(doc.id, db)
+
     return {
         "success": True,
         "message": f"Documento guardado en vault: {doc.filename}",
-        "document_id": doc.id
+        "document_id": doc.id,
+        "financial_extraction": extraction_result
     }
 
 
