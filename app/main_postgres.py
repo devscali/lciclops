@@ -1131,12 +1131,20 @@ def extract_financial_data_to_summaries(doc_id: int, db: Session) -> dict:
 @app.post("/process/sync-summaries")
 async def sync_financial_summaries(
     db: Session = Depends(get_db),
+    clean: bool = False,
     current_user: dict = Depends(get_current_user)
 ):
     """
     Procesa todos los documentos confirmados y extrae datos a monthly_summaries.
     PROTEGIDO: Requiere autenticación
+    Parámetro clean=true borra todos los registros existentes antes de procesar.
     """
+    deleted_count = 0
+    if clean:
+        # Borrar todos los registros existentes de monthly_summaries
+        deleted_count = db.query(models.MonthlySummary).delete()
+        db.commit()
+
     # Buscar documentos confirmados de Estado de Resultados
     docs = db.query(models.Document).filter(
         models.Document.status == "confirmed",
@@ -1154,6 +1162,8 @@ async def sync_financial_summaries(
 
     return {
         "success": True,
+        "cleaned": clean,
+        "deleted_records": deleted_count,
         "documents_processed": len(docs),
         "results": results
     }
