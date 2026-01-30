@@ -992,12 +992,18 @@ def extract_financial_data_to_summaries(doc_id: int, db: Session) -> dict:
 
     # Mapear columnas a tiendas
     store_columns = {}  # {col_key: store_name}
+    # Nombres a excluir (son hojas de Excel, no tiendas)
+    excluded_names = ["EDO RES", "EDO RESUL", "TOTAL", "COMENTARIOS", "FLETES", "PUBLICIDAD", "COLABORADORES"]
+
     for key, val in header_row.items():
         if val and isinstance(val, str) and val != "%" and "Unnamed" not in key and "_hoja" not in key:
             # Limpiar nombre de tienda
             store_name = str(val).strip().upper()
-            if store_name and len(store_name) > 1 and store_name != "TOTAL":
-                store_columns[key] = store_name
+            # Excluir nombres de hojas y valores no válidos
+            if store_name and len(store_name) > 1:
+                is_excluded = any(exc in store_name for exc in excluded_names)
+                if not is_excluded:
+                    store_columns[key] = store_name
 
     # Estructura para acumular datos por tienda
     stores_data = {}
@@ -1019,11 +1025,16 @@ def extract_financial_data_to_summaries(doc_id: int, db: Session) -> dict:
     for row in data[1:]:  # Saltar header
         first_col_val = None
         for key, val in row.items():
-            if val and isinstance(val, str) and "Unnamed" not in key:
+            # Buscar el concepto en la primera columna válida (no metadata, no Unnamed)
+            if val and isinstance(val, str) and "Unnamed" not in key and "_hoja" not in key and "P" in key:
                 first_col_val = str(val).upper().strip()
                 break
 
         if not first_col_val:
+            continue
+
+        # Ignorar si es un nombre de hoja, no un concepto
+        if any(exc in first_col_val for exc in ["EDO RES", "EDO RESUL"]):
             continue
 
         # Extraer valores por tienda
