@@ -1039,6 +1039,9 @@
                 if (chartsResponse.ok) {
                     const chartsData = await chartsResponse.json();
                     if (chartsData.success && chartsData.has_data) {
+                        // Guardar datos reales para modales
+                        realChartsData = chartsData.charts;
+                        realSummaryData = chartsData.summary;
                         // Update KPIs with real data
                         updateKPIsFromCharts(chartsData.summary);
                         // Update ALL 10 charts with real data
@@ -1650,6 +1653,9 @@
         // CHART MODAL FUNCTIONALITY
         // ==========================================
         let modalChartInstance = null;
+        let realChartsData = null; // Datos reales del API
+        let realSummaryData = null; // Summary real del API
+
         const chartData = {
             'revenueChart': {
                 title: 'Ingresos por Período - Detalle',
@@ -1714,11 +1720,63 @@
         };
 
         function openChartModal(chartId) {
-            const data = chartData[chartId];
-            if (!data) return;
+            const demoData = chartData[chartId];
+            if (!demoData) return;
 
-            document.getElementById('chartModalTitle').textContent = data.title;
-            document.getElementById('chartModalInsight').innerHTML = '<p class="text-ink-2 text-sm leading-relaxed">' + data.insight + '</p>';
+            // Usar datos reales si están disponibles
+            let chartConfig = { ...demoData };
+            let insight = demoData.insight;
+
+            if (realChartsData && realChartsData[chartId]) {
+                const real = realChartsData[chartId];
+
+                // Configurar según el tipo de gráfica
+                if (chartId === 'revenueChart' && real.labels) {
+                    chartConfig.type = 'bar';
+                    chartConfig.data = {
+                        labels: real.labels,
+                        datasets: [
+                            { label: 'Ingresos', data: real.datasets.ingresos.map(v => v/1000000), backgroundColor: '#FF5722', borderRadius: 4 },
+                            { label: 'Utilidad', data: real.datasets.utilidad.map(v => v/1000000), backgroundColor: '#34C759', borderRadius: 4 }
+                        ]
+                    };
+                    const totalSales = real.datasets.ingresos.reduce((a,b) => a+b, 0);
+                    const totalProfit = real.datasets.utilidad.reduce((a,b) => a+b, 0);
+                    insight = `<strong class="${totalProfit >= 0 ? 'text-success' : 'text-danger'}">Utilidad total: $${(totalProfit/1000000).toFixed(1)}M</strong> de $${(totalSales/1000000).toFixed(1)}M en ventas. ${real.labels.length} tiendas analizadas.`;
+                }
+                else if (chartId === 'expenseChart' && real.labels) {
+                    chartConfig.type = 'doughnut';
+                    chartConfig.data = {
+                        labels: real.labels,
+                        datasets: [{ data: real.values.map(v => v/1000000), backgroundColor: ['#FF5722', '#FF8A65', '#FFAB91', '#FFCCBC', '#636366'] }]
+                    };
+                    insight = `<strong class="text-pizza">Principales gastos:</strong> ${real.labels.slice(0,3).join(', ')}. Total: $${(real.values.reduce((a,b)=>a+b,0)/1000000).toFixed(1)}M`;
+                }
+                else if (chartId === 'trendChart' && real.labels) {
+                    chartConfig.type = 'line';
+                    chartConfig.data = {
+                        labels: real.labels,
+                        datasets: [
+                            { label: 'Ventas', data: real.datasets.ventas.map(v => v/1000000), borderColor: '#FF5722', fill: true, tension: 0.4 },
+                            { label: 'Utilidad', data: real.datasets.utilidad.map(v => v/1000000), borderColor: '#34C759', fill: true, tension: 0.4 }
+                        ]
+                    };
+                    insight = `<strong class="text-success">Tendencia de ${real.labels.length} períodos.</strong> Evolución de ventas y utilidad por período fiscal.`;
+                }
+                else if (chartId === 'rankingChart' && real.labels) {
+                    chartConfig.type = 'bar';
+                    chartConfig.data = {
+                        labels: real.labels,
+                        datasets: [{ label: 'Margen %', data: real.margins, backgroundColor: real.margins.map(m => m >= 10 ? '#34C759' : m >= 0 ? '#FF9500' : '#FF3B30'), borderRadius: 4 }]
+                    };
+                    const top = real.labels[0];
+                    const bottom = real.labels[real.labels.length-1];
+                    insight = `<strong class="text-success">${top} lidera</strong> con ${real.margins[0]?.toFixed(1)}% de margen. <strong class="text-warning">${bottom}</strong> está en ${real.margins[real.margins.length-1]?.toFixed(1)}%.`;
+                }
+            }
+
+            document.getElementById('chartModalTitle').textContent = chartConfig.title;
+            document.getElementById('chartModalInsight').innerHTML = '<p class="text-ink-2 text-sm leading-relaxed">' + insight + '</p>';
 
             // Destroy previous chart if exists
             if (modalChartInstance) {
@@ -1728,13 +1786,13 @@
             // Create new chart in modal
             const ctx = document.getElementById('modalChart').getContext('2d');
             modalChartInstance = new Chart(ctx, {
-                type: data.type,
-                data: data.data,
+                type: chartConfig.type,
+                data: chartConfig.data,
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    indexAxis: data.type === 'bar' && chartId === 'topCategoriesChart' ? 'y' : 'x',
-                    plugins: { legend: { display: data.type !== 'doughnut', position: 'bottom' } }
+                    indexAxis: chartConfig.type === 'bar' && (chartId === 'topCategoriesChart' || chartId === 'rankingChart') ? 'y' : 'x',
+                    plugins: { legend: { display: chartConfig.type !== 'doughnut', position: 'bottom' } }
                 }
             });
 
