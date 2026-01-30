@@ -1047,23 +1047,36 @@ def extract_financial_data_to_summaries(doc_id: int, db: Session) -> dict:
 
             val = float(val)
 
-            # Clasificar según el concepto
-            if first_col_val == "INGRESOS" or first_col_val == "VENTAS" or "VENTA NETA" in first_col_val:
+            # Clasificar según el concepto (nombres exactos del Excel LC)
+            # INGRESOS
+            if first_col_val == "INGRESOS":
                 store_info["total_sales"] = val
-            elif first_col_val == "COSTO DE VENTA" or first_col_val == "COSTO DE VENTAS":
-                store_info["cost_of_sales"] = val
-            elif first_col_val == "TOTAL EGRESOS" or first_col_val == "EGRESOS TOTALES":
+
+            # EGRESOS TOTALES
+            elif first_col_val == "TOTAL EGRESOS":
                 store_info["operating_expenses"] = val
-            elif "NOMINA" in first_col_val or "SALARIO" in first_col_val or "SUELDO" in first_col_val:
-                store_info["labor_cost"] += val
-            elif "RENTA" in first_col_val and "LOCAL" in first_col_val:
-                store_info["rent"] = val
-            elif first_col_val == "RENTA":
-                store_info["rent"] = val
-            elif any(x in first_col_val for x in ["CFE", "LUZ", "ELECTRICIDAD", "AGUA", "GAS"]):
-                store_info["utilities"] += val
-            elif "UTILIDAD NETA" in first_col_val or first_col_val == "UTILIDAD":
+
+            # UTILIDAD (puede ser BRUTA o NETA)
+            elif first_col_val == "UTILIDAD BRUTA" or first_col_val == "UTILIDAD NETA" or first_col_val == "UTILIDAD":
                 store_info["net_profit"] = val
+
+            # COSTO DE VENTA (componentes: inventario, compras)
+            elif first_col_val in ["AXION", "PEPSI", "VERDURAS", "AGUA PURIFICADA", "COMPRAS CLEAN"]:
+                store_info["cost_of_sales"] += val
+
+            # NÓMINA (NOMINAS, no NOMINA)
+            elif first_col_val == "NOMINAS" or first_col_val == "AGUINALDOS" or first_col_val == "IMSS" or first_col_val == "BONOS":
+                store_info["labor_cost"] += val
+            elif "SALARIO" in first_col_val:
+                store_info["labor_cost"] += val
+
+            # RENTA (ALQUILER, no RENTA)
+            elif first_col_val == "ALQUILER" or first_col_val == "MTTO ALQUILER":
+                store_info["rent"] += val
+
+            # SERVICIOS (CFE, AGUA, GAS)
+            elif first_col_val in ["CFE", "AGUA", "GAS", "TELMEX"]:
+                store_info["utilities"] += val
 
     # Guardar en monthly_summaries
     records_created = 0
