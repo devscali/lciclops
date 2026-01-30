@@ -1024,11 +1024,13 @@ def extract_financial_data_to_summaries(doc_id: int, db: Session) -> dict:
     # Recorrer filas buscando conceptos financieros
     for row in data[1:]:  # Saltar header
         first_col_val = None
-        for key, val in row.items():
-            # Buscar el concepto en la primera columna válida (no metadata, no Unnamed)
-            if val and isinstance(val, str) and "Unnamed" not in key and "_hoja" not in key and "P" in key:
-                first_col_val = str(val).upper().strip()
-                break
+        # La columna del concepto suele ser la primera que empieza con P (ej: "P12 S45 A S48")
+        for key in sorted(row.keys()):
+            if key.startswith("P") and "." not in key:  # Columna principal (sin número)
+                val = row.get(key)
+                if val and isinstance(val, str):
+                    first_col_val = str(val).upper().strip()
+                    break
 
         if not first_col_val:
             continue
